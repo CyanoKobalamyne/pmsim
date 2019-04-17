@@ -1,0 +1,6 @@
+# Temporary files
+__pycache__/
+
+# IDE folders
+.mypy_cache/
+.vscode/
