@@ -27,8 +27,11 @@ class Machine:
                 pending.remove(tr)
             else:
                 # Remove first finished transaction.
-                core = min(self.cores, key=clock)
+                core = min((c for c in self.cores if transaction(c) is not None), key=clock)
+                finish = core[0]
                 core[1] = None
+                for core in free_cores:
+                    core[0] = finish
 
         return max(self.cores, key=clock)
 
