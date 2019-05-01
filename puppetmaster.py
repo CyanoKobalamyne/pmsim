@@ -1,58 +1,52 @@
+class Times:
+    MERGE_TRANSACTION = 1
+    CHECK_OBJ_CONFLICT = 1
+
+
 class Machine:
-    def __init__(self, n_cores, transactions, scheduler):
+    def __init__(self, n_cores, scheduler):
         # Initialize data.
-        self.clock = 0
-        self.pending_transactions = set(transactions)
-        self.scheduled_transactions = set()
-        self.done_transactions = set()
-        self.cores = [[None, 0] for n in range(n_cores)]
-        self.scheduler = scheduler
+        self.cores = [[0, None] for _ in range(n_cores)]
+        self.scheduler = scheduler()
 
-        # Initialize scheduler.
-        self.start_scheduler()
+    def run(self, transactions):
+        def clock(core):
+            return core[0]
+        def transaction(core):
+            return core[1]
+        pending = set(transactions)
+        while pending:
+            free_cores = [ix for ix, c in enumerate(self.cores) if transaction(c) is None]
+            if free_cores:
+                # Schedule new transaction on first idle core.
+                running = [tr for clk, tr in self.cores if tr is not None]
+                tr = self.scheduler.sched_single(pending, running)
+                core = min((self.cores[ix] for ix in free_cores), key=clock)
+                core[0] += tr.time  # Advance clock by execution time.
+                core[1] = tr
+                pending.remove(tr)
+            else:
+                # Remove first finished transaction.
+                core = min(self.cores, key=clock)
+                core[1] = None
 
-    def tick(self):
-        # Advance all cores.
-        for core in self.cores:
-            self.cores[1] += 1
-            if core[0] is not None and core[0].time == self.cores[1]:
-                # Move current transaction to done.
-                t = self.cores[0]
-                self.done_transactions.add(t)
-                # Execute new transaction.
-                try:
-                    t = self.scheduled_transactions.pop()
-                except KeyError:
-                    t = None
-                self.cores[0] = t
-                self.cores[1] = t.time if t is not None else 0
-        # Advance scheduler.
-        compatible_transactions = next(self.gen_schedule)
-        if compatible_transactions is not None:
-            # Schedule transactions.
-            self.pending_transactions -= compatible_transactions
-            self.scheduled_transactions |= compatible_transactions
-            # Restart scheduler.
-            self.start_scheduler()
-
-    def start_scheduler(self):
-        running_transactions = set(map(lambda c: c[0], self.cores))
-        running_transactions |= self.scheduled_transactions
-        self.gen_schedule = self.scheduler.run(
-            self.pending_transactions, running_transactions)
+        return max(self.cores, key=clock)
 
 
 class Scheduler:
-    def __init__(self, n_cores):
-        self.n_cores = n_cores
-
-    def run(self, pending_transactions, ongoing_transactions):
+    def sched_single(self, pending, ongoing):
+        t = 0
         # Filter out candidates compatible with ongoing.
-        # TODO: parallelize
-        for pending in TransactionSet.create(pending_transactions):
-            yield
-        # Take 2^n (?), discard and merge pairwise.
-        pass
+        tr_set, t1 = TransactionSet.create(pending)
+        t += t1
+        compatible = set()
+        for tr in pending:
+            is_comp, t2 = tr_set.compatible(tr)
+            t += t2
+            if is_comp:
+                compatible.add(tr)
+        transaction = compatible.pop()
+        return transaction, t
 
 
 class Transaction:
@@ -72,42 +66,26 @@ class TransactionSet:
 
     @classmethod
     def create(cls, transactions):
+        t = 0
         self = cls()
         self.transactions = set(transactions)
         for transaction in transactions:
             self.read_set |= transaction.read_set
             self.write_set |= transaction.write_set
-            yield
-        return self
+            t += Times.MERGE_TRANSACTION
+        return self, t
 
-    def __iter__(self):
-        return self.transactions.__iter__()
-
-    def add(self, transaction):
-        self.transactions.add(transaction)
-
-    def addall(self, transactions):
-        self.transactions |= transactions
-
-    def pop(self):
-        if self.transactions:
-            return self.transactions.pop()
-        else:
-            return None
-
-    def compatible(self, transaction_set):
-        for read_obj in transaction_set.read_set:
+    def compatible(self, transaction):
+        t = 0
+        for read_obj in transaction.read_set:
             if read_obj in self.write_set:
-                return False
-            yield
-        for write_obj in transaction_set.write_set:
+                return False, t
+            t += Times.CHECK_OBJ_CONFLICT
+        for write_obj in transaction.write_set:
             if write_obj in self.read_set:
-                return False
-            yield
+                return False, t
+            t += Times.CHECK_OBJ_CONFLICT
             if write_obj in self.write_set:
-                return False
-            yield
-        return True
-
-    def union(self, other):
-        pass
+                return False, t
+            t += Times.CHECK_OBJ_CONFLICT
+        return True, t
