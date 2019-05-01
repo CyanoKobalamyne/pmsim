@@ -17,10 +17,10 @@ class Machine:
         pending = set(transactions)
         while pending:
             free_cores = [ix for ix, c in enumerate(self.cores) if transaction(c) is None]
-            if free_cores:
+            running = [tr for clk, tr in self.cores if tr is not None]
+            tr = self.scheduler.sched_single(pending, running)
+            if free_cores and tr:
                 # Schedule new transaction on first idle core.
-                running = [tr for clk, tr in self.cores if tr is not None]
-                tr = self.scheduler.sched_single(pending, running)
                 core = min((self.cores[ix] for ix in free_cores), key=clock)
                 core[0] += tr.time  # Advance clock by execution time.
                 core[1] = tr
