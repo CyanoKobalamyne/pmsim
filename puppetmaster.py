@@ -30,8 +30,8 @@ class Machine:
                 core = min((c for c in self.cores if transaction(c) is not None), key=clock)
                 finish = core[0]
                 core[1] = None
-                for core in free_cores:
-                    core[0] = finish
+                for ix in free_cores:
+                    self.cores[ix][0] = finish
 
         return max(map(clock, self.cores))
 
