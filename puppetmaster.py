@@ -33,7 +33,7 @@ class Machine:
                 for core in free_cores:
                     core[0] = finish
 
-        return max(self.cores, key=clock)
+        return max(map(clock, self.cores))
 
 
 class Scheduler:
