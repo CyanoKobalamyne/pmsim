@@ -1,3 +1,4 @@
+"""Unit tests for puppetmaster."""
 import unittest
 from unittest import TestCase
 
@@ -5,6 +6,8 @@ import puppetmaster as pm
 
 
 class TestSimple(TestCase):
+    """Simple tests for scheduling 1-2 transactions."""
+
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = pm.Scheduler()
         m = pm.Machine(n_cores, sched)
