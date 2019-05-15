@@ -7,7 +7,7 @@ class Machine:
     def __init__(self, n_cores, scheduler):
         # Initialize data.
         self.cores = [[0, None] for _ in range(n_cores)]
-        self.scheduler = scheduler()
+        self.scheduler = scheduler
 
     def run(self, transactions):
         def clock(core):
