@@ -1,5 +1,4 @@
 # Current
-- tests for correctness
 - generate data and measure
   - uniform distribution
   - Zipf's law
