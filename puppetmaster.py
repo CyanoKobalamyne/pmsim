@@ -40,7 +40,7 @@ class Scheduler:
     def sched_single(self, pending, ongoing):
         t = 0
         # Filter out candidates compatible with ongoing.
-        tr_set, t1 = TransactionSet.create(pending)
+        tr_set, t1 = TransactionSet.create(ongoing)
         t += t1
         compatible = set()
         for tr in pending:
@@ -48,7 +48,11 @@ class Scheduler:
             t += t2
             if is_comp:
                 compatible.add(tr)
-        transaction = compatible.pop()
+        try:
+            transaction = compatible.pop()
+        except KeyError:
+            # No compatible transaction.
+            transaction = None
         return transaction, t
 
 
