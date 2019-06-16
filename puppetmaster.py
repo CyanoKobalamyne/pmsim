@@ -1,39 +1,49 @@
+import operator
+
+
 class Times:
     MERGE_TRANSACTION = 1
     CHECK_OBJ_CONFLICT = 1
 
 
+class Core:
+    def __init__(self, clock_start=0, transaction=None):
+        self.clock = clock_start
+        self.transaction = transaction
+
+
 class Machine:
     def __init__(self, n_cores, scheduler):
         # Initialize data.
-        self.cores = [[0, None] for _ in range(n_cores)]
+        self.cores = [Core() for _ in range(n_cores)]
         self.scheduler = scheduler
 
     def run(self, transactions):
-        def clock(core):
-            return core[0]
-        def transaction(core):
-            return core[1]
+        clock_fn = operator.attrgetter('clock')
         pending = set(transactions)
         while pending:
-            free_cores = [ix for ix, c in enumerate(self.cores) if transaction(c) is None]
-            running = [tr for clk, tr in self.cores if tr is not None]
+            free_cores = [core for core in self.cores
+                          if core.transaction is None]
+            transactions = [core.transaction for core in self.cores]
+            running = [tr for tr in transactions if tr is not None]
             tr, time = self.scheduler.sched_single(pending, running)
             if free_cores and tr:
                 # Schedule new transaction on first idle core.
-                core = min((self.cores[ix] for ix in free_cores), key=clock)
-                core[0] += tr.time  # Advance clock by execution time.
-                core[1] = tr
+                core = min(free_cores, key=clock_fn)
+                core.clock += tr.time  # Advance clock by execution time.
+                core.transaction = tr
                 pending.remove(tr)
             else:
                 # Remove first finished transaction.
-                core = min((c for c in self.cores if transaction(c) is not None), key=clock)
-                finish = core[0]
-                core[1] = None
-                for ix in free_cores:
-                    self.cores[ix][0] = finish
+                busy_cores = [core for core in self.cores
+                              if core.transaction is not None]
+                core = min(busy_cores, key=clock_fn)
+                finish = core.clock
+                core.transaction = None
+                for core in free_cores:
+                    core.clock = finish
 
-        return max(map(clock, self.cores))
+        return max(map(clock_fn, self.cores))
 
 
 class Scheduler:
