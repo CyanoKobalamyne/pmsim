@@ -1,9 +1,7 @@
 import operator
 
 
-class Times:
-    MERGE_TRANSACTION = 1
-    CHECK_OBJ_CONFLICT = 1
+SCHEDULING_TIME = 0
 
 
 class Core:
@@ -20,19 +18,28 @@ class Machine:
 
     def run(self, transactions):
         clock_fn = operator.attrgetter('clock')
+        scheduler_clock = 0
+        tr = None
         pending = set(transactions)
         while pending:
             free_cores = [core for core in self.cores
                           if core.transaction is None]
             transactions = [core.transaction for core in self.cores]
             running = [tr for tr in transactions if tr is not None]
-            tr, time = self.scheduler.sched_single(pending, running)
+            if not tr:
+                # Try scheduling a new transaction.
+                tr = self.scheduler.sched_single(pending, running)
+                scheduler_clock += SCHEDULING_TIME
             if free_cores and tr:
-                # Schedule new transaction on first idle core.
+                # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
+                # If the core was idle while the scheduler was working,
+                # move its clock forward.
+                core.clock = max(scheduler_clock, core.clock)
                 core.clock += tr.time  # Advance clock by execution time.
                 core.transaction = tr
                 pending.remove(tr)
+                tr = None
             else:
                 # Remove first finished transaction.
                 busy_cores = [core for core in self.cores
@@ -42,20 +49,20 @@ class Machine:
                 core.transaction = None
                 for core in free_cores:
                     core.clock = finish
+                # If the scheduler was idle until the first core freed up,
+                # move its clock forward.
+                scheduler_clock = max(finish, scheduler_clock)
 
         return max(map(clock_fn, self.cores))
 
 
 class Scheduler:
     def sched_single(self, pending, ongoing):
-        t = 0
         # Filter out candidates compatible with ongoing.
-        tr_set, t1 = TransactionSet.create(ongoing)
-        t += t1
+        tr_set = TransactionSet.create(ongoing)
         compatible = set()
         for tr in pending:
-            is_comp, t2 = tr_set.compatible(tr)
-            t += t2
+            is_comp = tr_set.compatible(tr)
             if is_comp:
                 compatible.add(tr)
         try:
@@ -63,7 +70,7 @@ class Scheduler:
         except KeyError:
             # No compatible transaction.
             transaction = None
-        return transaction, t
+        return transaction
 
 
 class Transaction:
@@ -83,26 +90,20 @@ class TransactionSet:
 
     @classmethod
     def create(cls, transactions):
-        t = 0
         self = cls()
         self.transactions = set(transactions)
         for transaction in transactions:
             self.read_set |= transaction.read_set
             self.write_set |= transaction.write_set
-            t += Times.MERGE_TRANSACTION
-        return self, t
+        return self
 
     def compatible(self, transaction):
-        t = 0
         for read_obj in transaction.read_set:
             if read_obj in self.write_set:
-                return False, t
-            t += Times.CHECK_OBJ_CONFLICT
+                return False
         for write_obj in transaction.write_set:
             if write_obj in self.read_set:
-                return False, t
-            t += Times.CHECK_OBJ_CONFLICT
+                return False
             if write_obj in self.write_set:
-                return False, t
-            t += Times.CHECK_OBJ_CONFLICT
-        return True, t
+                return False
+        return True

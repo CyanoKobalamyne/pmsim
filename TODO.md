@@ -2,7 +2,6 @@
 - generate data and measure
   - uniform distribution
   - Zipf's law
-- constant time scheduling
 - add transactions to constant-size pool while running
 
 # Long-term
