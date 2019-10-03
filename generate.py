@@ -25,8 +25,7 @@ def gen_transactions(max_read_objects, max_write_objects, max_time,
     """
     object_pool = [object() for _ in range(memory_size)]
 
-    def objects(*size_range):
-        min_, max_ = size_range
+    def objects(min_, max_):
         zipf_weights = [1 / (i + 1) for i in range(max_ - min_ + 1)]
         size = random.choices(list(range(min_, max_ + 1)),
                               weights=zipf_weights)[0]
