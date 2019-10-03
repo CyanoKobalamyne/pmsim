@@ -1,7 +1,5 @@
+"""Puppet master: simulation of a hardware-based distributed scheduler."""
 import operator
-
-
-SCHEDULING_TIME = 0
 
 
 class Core:
@@ -29,13 +27,15 @@ class Core:
 class Machine:
     """Device capable of executing transactions in parallel."""
 
-    def __init__(self, n_cores, scheduler):
+    def __init__(self, n_cores, scheduler, scheduling_time=0):
         """Create a new machine.
 
         Arguments:
             n_cores (int): number of execution units (cores) available
             scheduler (Scheduler): object used to schedule transactions on
                                    the cores
+            scheduling_time (int): constant amount of time the scheduler takes
+                                   to choose the next transaction to execute
 
         """
         self.cores = [Core() for _ in range(n_cores)]
@@ -63,7 +63,7 @@ class Machine:
             if not tr:
                 # Try scheduling a new transaction.
                 tr = self.scheduler.sched_single(pending, running)
-                scheduler_clock += SCHEDULING_TIME
+                scheduler_clock += self.scheduling_time
             if free_cores and tr:
                 # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
