@@ -3,6 +3,7 @@
   - uniform distribution
   - Zipf's law
 - add transactions to constant-size pool while running
+- choose transaction from fixed-size pool
 
 # Long-term
 - queue multiple transactions from scheduler
