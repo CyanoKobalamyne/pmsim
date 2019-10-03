@@ -1,7 +1,4 @@
 # Current
-- generate data and measure
-  - uniform distribution
-  - Zipf's law
 - add transactions to constant-size pool while running
 - choose transaction from fixed-size pool
 
