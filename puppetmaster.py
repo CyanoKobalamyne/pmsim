@@ -5,18 +5,52 @@ SCHEDULING_TIME = 0
 
 
 class Core:
+    """Component of `Machine` executing a single transaction.
+
+    Attributes:
+        clock (int): time elapsed since the start of the machine in "ticks"
+        transaction (Transaction): the transaction being executed or None if
+                                   the core is idle
+
+    """
+
     def __init__(self, clock_start=0, transaction=None):
+        """Create a new core.
+
+        Arguments:
+            clock_start (int): initial value for the clock
+            transaction: initial transaction being executed
+
+        """
         self.clock = clock_start
         self.transaction = transaction
 
 
 class Machine:
+    """Device capable of executing transactions in parallel."""
+
     def __init__(self, n_cores, scheduler):
-        # Initialize data.
+        """Create a new machine.
+
+        Arguments:
+            n_cores (int): number of execution units (cores) available
+            scheduler (Scheduler): object used to schedule transactions on
+                                   the cores
+
+        """
         self.cores = [Core() for _ in range(n_cores)]
         self.scheduler = scheduler
 
     def run(self, transactions):
+        """Simulate execution of a set of transactions on this machine.
+
+        Arguments:
+            transactions (Iterable[Transaction]): transactions to execute
+
+        Returns:
+            int: amount of time (ticks) it took to execute all transactions
+
+        """
         clock_fn = operator.attrgetter('clock')
         scheduler_clock = 0
         tr = None
