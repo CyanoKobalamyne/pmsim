@@ -1,12 +1,20 @@
-# Model vs reality
-- read and write sets are distinct; write sets are much smaller
-  - object popularity is distributed according to Zipf's Law
-- there are a few kinds of transactions with fixed sizes (and times?)
-- different objects have different sizes/costs
-- execution time depends on scheduling decisions 
-- memory bandwith can be a bottleneck too
+# Puppet Master
 
-# Transaction types
+Puppet Master is a hardware-based distributed scheduler. The code here is its
+software simulation.
+
+## Model
+
+- Transaction-based scheduling.
+- Read and write sets are distinct. Write sets are generally smaller.
+- Object popularity is distributed according to Zipf's law.
+- There are a few kinds of transactions with fixed sizes (and times?).
+- Different objects have different sizes/costs.
+- Execution time depends on scheduling decisions.
+- Memory bandwith can be a bottleneck too.
+
+## Transaction types
+
 1. Key-Value Store:
    - 1 read (get)
    - 1 write (set)
