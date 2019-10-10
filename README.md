@@ -16,5 +16,5 @@
    - N writes (commit)
 1. Bank:
    - 1 read (query)
-   - 1 read, 1 write (deposit)
-   - 2 reads, 2 writes (transfer)
+   - 1 write (deposit)
+   - 2 writes (transfer)
