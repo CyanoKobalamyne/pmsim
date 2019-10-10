@@ -1,5 +1,4 @@
 # Current
-- read paper sent by Ziv
 - investigate better-than-perfect parallelism
 - parametrize over object pool size, transaction time, and Zipf's Law parameter
 - we want a transaction template to run with
