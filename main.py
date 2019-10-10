@@ -14,6 +14,8 @@ def _main():
     parser.add_argument('-s', '--step', help="difference in between "
                         "transaction times of consecutive runs", default=1,
                         type=int)
+    parser.add_argument('-t', '--time', help="scheduling time", default=0,
+                        type=int)
     parser.add_argument('-o', '--objects', help="maximum number of objects in "
                         "a transaction", default=20, type=int)
     parser.add_argument('-x', '--multiplier', help="multiplier factor between "
@@ -33,17 +35,18 @@ def _main():
     max_read_objects = int(round(
         args.objects * args.multiplier / (args.multiplier + 1)))
 
-    print("Tr. time  Min     Avg  Max")
+    print("Tr. time   Min      Avg   Max")
     for time in range(1, args.max_time + 1, args.step):
         results = []
         for i in range(args.repeats):
             tr_gen = gen_transactions(max_read_objects, max_write_objects,
                                       time, args.memory_size)
             transactions = [next(tr_gen) for _ in range(args.n)]
-            machine = Machine(n_cores=args.cores, scheduler=Scheduler())
+            machine = Machine(n_cores=args.cores, scheduler=Scheduler(),
+                              scheduling_time=args.time)
             results.append(machine.run(transactions))
-        print(f"{time:<8d}  {min(results):3d}  {statistics.mean(results):6.2f}"
-              f"  {max(results):3d}")
+        print(f"{time:<8d}  {min(results):4d}  {statistics.mean(results):7.2f}"
+              f"  {max(results):4d}")
 
 
 if __name__ == "__main__":

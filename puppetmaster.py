@@ -40,6 +40,7 @@ class Machine:
         """
         self.cores = [Core() for _ in range(n_cores)]
         self.scheduler = scheduler
+        self.scheduling_time = scheduling_time
 
     def run(self, transactions):
         """Simulate execution of a set of transactions on this machine.
