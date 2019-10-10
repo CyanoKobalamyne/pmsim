@@ -117,6 +117,9 @@ class Transaction:
     def __hash__(self):
         return id(self)
 
+    def __str__(self):
+        return f"<Transaction: id {id(self)}, length {self.time}"
+
 
 class TransactionSet:
     def __init__(self):
