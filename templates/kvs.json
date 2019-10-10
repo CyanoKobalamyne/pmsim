@@ -1,0 +1,12 @@
+{
+    "get" :{
+        "reads": 1,
+        "writes": 0,
+        "time": 10,
+        "weight": 10 },
+    "set" : {
+        "reads": 0,
+        "writes": 1,
+        "time": 10,
+        "weight": 1 }
+}
