@@ -92,7 +92,20 @@ class Machine:
 
 
 class Scheduler:
+    """Implementation of a scheduling algorithm."""
+
     def sched_single(self, pending, ongoing):
+        """Try scheduling a single transaction.
+
+        Arguments:
+            pending: set of transactions waiting to be executed
+            ongoing: set of transactions currently being executed
+
+        Returns:
+            a transaction that can be executed concurrently with the
+            currently running ones without conflicts, or None
+
+        """
         # Filter out candidates compatible with ongoing.
         tr_set = TransactionSet.create(ongoing)
         compatible = set()
@@ -109,25 +122,42 @@ class Scheduler:
 
 
 class Transaction:
+    """An atomic operation in the model."""
+
     def __init__(self, read_set, write_set, time):
+        """Create a transaction.
+
+        Attributes:
+            read_set: the set of objects that this transaction needs to read
+            write_set: the set of objects that this transaction needs to write
+                       and possibly also read
+            time: the amount of time units it takes to execute this transaction
+
+        """
         self.read_set = read_set
         self.write_set = write_set
         self.time = time
 
     def __hash__(self):
+        """Return a hash value for this transaction."""
         return id(self)
 
     def __str__(self):
+        """Return a human-readable representation of this transaction."""
         return f"<Transaction: id {id(self)}, length {self.time}"
 
 
 class TransactionSet:
+    """A set of transactions."""
+
     def __init__(self):
+        """Create a set with no transactions."""
         self.read_set = set()
         self.write_set = set()
 
     @classmethod
     def create(cls, transactions):
+        """Create a set from the given transactions."""
         self = cls()
         self.transactions = set(transactions)
         for transaction in transactions:
@@ -136,6 +166,7 @@ class TransactionSet:
         return self
 
     def compatible(self, transaction):
+        """Return whether the given transaction is compatible with this set."""
         for read_obj in transaction.read_set:
             if read_obj in self.write_set:
                 return False
