@@ -4,35 +4,33 @@ import random
 from puppetmaster import Transaction
 
 
-def gen_transactions(max_read_objects, max_write_objects, max_time,
-                     memory_size):
+def gen_transactions(memory_size, read_set_size, write_set_size, time, s=1):
     """Yield `Transaction`s with the specified parameters.
 
     A pool of objects with size `memory_size` is created first,
     and the read and write sets are chosen from this set in accordance
-    with Zipf's Law.
+    with Zipf's law.
 
     Arguments:
-        max_read_objects: maximum size of the read sets
-        max_write_objects: maximum size of the write sets
-        max_time: maximum transaction time
-        memory_size: total number of objects from which the read and write
-                     sets are selected
+        memory_size: size of the pool from which objects in the read and
+                     write sets are selected
+        read_set_size: size of the read sets
+        write_set_size: size of the write sets
+        time: transaction time
+        s: parameter of the Zipf's law distribution
 
     Yields:
-        Transaction: a Transaction with a randomly chosen size and time
+        a `Transaction` with a randomly chosen size and time
 
     """
     object_pool = [object() for _ in range(memory_size)]
+    zipf_weights = [1 / (i + 1)**s for i in range(memory_size)]
 
-    def objects(min_, max_):
-        zipf_weights = [1 / (i + 1) for i in range(max_ - min_ + 1)]
-        size = random.choices(list(range(min_, max_ + 1)),
-                              weights=zipf_weights)[0]
-        return random.choices(object_pool, k=size)
+    def mem_objects(N):
+        return random.choices(object_pool, k=N, weights=zipf_weights)
 
     while True:
         yield Transaction(
-            set(objects(1, max_read_objects)),
-            set(objects(0, max_write_objects)),
-            random.randint(1, max_time))
+            set(mem_objects(read_set_size)),
+            set(mem_objects(write_set_size)),
+            time)
