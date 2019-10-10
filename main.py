@@ -38,7 +38,7 @@ def _main():
 
     print(f"Average throughput for run with {args.n} transactions and "
           f"{os.path.basename(args.template.name)} template "
-          f"on {args.cores} cores and s={args.s:.2f}")
+          f"on {args.cores} cores where s={args.s:.2f}")
     print("----------")
     print(hline.format(label, *SCHEDULING_TIMES))
 
@@ -51,6 +51,7 @@ def _main():
 
     for multiplier in MEMORY_SIZES:
         mem_size = int(round(multiplier * args.n))
+        tr_gen = gen_transactions(mem_size, args.s)
         avg_throughputs = []
         for sched_time in SCHEDULING_TIMES:
             results = []
@@ -58,11 +59,9 @@ def _main():
                 transactions = []
                 weight_sum = sum(tr["weight"] for tr in tr_types.values())
                 for name, prop in tr_types.items():
-                    tr_gen = gen_transactions(mem_size, prop["reads"],
-                                              prop["writes"], prop["time"],
-                                              args.s)
                     N = int(round(args.n * prop["weight"] / weight_sum))
-                    transactions.extend(next(tr_gen) for _ in range(N))
+                    transactions.extend(
+                        tr_gen(prop["reads"], prop["writes"], prop["time"], N))
                 machine = Machine(n_cores=args.cores,
                                   scheduler=Scheduler(),
                                   scheduling_time=sched_time)
