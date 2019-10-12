@@ -1,5 +1,5 @@
 {
-    "get" :{
+    "get" : {
         "reads": 1,
         "writes": 0,
         "time": 10,
