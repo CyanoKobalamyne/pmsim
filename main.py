@@ -46,8 +46,6 @@ def _main():
     total_weight = sum(tr["weight"] for tr in tr_types.values())
     for tr in tr_types.values():
         tr["N"] = args.n * tr["weight"] / total_weight
-    serial_runtime = sum(tr["time"] * tr["N"] for tr in tr_types.values())
-    parallel_runtime = serial_runtime / args.cores
 
     for multiplier in MEMORY_SIZES:
         mem_size = int(round(multiplier * args.n))
@@ -66,7 +64,7 @@ def _main():
                                   scheduler=Scheduler(),
                                   scheduling_time=sched_time)
                 results.append(machine.run(transactions))
-            avg_throughputs.append(parallel_runtime / statistics.mean(results))
+            avg_throughputs.append(args.n / statistics.mean(results))
         print(line.format(mem_size, *avg_throughputs))
 
 
