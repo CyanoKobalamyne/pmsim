@@ -8,7 +8,7 @@ from generate import gen_transactions
 from puppetmaster import Machine, Scheduler
 
 
-SCHEDULING_TIMES = [0, 1, 2, 5, 10, 20]
+SCHEDULING_TIMES = list(range(11))
 MEMORY_SIZES = [0.01, 0.1, 1, 10, 100]
 
 
