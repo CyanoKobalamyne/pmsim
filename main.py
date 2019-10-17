@@ -5,7 +5,7 @@ import os
 import statistics
 
 from generate import gen_transactions
-from puppetmaster import Machine, Scheduler
+from puppetmaster import ConstantTimeScheduler, Machine
 
 
 SCHEDULING_TIMES = list(range(11))
@@ -64,9 +64,7 @@ def _main():
                     N = int(round(args.n * prop["weight"] / weight_sum))
                     transactions.extend(
                         tr_gen(prop["reads"], prop["writes"], prop["time"], N))
-                machine = Machine(n_cores=cores,
-                                  scheduler=Scheduler(),
-                                  scheduling_time=sched_time)
+                machine = Machine(cores, ConstantTimeScheduler(sched_time))
                 results.append(machine.run(transactions))
             avg_throughputs.append(args.n / statistics.mean(results))
         print(line.format(f"{col_label} {sched_time}", *avg_throughputs))

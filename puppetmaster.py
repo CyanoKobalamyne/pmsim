@@ -27,7 +27,7 @@ class Core:
 class Machine:
     """Device capable of executing transactions in parallel."""
 
-    def __init__(self, n_cores, scheduler, scheduling_time=0):
+    def __init__(self, n_cores, scheduler):
         """Create a new machine.
 
         Arguments:
@@ -40,7 +40,6 @@ class Machine:
         """
         self.cores = [Core() for _ in range(n_cores)]
         self.scheduler = scheduler
-        self.scheduling_time = scheduling_time
 
     def run(self, transactions):
         """Simulate execution of a set of transactions on this machine.
@@ -63,8 +62,8 @@ class Machine:
             running = [tr for tr in transactions if tr is not None]
             if not tr:
                 # Try scheduling a new transaction.
-                tr = self.scheduler.sched_single(pending, running)
-                scheduler_clock += self.scheduling_time
+                tr, sched_time = self.scheduler.sched_single(pending, running)
+                scheduler_clock += sched_time
             if free_cores and tr:
                 # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
@@ -91,8 +90,18 @@ class Machine:
         return max(map(clock_fn, self.cores))
 
 
-class Scheduler:
-    """Implementation of a scheduling algorithm."""
+class ConstantTimeScheduler:
+    """Implementation of a simple scheduler."""
+
+    def __init__(self, scheduling_time=0):
+        """Initialize a new scheduler.
+
+        Arguments:
+            scheduling_time (int): constant amount of time the scheduler takes
+                                   to choose the next transaction to execute
+
+        """
+        self.scheduling_time = scheduling_time
 
     def sched_single(self, pending, ongoing):
         """Try scheduling a single transaction.
@@ -118,7 +127,7 @@ class Scheduler:
         except KeyError:
             # No compatible transaction.
             transaction = None
-        return transaction
+        return transaction, self.scheduling_time
 
 
 class Transaction:
