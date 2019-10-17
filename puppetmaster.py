@@ -62,7 +62,7 @@ class Machine:
             running = [tr for tr in transactions if tr is not None]
             if not tr:
                 # Try scheduling a new transaction.
-                tr, sched_time = self.scheduler.sched_single(pending, running)
+                tr, sched_time = self.scheduler.run(pending, running)
                 scheduler_clock += sched_time
             if free_cores and tr:
                 # Execute scheduled transaction on first idle core.
@@ -103,7 +103,7 @@ class ConstantTimeScheduler:
         """
         self.scheduling_time = scheduling_time
 
-    def sched_single(self, pending, ongoing):
+    def run(self, pending, ongoing):
         """Try scheduling a single transaction.
 
         Arguments:
