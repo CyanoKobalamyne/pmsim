@@ -9,7 +9,7 @@ from puppetmaster import Machine, Scheduler
 
 
 SCHEDULING_TIMES = list(range(11))
-MEMORY_SIZES = [0.01, 0.1, 1, 10, 100]
+CORES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128]
 
 
 def _main():
@@ -18,8 +18,8 @@ def _main():
     parser.add_argument('template', help="transaction template file",
                         type=FileType('rt'))
     parser.add_argument('n', help="total number of transactions", type=int)
-    parser.add_argument('-c', '--cores', help="number of cores in the machine",
-                        default=4, type=int)
+    parser.add_argument('-m', '--memsize', help="memory size (# of objects)",
+                        default=1000, type=int)
     parser.add_argument('-s', help="parameter of the Zipf's law distribution",
                         default=1, type=float)
     parser.add_argument('-r', '--repeats', help="number of times the "
@@ -27,31 +27,35 @@ def _main():
                         default=10, type=int)
     args = parser.parse_args()
 
-    label = "MemSize \\ SchedTime"
-    hcol = f"{{0:<{max(len(label), len(str(max(MEMORY_SIZES) * args.n)))}}}  "
-    col_width = max(len(f"{1:.3f}"), len(str(max(SCHEDULING_TIMES))))
+    label = "Cores"
+    col_label = "Sched. time"
+    hcol_width = max(len(label),
+                     len(col_label) + len(str(max(SCHEDULING_TIMES))) + 1)
+    hcol = f"{{0:<{hcol_width}}}  "
+    col_width = max(len(f"{1:.3f}"), len(str(max(CORES))))
     cols = "".join(f"{{{i + 1}:{col_width}.3f}}  "
-                   for i in range(len(SCHEDULING_TIMES)))
+                   for i in range(len(CORES)))
     hline = hcol + "".join(f"{{{i + 1}:{col_width}d}}  "
-                           for i in range(len(SCHEDULING_TIMES)))
+                           for i in range(len(CORES)))
     line = hcol + cols
 
-    print(f"Average throughput for run with {args.n} transactions and "
-          f"{os.path.basename(args.template.name)} template "
-          f"on {args.cores} cores where s={args.s:.2f}")
-    print("----------")
-    print(hline.format(label, *SCHEDULING_TIMES))
+    print(
+        f"Average throughput w.r.t. number of cores for:\n"
+        f"- template: {os.path.basename(args.template.name)}\n"
+        f"- transactions: {args.n}\n"
+        f"- memory size: {args.memsize}\n"
+        f"- object distribution parameter: {args.s:.2f}\n")
+    print(hline.format(label, *CORES))
 
     tr_types = json.load(args.template)
     total_weight = sum(tr["weight"] for tr in tr_types.values())
     for tr in tr_types.values():
         tr["N"] = args.n * tr["weight"] / total_weight
+    tr_gen = gen_transactions(args.memsize, args.s)
 
-    for multiplier in MEMORY_SIZES:
-        mem_size = int(round(multiplier * args.n))
-        tr_gen = gen_transactions(mem_size, args.s)
+    for sched_time in SCHEDULING_TIMES:
         avg_throughputs = []
-        for sched_time in SCHEDULING_TIMES:
+        for cores in CORES:
             results = []
             for i in range(args.repeats):
                 transactions = []
@@ -60,12 +64,12 @@ def _main():
                     N = int(round(args.n * prop["weight"] / weight_sum))
                     transactions.extend(
                         tr_gen(prop["reads"], prop["writes"], prop["time"], N))
-                machine = Machine(n_cores=args.cores,
+                machine = Machine(n_cores=cores,
                                   scheduler=Scheduler(),
                                   scheduling_time=sched_time)
                 results.append(machine.run(transactions))
             avg_throughputs.append(args.n / statistics.mean(results))
-        print(line.format(mem_size, *avg_throughputs))
+        print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
 
 
 if __name__ == "__main__":
