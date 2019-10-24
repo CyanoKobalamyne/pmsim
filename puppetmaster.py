@@ -169,10 +169,7 @@ class TransactionSet(MutableSet):
     """A set of disjoint transactions."""
 
     def __init__(self, transactions=()):
-        """Create a new set.
-
-        Throws ValueError if any two of the transactions conflict.
-        """
+        """Create a new set."""
         self.transactions = set()
         self.read_set = set()
         self.write_set = set()
@@ -192,17 +189,10 @@ class TransactionSet(MutableSet):
         return len(self.transactions)
 
     def add(self, transaction):
-        """Add a new transaction to the set.
-
-        Throws ValueError if the transactions conflicts with the ones already
-        in the set.
-        """
-        if self.compatible(transaction):
-            self.transactions.add(transaction)
-            self.read_set |= transaction.read_set
-            self.write_set |= transaction.write_set
-        else:
-            raise ValueError("incompatible transaction.")
+        """Add a new transaction to the set."""
+        self.transactions.add(transaction)
+        self.read_set |= transaction.read_set
+        self.write_set |= transaction.write_set
 
     def discard(self, transaction):
         """Remove a transaction from the set.
