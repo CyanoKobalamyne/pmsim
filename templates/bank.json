@@ -1,0 +1,17 @@
+{
+    "query" : {
+        "reads": 1,
+        "writes": 0,
+        "time": 10,
+        "weight": 10 },
+    "deposit" : {
+        "reads": 0,
+        "writes": 1,
+        "time": 10,
+        "weight": 1 },
+    "transfer" : {
+        "reads": 0,
+        "writes": 2,
+        "time": 10,
+        "weight": 10 }
+}
