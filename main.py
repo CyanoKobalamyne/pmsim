@@ -50,6 +50,7 @@ def _main():
         f"- transactions: {args.n}\n"
         f"- memory size: {args.memsize}\n"
         f"- scheduling pool size: {args.poolsize or 'infinite'}\n"
+        f"- concurrently scheduled transactions: {args.schedule}\n"
         f"- object distribution parameter: {args.s:.2f}\n")
     print(hline.format(label, *CORES))
 
