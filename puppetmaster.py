@@ -27,18 +27,19 @@ class Core:
 class Machine:
     """Device capable of executing transactions in parallel."""
 
-    def __init__(self, n_cores, scheduler):
+    def __init__(self, n_cores, pool_size, scheduler):
         """Create a new machine.
 
         Arguments:
             n_cores (int): number of execution units (cores) available
+            pool_size (int): number of tranactions seen by the scheduler
+                             simultaneously (all of them if None)
             scheduler (Scheduler): object used to schedule transactions on
                                    the cores
-            scheduling_time (int): constant amount of time the scheduler takes
-                                   to choose the next transaction to execute
 
         """
         self.cores = [Core() for _ in range(n_cores)]
+        self.pool_size = pool_size
         self.scheduler = scheduler
 
     def run(self, transactions):
@@ -54,13 +55,22 @@ class Machine:
         clock_fn = operator.attrgetter('clock')
         scheduler_clock = 0
         tr = None
-        pending = set(transactions)
-        while pending:
+        tr_iter = iter(transactions)
+        pending = set()
+        is_tr_left = True
+        while pending or is_tr_left:
             free_cores = [core for core in self.cores
                           if core.transaction is None]
             transactions = [core.transaction for core in self.cores]
             running = [tr for tr in transactions if tr is not None]
             if not tr:
+                # Fill up pending pool.
+                while self.pool_size is None or len(pending) < self.pool_size:
+                    try:
+                        pending.add(next(tr_iter))
+                    except StopIteration:
+                        is_tr_left = False
+                        break
                 # Try scheduling a new transaction.
                 tr, sched_time = self.scheduler.run(pending, running)
                 scheduler_clock += sched_time

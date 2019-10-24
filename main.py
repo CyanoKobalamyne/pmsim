@@ -20,6 +20,8 @@ def _main():
     parser.add_argument('n', help="total number of transactions", type=int)
     parser.add_argument('-m', '--memsize', help="memory size (# of objects)",
                         default=1000, type=int)
+    parser.add_argument('-p', '--poolsize', help="size of scheduling pool",
+                        type=int)
     parser.add_argument('-s', help="parameter of the Zipf's law distribution",
                         default=1, type=float)
     parser.add_argument('-r', '--repeats', help="number of times the "
@@ -44,6 +46,7 @@ def _main():
         f"- template: {os.path.basename(args.template.name)}\n"
         f"- transactions: {args.n}\n"
         f"- memory size: {args.memsize}\n"
+        f"- scheduling pool size: {args.poolsize or 'infinite'}\n"
         f"- object distribution parameter: {args.s:.2f}\n")
     print(hline.format(label, *CORES))
 
@@ -64,7 +67,8 @@ def _main():
                     N = int(round(args.n * prop["weight"] / weight_sum))
                     transactions.extend(
                         tr_gen(prop["reads"], prop["writes"], prop["time"], N))
-                machine = Machine(cores, ConstantTimeScheduler(sched_time))
+                machine = Machine(cores, args.poolsize,
+                                  ConstantTimeScheduler(sched_time))
                 results.append(machine.run(transactions))
             avg_throughputs.append(args.n / statistics.mean(results))
         print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
