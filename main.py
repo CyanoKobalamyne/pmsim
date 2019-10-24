@@ -48,10 +48,10 @@ def _main():
         f"Average throughput w.r.t. number of cores for:\n"
         f"- template: {os.path.basename(args.template.name)}\n"
         f"- transactions: {args.n}\n"
-        f"- memory size: {args.memsize}\n"
-        f"- scheduling pool size: {args.poolsize or 'infinite'}\n"
-        f"- concurrently scheduled transactions: {args.schedule}\n"
-        f"- object distribution parameter: {args.s:.2f}\n")
+        f"- [m]emory size: {args.memsize}\n"
+        f"- scheduling [p]ool size: {args.poolsize or 'infinite'}\n"
+        f"- concurr[e]ntly scheduled transactions: {args.schedule}\n"
+        f"- object di[s]tribution parameter: {args.s:.2f}\n")
     print(hline.format(label, *CORES))
 
     tr_types = json.load(args.template)
