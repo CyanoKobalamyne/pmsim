@@ -1,4 +1,5 @@
 """Puppet master: simulation of a hardware-based distributed scheduler."""
+from collections.abc import MutableSet
 import operator
 
 
@@ -126,8 +127,8 @@ class ConstantTimeScheduler:
 
         """
         # Filter out candidates compatible with ongoing.
-        tr_set = TransactionSet.create(ongoing)
-        compatible = set()
+        tr_set = TransactionSet(ongoing)
+        compatible = TransactionSet()
         for tr in pending:
             is_comp = tr_set.compatible(tr)
             if is_comp:
@@ -166,23 +167,51 @@ class Transaction:
         return f"<Transaction: id {id(self)}, length {self.time}"
 
 
-class TransactionSet:
-    """A set of transactions."""
+class TransactionSet(MutableSet):
+    """A set of disjoint transactions."""
 
-    def __init__(self):
-        """Create a set with no transactions."""
+    def __init__(self, transactions=()):
+        """Create a new set.
+
+        Throws ValueError if any two of the transactions conflict.
+        """
+        self.transactions = set()
         self.read_set = set()
         self.write_set = set()
+        for t in transactions:
+            self.add(t)
 
-    @classmethod
-    def create(cls, transactions):
-        """Create a set from the given transactions."""
-        self = cls()
-        self.transactions = set(transactions)
-        for transaction in transactions:
+    def __contains__(self, transaction):
+        """Return if the given transaction is in the set."""
+        return transaction in self.transactions
+
+    def __iter__(self):
+        """Yield each transaction in the set."""
+        yield from self.transactions
+
+    def __len__(self):
+        """Return the number of transactions in the set."""
+        return len(self.transactions)
+
+    def add(self, transaction):
+        """Add a new transaction to the set.
+
+        Throws ValueError if the transactions conflicts with the ones already
+        in the set.
+        """
+        if self.compatible(transaction):
+            self.transactions.add(transaction)
             self.read_set |= transaction.read_set
             self.write_set |= transaction.write_set
-        return self
+        else:
+            raise ValueError("incompatible transaction.")
+
+    def discard(self, transaction):
+        """Remove a transaction from the set.
+
+        Warning: does not update the combined read and write sets.
+        """
+        self.transactions.discard(transaction)
 
     def compatible(self, transaction):
         """Return whether the given transaction is compatible with this set."""
