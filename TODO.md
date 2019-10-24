@@ -2,9 +2,10 @@
 
 ## Current
 
-- switch memory size with core number as parameter
-- choose transaction from fixed-size pool
 - parallel scheduler: output n transactions per scheduling cycle
+  - greedily in some order
+- randomize transactions going into pool
+- read papers: FPGA accelerated transactional memory, tightly integrated task scheduling (MICRO-52)
 
 ## Long-term
 
