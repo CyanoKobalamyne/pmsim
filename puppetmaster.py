@@ -55,16 +55,16 @@ class Machine:
         """
         clock_fn = operator.attrgetter('clock')
         scheduler_clock = 0
-        tr = None
         tr_iter = iter(transactions)
         pending = set()
+        scheduled = set()
         is_tr_left = True
         while pending or is_tr_left:
             free_cores = [core for core in self.cores
                           if core.transaction is None]
             transactions = [core.transaction for core in self.cores]
             running = [tr for tr in transactions if tr is not None]
-            if not tr:
+            if not scheduled:
                 # Fill up pending pool.
                 while self.pool_size is None or len(pending) < self.pool_size:
                     try:
@@ -72,19 +72,20 @@ class Machine:
                     except StopIteration:
                         is_tr_left = False
                         break
-                # Try scheduling a new transaction.
-                tr, sched_time = self.scheduler.run(pending, running)
+                # Try scheduling a batch of new transactions.
+                scheduled, sched_time = self.scheduler.run(pending, running)
+                pending -= scheduled
                 scheduler_clock += sched_time
-            if free_cores and tr:
+            if free_cores and scheduled:
                 # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
                 # If the core was idle while the scheduler was working,
                 # move its clock forward.
                 core.clock = max(scheduler_clock, core.clock)
-                core.clock += tr.time  # Advance clock by execution time.
+                # Execute one transaction.
+                tr = scheduled.pop()
                 core.transaction = tr
-                pending.remove(tr)
-                tr = None
+                core.clock += tr.time
             else:
                 # Remove first finished transaction.
                 busy_cores = [core for core in self.cores
@@ -104,7 +105,7 @@ class Machine:
 class ConstantTimeScheduler:
     """Implementation of a simple scheduler."""
 
-    def __init__(self, scheduling_time=0):
+    def __init__(self, scheduling_time=0, n_transactions=1):
         """Initialize a new scheduler.
 
         Arguments:
@@ -113,9 +114,10 @@ class ConstantTimeScheduler:
 
         """
         self.scheduling_time = scheduling_time
+        self.n = n_transactions
 
     def run(self, pending, ongoing):
-        """Try scheduling a single transaction.
+        """Try scheduling a batch of transactions.
 
         Arguments:
             pending: set of transactions waiting to be executed
@@ -127,18 +129,14 @@ class ConstantTimeScheduler:
 
         """
         # Filter out candidates compatible with ongoing.
-        tr_set = TransactionSet(ongoing)
-        compatible = TransactionSet()
+        ongoing = TransactionSet(ongoing)
+        candidates = TransactionSet()
         for tr in pending:
-            is_comp = tr_set.compatible(tr)
-            if is_comp:
-                compatible.add(tr)
-        try:
-            transaction = compatible.pop()
-        except KeyError:
-            # No compatible transaction.
-            transaction = None
-        return transaction, self.scheduling_time
+            if len(candidates) == self.n:
+                break
+            if ongoing.compatible(tr) and candidates.compatible(tr):
+                candidates.add(tr)
+        return candidates, self.scheduling_time
 
 
 class Transaction:
