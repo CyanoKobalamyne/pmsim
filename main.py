@@ -23,6 +23,8 @@ def _main():
                         default=1000, type=int)
     parser.add_argument('-p', '--poolsize', help="size of scheduling pool",
                         type=int)
+    parser.add_argument('-e', '--schedule', help="number of transactions to "
+                        "schedule in one round", type=int, default=1)
     parser.add_argument('-s', help="parameter of the Zipf's law distribution",
                         default=1, type=float)
     parser.add_argument('-r', '--repeats', help="number of times the "
@@ -69,8 +71,9 @@ def _main():
                     transactions.extend(
                         tr_gen(prop["reads"], prop["writes"], prop["time"], N))
                 random.shuffle(transactions)
-                machine = Machine(cores, args.poolsize,
-                                  ConstantTimeScheduler(sched_time))
+                scheduler = ConstantTimeScheduler(
+                    sched_time, n_transactions=args.schedule)
+                machine = Machine(cores, args.poolsize, scheduler)
                 results.append(machine.run(transactions))
             avg_throughputs.append(args.n / statistics.mean(results))
         print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
