@@ -2,6 +2,7 @@
 from argparse import ArgumentParser, FileType
 import json
 import os
+import random
 import statistics
 
 from generate import gen_transactions
@@ -67,6 +68,7 @@ def _main():
                     N = int(round(args.n * prop["weight"] / weight_sum))
                     transactions.extend(
                         tr_gen(prop["reads"], prop["writes"], prop["time"], N))
+                random.shuffle(transactions)
                 machine = Machine(cores, args.poolsize,
                                   ConstantTimeScheduler(sched_time))
                 results.append(machine.run(transactions))
