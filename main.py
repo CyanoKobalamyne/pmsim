@@ -5,8 +5,8 @@ import os
 import random
 import statistics
 
-from generate import gen_transactions
-from puppetmaster import ConstantTimeScheduler, Machine
+from machine import ConstantTimeScheduler, Machine
+from transaction import TransactionGenerator
 
 
 SCHEDULING_TIMES = list(range(11))
@@ -58,7 +58,7 @@ def _main():
     total_weight = sum(tr["weight"] for tr in tr_types.values())
     for tr in tr_types.values():
         tr["N"] = args.n * tr["weight"] / total_weight
-    tr_gen = gen_transactions(args.memsize, args.s)
+    tr_gen = TransactionGenerator(args.memsize, args.s)
 
     for sched_time in SCHEDULING_TIMES:
         avg_throughputs = []
