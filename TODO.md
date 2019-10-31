@@ -2,7 +2,6 @@
 
 ## Current
 
-- optimize
 - read papers: FPGA accelerated transactional memory, tightly integrated task scheduling (MICRO-52), SWARM (MICRO-48/49)
 
 ## Long-term
