@@ -45,7 +45,7 @@ def _main():
     line = hcol + cols
 
     print(
-        f"Average throughput w.r.t. number of cores for:\n"
+        f"Average throughput for:\n"
         f"- template: {os.path.basename(args.template.name)}\n"
         f"- transactions: {args.n}\n"
         f"- [m]emory size: {args.memsize}\n"
