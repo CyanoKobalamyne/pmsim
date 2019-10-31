@@ -26,14 +26,16 @@ def gen_transactions(memory_size, s=1):
     object_pool = [object() for _ in range(memory_size)]
     zipf_weights = [1 / (i + 1)**s for i in range(memory_size)]
 
-    def mem_objects(N):
-        return set(random.choices(object_pool, k=N, weights=zipf_weights))
-
     def generator(read_set_size, write_set_size, time, count):
-        for _ in range(count):
-            yield Transaction(
-                mem_objects(read_set_size),
-                mem_objects(write_set_size),
-                time)
+        size = read_set_size + write_set_size
+        k = count * size
+        objects = random.choices(object_pool, k=k, weights=zipf_weights)
+        for i in range(count):
+            start = i * count
+            mid = start + read_set_size
+            end = mid + write_set_size
+            read_set = set(objects[start:mid])
+            write_set = set(objects[mid:end])
+            yield Transaction(read_set, write_set, time)
 
     return generator
