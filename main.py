@@ -37,7 +37,7 @@ def _main():
     hcol_width = max(len(label),
                      len(col_label) + len(str(max(SCHEDULING_TIMES))) + 1)
     hcol = f"{{0:<{hcol_width}}}  "
-    col_width = max(len(f"{1:.3f}"), len(str(max(CORES))))
+    col_width = max(len(f"{10:.3f}"), len(str(max(CORES))))
     cols = "".join(f"{{{i + 1}:{col_width}.3f}}  "
                    for i in range(len(CORES)))
     hline = hcol + "".join(f"{{{i + 1}:{col_width}d}}  "
