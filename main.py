@@ -56,9 +56,12 @@ def _main():
 
     tr_types = json.load(args.template)
     total_weight = sum(tr["weight"] for tr in tr_types.values())
+    n_total_objects = 0
     for tr in tr_types.values():
-        tr["N"] = args.n * tr["weight"] / total_weight
-    tr_gen = TransactionGenerator(args.memsize, args.s)
+        tr["N"] = int(round(args.n * tr["weight"] / total_weight))
+        n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
+    n_total_objects *= len(SCHEDULING_TIMES) * len(CORES) * args.repeats
+    tr_gen = TransactionGenerator(args.memsize, n_total_objects, args.s)
 
     for sched_time in SCHEDULING_TIMES:
         avg_throughputs = []
@@ -66,11 +69,9 @@ def _main():
             results = []
             for i in range(args.repeats):
                 transactions = []
-                weight_sum = sum(tr["weight"] for tr in tr_types.values())
-                for name, prop in tr_types.items():
-                    N = int(round(args.n * prop["weight"] / weight_sum))
-                    transactions.extend(
-                        tr_gen(prop["reads"], prop["writes"], prop["time"], N))
+                for tr in tr_types.values():
+                    transactions.extend(tr_gen(
+                        tr["reads"], tr["writes"], tr["time"], tr["N"]))
                 random.shuffle(transactions)
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule)

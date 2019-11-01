@@ -79,7 +79,7 @@ class TransactionSet(MutableSet):
 class TransactionGenerator:
     """Generates new transactions based on a parametrized distribution."""
 
-    def __init__(self, memory_size, s=1):
+    def __init__(self, memory_size, n_total_objects, s=1):
         """Create a new generator for `Transaction`s.
 
         A pool of objects with size `memory_size` is created, and the read and
@@ -88,10 +88,15 @@ class TransactionGenerator:
         Arguments:
             memory_size: size of the pool from which objects in the read and
                          write sets are selected
+            n_total_objects: number of objects that will be needed by the
+                             generated transactions
             s: parameter of the Zipf's law distribution
         """
-        self.object_pool = [object() for _ in range(memory_size)]
-        self.weights = [1 / (i + 1)**s for i in range(memory_size)]
+        object_pool = [object() for _ in range(memory_size)]
+        zipf_weights = [1 / (i + 1)**s for i in range(memory_size)]
+        self.objects = random.choices(
+            object_pool, weights=zipf_weights, k=n_total_objects)
+        self.last_used = 0
 
     def __call__(self, read_set_size, write_set_size, time, count):
         """Yield new `Transaction`s.
@@ -105,13 +110,14 @@ class TransactionGenerator:
             transactions with the specified properties.
 
         """
-        size = read_set_size + write_set_size
-        k = count * size
-        objects = random.choices(self.object_pool, k=k, weights=self.weights)
         for i in range(count):
-            start = i * count
+            if len(self.objects) <= self.last_used:
+                raise RuntimeError(f"not enough objects generated, "
+                                   f"{len(self.objects)} > {self.last_used}.")
+            start = self.last_used
             mid = start + read_set_size
             end = mid + write_set_size
-            read_set = set(objects[start:mid])
-            write_set = set(objects[mid:end])
+            self.last_used = end
+            read_set = set(self.objects[start:mid])
+            write_set = set(self.objects[mid:end])
             yield Transaction(read_set, write_set, time)
