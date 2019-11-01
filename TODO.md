@@ -3,6 +3,9 @@
 ## Current
 
 - read papers: FPGA accelerated transactional memory, tightly integrated task scheduling (MICRO-52), SWARM (MICRO-48/49)
+- model messaging with changing object popularity
+  - a thread to which a new message is posted becomes popular
+  - indexing structure for full-text search
 
 ## Long-term
 
