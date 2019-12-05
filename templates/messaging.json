@@ -1,0 +1,13 @@
+{
+    "read" : {
+        "reads": 1,
+        "writes": 1,
+        "time": 10,
+        "weight": 10 },
+    "post" : {
+        "reads": 0,
+        "writes": 1,
+        "time": 10,
+        "weight": 1,
+        "rotate_most_popular": true }
+}
