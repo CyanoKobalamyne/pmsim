@@ -125,5 +125,5 @@ class TransactionGenerator:
     def swap_most_popular(self, obj):
         """Swap `obj` with the most popular object in the distribution."""
         if self.objects[0] is not obj:
-            self.objects[self.objects.index(obj)] = self.objects[0]
+            self.objects[1:self.objects.index(obj) + 1] = self.objects[:self.objects.index(obj)]
             self.objects[0] = obj
