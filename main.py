@@ -68,11 +68,17 @@ def _main():
         for cores in CORES:
             results = []
             for i in range(args.repeats):
+                tr_data = []
+                for type_ in tr_types.values():
+                    tr_data.extend(type_ for i in range(type_["N"]))
+                random.shuffle(tr_data)
                 transactions = []
-                for tr in tr_types.values():
-                    transactions.extend(tr_gen(
-                        tr["reads"], tr["writes"], tr["time"], tr["N"]))
-                random.shuffle(transactions)
+                for d in tr_data:
+                    tr = next(tr_gen(d["reads"], d["writes"], d["time"], d["N"]))
+                    transactions.append(tr)
+                    if "rotate_most_popular" in d:
+                        obj = next(iter(tr.write_set))
+                        tr_gen.swap_most_popular(obj)
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule)
                 machine = Machine(cores, args.poolsize, scheduler)

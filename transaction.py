@@ -92,10 +92,10 @@ class TransactionGenerator:
                              generated transactions
             s: parameter of the Zipf's law distribution
         """
-        object_pool = [object() for _ in range(memory_size)]
+        self.objects = [object() for _ in range(memory_size)]
         zipf_weights = [1 / (i + 1)**s for i in range(memory_size)]
-        self.objects = random.choices(
-            object_pool, weights=zipf_weights, k=n_total_objects)
+        self.indices = random.choices(
+            range(memory_size), weights=zipf_weights, k=n_total_objects)
         self.last_used = 0
 
     def __call__(self, read_set_size, write_set_size, time, count):
@@ -111,13 +111,19 @@ class TransactionGenerator:
 
         """
         for i in range(count):
-            if len(self.objects) <= self.last_used:
+            if len(self.indices) <= self.last_used:
                 raise RuntimeError(f"not enough objects generated, "
-                                   f"{len(self.objects)} > {self.last_used}.")
+                                   f"{len(self.indices)} > {self.last_used}.")
             start = self.last_used
             mid = start + read_set_size
             end = mid + write_set_size
             self.last_used = end
-            read_set = set(self.objects[start:mid])
-            write_set = set(self.objects[mid:end])
+            read_set = {self.objects[i] for i in self.indices[start:mid]}
+            write_set = {self.objects[i] for i in self.indices[mid:end]}
             yield Transaction(read_set, write_set, time)
+
+    def swap_most_popular(self, obj):
+        """Swap `obj` with the most popular object in the distribution."""
+        if self.objects[0] is not obj:
+            self.objects[self.objects.index(obj)] = self.objects[0]
+            self.objects[0] = obj
