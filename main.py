@@ -1,3 +1,4 @@
+#!/bin/env python3
 """Main executable for running puppetmaster."""
 from argparse import ArgumentParser, FileType
 import json
