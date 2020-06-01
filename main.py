@@ -10,7 +10,7 @@ from machine import ConstantTimeScheduler, Machine
 from transaction import TransactionGenerator
 
 
-SCHEDULING_TIMES = list(range(11))
+SCHEDULING_TIMES = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
 CORES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128]
 
 
