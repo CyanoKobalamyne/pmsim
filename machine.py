@@ -60,7 +60,8 @@ class Machine:
         pending = set()
         scheduled = set()
         is_tr_left = True
-        while pending or is_tr_left:
+        is_busy = False
+        while is_tr_left or pending or scheduled or is_busy:
             free_cores = [core for core in self.cores
                           if core.transaction is None]
             transactions = [core.transaction for core in self.cores]
@@ -87,6 +88,7 @@ class Machine:
                 tr = scheduled.pop()
                 core.transaction = tr
                 core.clock += tr.time
+                is_busy = True
             else:
                 # Remove first finished transaction.
                 busy_cores = [core for core in self.cores
@@ -99,6 +101,8 @@ class Machine:
                 # If the scheduler was idle until the first core freed up,
                 # move its clock forward.
                 scheduler_clock = max(finish, scheduler_clock)
+                if len(busy_cores) == 1:
+                    is_busy = False
 
         return max(map(clock_fn, self.cores))
 
