@@ -58,9 +58,11 @@ def _main():
     tr_types = json.load(args.template)
     total_weight = sum(tr["weight"] for tr in tr_types.values())
     n_total_objects = 0
+    total_tr_time = 0
     for tr in tr_types.values():
         tr["N"] = int(round(args.n * tr["weight"] / total_weight))
         n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
+        total_tr_time += tr["N"] * tr["time"]
     n_total_objects *= len(SCHEDULING_TIMES) * len(CORES) * args.repeats
     tr_gen = TransactionGenerator(args.memsize, n_total_objects, args.s)
 
@@ -84,7 +86,7 @@ def _main():
                     sched_time, n_transactions=args.schedule)
                 machine = Machine(cores, args.poolsize, scheduler)
                 results.append(machine.run(transactions))
-            avg_throughputs.append(args.n / statistics.mean(results))
+            avg_throughputs.append(total_tr_time / statistics.mean(results))
         print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
 
 
