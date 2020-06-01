@@ -77,7 +77,7 @@ def _main():
                 for d in tr_data:
                     tr = next(tr_gen(d["reads"], d["writes"], d["time"], d["N"]))
                     transactions.append(tr)
-                    if "rotate_most_popular" in d:
+                    if "rotate_most_popular" in d and d["rotate_most_popular"]:
                         obj = next(iter(tr.write_set))
                         tr_gen.swap_most_popular(obj)
                 scheduler = ConstantTimeScheduler(
