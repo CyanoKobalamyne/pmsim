@@ -10,27 +10,6 @@ from machine import ConstantTimeScheduler, Machine
 from transaction import TransactionGenerator
 
 
-SCHEDULING_TIMES = [
-    0,
-    1,
-    2,
-    5,
-    10,
-    20,
-    50,
-    100,
-    200,
-    500,
-    1000,
-    2000,
-    5000,
-    10000,
-    20000,
-    50000,
-]
-CORES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128]
-
-
 def _main():
     parser = ArgumentParser(
         description="Run puppetmaster on a range of input " "distributions."
@@ -61,15 +40,32 @@ def _main():
         default=10,
         type=int,
     )
+    parser.add_argument(
+        "--log-max-stime",
+        help="Log-2 of the maximum scheduling time",
+        default=10,
+        type=int,
+    )
+    parser.add_argument(
+        "--log-max-cores",
+        help="Log-2 of the maximum number of cores",
+        default=10,
+        type=int,
+    )
     args = parser.parse_args()
+
+    sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
+    core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     label = "Cores"
     col_label = "Sched. time"
-    hcol_width = max(len(label), len(col_label) + len(str(max(SCHEDULING_TIMES))) + 1)
+    hcol_width = max(len(label), len(col_label) + len(str(sched_times[-1])) + 1)
     hcol = f"{{0:<{hcol_width}}}  "
-    col_width = max(len(f"{10:.3f}"), len(str(max(CORES))))
-    cols = "".join(f"{{{i + 1}:{col_width}.3f}}  " for i in range(len(CORES)))
-    hline = hcol + "".join(f"{{{i + 1}:{col_width}d}}  " for i in range(len(CORES)))
+    col_width = max(len(f"{10:.3f}"), len(str(core_counts[-1])))
+    cols = "".join(f"{{{i + 1}:{col_width}.3f}}  " for i in range(len(core_counts)))
+    hline = hcol + "".join(
+        f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
+    )
     line = hcol + cols
 
     print(
@@ -81,7 +77,7 @@ def _main():
         f"- concurr[e]ntly scheduled transactions: {args.schedule}\n"
         f"- object di[s]tribution parameter: {args.s:.2f}\n"
     )
-    print(hline.format(label, *CORES))
+    print(hline.format(label, *core_counts))
 
     tr_types = json.load(args.template)
     total_weight = sum(tr["weight"] for tr in tr_types.values())
@@ -91,12 +87,12 @@ def _main():
         tr["N"] = int(round(args.n * tr["weight"] / total_weight))
         n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
         total_tr_time += tr["N"] * tr["time"]
-    n_total_objects *= len(SCHEDULING_TIMES) * len(CORES) * args.repeats
+    n_total_objects *= len(sched_times) * len(core_counts) * args.repeats
     tr_gen = TransactionGenerator(args.memsize, n_total_objects, args.s)
 
-    for sched_time in SCHEDULING_TIMES:
+    for sched_time in sched_times:
         avg_throughputs = []
-        for cores in CORES:
+        for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
                 tr_data = []
@@ -113,7 +109,7 @@ def _main():
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )
-                machine = Machine(cores, args.poolsize, scheduler)
+                machine = Machine(core_count, args.poolsize, scheduler)
                 results.append(machine.run(transactions))
             avg_throughputs.append(total_tr_time / statistics.mean(results))
         print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
