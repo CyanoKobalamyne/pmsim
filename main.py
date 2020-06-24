@@ -57,19 +57,23 @@ def _main():
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    label = "Cores"
-    col_label = "Sched. time"
-    hcol_width = max(len(label), len(col_label) + len(str(sched_times[-1])) + 1)
-    hcol = f"{{0:<{hcol_width}}}  "
-    col_width = max(len(f"{10:.3f}"), len(str(core_counts[-1])))
-    cols = "".join(f"{{{i + 1}:{col_width}.3f}}  " for i in range(len(core_counts)))
-    hline = hcol + "".join(
+    title = "Average throughput per core"
+    col1_header = "t_sched"
+    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
+    col1_template = f"{{0:<{col1_width}}}"
+    precision = 5
+    col_width = max(len(f"{1:.{precision}f}"), len(str(core_counts[-1])))
+    cols_header_template = "".join(
         f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
     )
-    line = hcol + cols
+    cols_body_template = "".join(
+        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
+    )
+    header_template = col1_template + cols_header_template
+    body_template = col1_template + cols_body_template
 
     print(
-        f"Average throughput for:\n"
+        f"Parameters:\n"
         f"- template: {os.path.basename(args.template.name)}\n"
         f"- transactions: {args.n}\n"
         f"- [m]emory size: {args.memsize}\n"
@@ -77,7 +81,8 @@ def _main():
         f"- concurr[e]ntly scheduled transactions: {args.schedule}\n"
         f"- object di[s]tribution parameter: {args.s:.2f}\n"
     )
-    print(hline.format(label, *core_counts))
+    print(" " * col1_width + title)
+    print(header_template.format(col1_header, *core_counts))
 
     tr_types = json.load(args.template)
     total_weight = sum(tr["weight"] for tr in tr_types.values())
@@ -91,7 +96,7 @@ def _main():
     tr_gen = TransactionGenerator(args.memsize, n_total_objects, args.s)
 
     for sched_time in sched_times:
-        avg_throughputs = []
+        throughputs = []
         for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
@@ -111,8 +116,8 @@ def _main():
                 )
                 machine = Machine(core_count, args.poolsize, scheduler)
                 results.append(machine.run(transactions))
-            avg_throughputs.append(total_tr_time / statistics.mean(results))
-        print(line.format(f"{col_label} {sched_time}", *avg_throughputs))
+            throughputs.append(total_tr_time / statistics.mean(results) / core_count)
+        print(body_template.format(f"{sched_time}", *throughputs))
 
 
 if __name__ == "__main__":
