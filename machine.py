@@ -54,7 +54,7 @@ class Machine:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        clock_fn = operator.attrgetter('clock')
+        clock_fn = operator.attrgetter("clock")
         scheduler_clock = 0
         tr_iter = iter(transactions)
         pending = set()
@@ -62,8 +62,7 @@ class Machine:
         is_tr_left = True
         is_busy = False
         while is_tr_left or pending or scheduled or is_busy:
-            free_cores = [core for core in self.cores
-                          if core.transaction is None]
+            free_cores = [core for core in self.cores if core.transaction is None]
             transactions = [core.transaction for core in self.cores]
             running = [tr for tr in transactions if tr is not None]
             if not scheduled:
@@ -91,8 +90,9 @@ class Machine:
                 is_busy = True
             else:
                 # Remove first finished transaction.
-                busy_cores = [core for core in self.cores
-                              if core.transaction is not None]
+                busy_cores = [
+                    core for core in self.cores if core.transaction is not None
+                ]
                 core = min(busy_cores, key=clock_fn)
                 finish = core.clock
                 core.transaction = None
