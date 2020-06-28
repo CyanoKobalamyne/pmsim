@@ -6,8 +6,9 @@ import os
 import random
 import statistics
 
-from machine import ConstantTimeScheduler, Machine
-from transaction import TransactionGenerator
+from generators import RandomGenerator
+from schedulers import ConstantTimeScheduler
+from simulator import Simulator
 
 
 def _main():
@@ -93,7 +94,7 @@ def _main():
         n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
         total_tr_time += tr["N"] * tr["time"]
     n_total_objects *= len(sched_times) * len(core_counts) * args.repeats
-    tr_gen = TransactionGenerator(args.memsize, n_total_objects, args.s)
+    tr_gen = RandomGenerator(args.memsize, n_total_objects, args.s)
 
     for sched_time in sched_times:
         throughputs = []
@@ -114,8 +115,8 @@ def _main():
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )
-                machine = Machine(core_count, args.poolsize, scheduler)
-                results.append(machine.run(transactions))
+                sim = Simulator(core_count, args.poolsize, scheduler)
+                results.append(sim.run(transactions))
             throughputs.append(total_tr_time / statistics.mean(results) / core_count)
         print(body_template.format(f"{sched_time}", *throughputs))
 

@@ -1,36 +1,15 @@
-"""Puppet Master: simulation of a hardware-based distributed scheduler."""
+"""Main Puppetmaster simulator class."""
+
 import operator
 
-from transaction import TransactionSet
+from model import Machine
 
 
-class Core:
-    """Component of `Machine` executing a single transaction.
-
-    Attributes:
-        clock (int): time elapsed since the start of the machine in "ticks"
-        transaction (Transaction): the transaction being executed or None if
-                                   the core is idle
-
-    """
-
-    def __init__(self, clock_start=0, transaction=None):
-        """Create a new core.
-
-        Arguments:
-            clock_start (int): initial value for the clock
-            transaction: initial transaction being executed
-
-        """
-        self.clock = clock_start
-        self.transaction = transaction
-
-
-class Machine:
-    """Device capable of executing transactions in parallel."""
+class Simulator:
+    """Simulates executing a set of transactions."""
 
     def __init__(self, n_cores, pool_size, scheduler):
-        """Create a new machine.
+        """Create a new simulator.
 
         Arguments:
             n_cores (int): number of execution units (cores) available
@@ -40,8 +19,7 @@ class Machine:
                                    the cores
 
         """
-        self.cores = [Core() for _ in range(n_cores)]
-        self.pool_size = pool_size
+        self.machine = Machine(n_cores, pool_size)
         self.scheduler = scheduler
 
     def run(self, transactions):
@@ -62,12 +40,17 @@ class Machine:
         is_tr_left = True
         is_busy = False
         while is_tr_left or pending or scheduled or is_busy:
-            free_cores = [core for core in self.cores if core.transaction is None]
-            transactions = [core.transaction for core in self.cores]
+            free_cores = [
+                core for core in self.machine.cores if core.transaction is None
+            ]
+            transactions = [core.transaction for core in self.machine.cores]
             running = [tr for tr in transactions if tr is not None]
             if not scheduled:
                 # Fill up pending pool.
-                while self.pool_size is None or len(pending) < self.pool_size:
+                while (
+                    self.machine.pool_size is None
+                    or len(pending) < self.machine.pool_size
+                ):
                     try:
                         pending.add(next(tr_iter))
                     except StopIteration:
@@ -91,7 +74,7 @@ class Machine:
             else:
                 # Remove first finished transaction.
                 busy_cores = [
-                    core for core in self.cores if core.transaction is not None
+                    core for core in self.machine.cores if core.transaction is not None
                 ]
                 core = min(busy_cores, key=clock_fn)
                 finish = core.clock
@@ -104,41 +87,4 @@ class Machine:
                 if len(busy_cores) == 1:
                     is_busy = False
 
-        return max(map(clock_fn, self.cores))
-
-
-class ConstantTimeScheduler:
-    """Implementation of a simple scheduler."""
-
-    def __init__(self, scheduling_time=0, n_transactions=1):
-        """Initialize a new scheduler.
-
-        Arguments:
-            scheduling_time (int): constant amount of time the scheduler takes
-                                   to choose the next transaction to execute
-
-        """
-        self.scheduling_time = scheduling_time
-        self.n = n_transactions
-
-    def run(self, pending, ongoing):
-        """Try scheduling a batch of transactions.
-
-        Arguments:
-            pending: set of transactions waiting to be executed
-            ongoing: set of transactions currently being executed
-
-        Returns:
-            a transaction that can be executed concurrently with the
-            currently running ones without conflicts, or None
-
-        """
-        # Filter out candidates compatible with ongoing.
-        ongoing = TransactionSet(ongoing)
-        candidates = TransactionSet()
-        for tr in pending:
-            if len(candidates) == self.n:
-                break
-            if ongoing.compatible(tr) and candidates.compatible(tr):
-                candidates.add(tr)
-        return candidates, self.scheduling_time
+        return max(map(clock_fn, self.machine.cores))

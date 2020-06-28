@@ -1,6 +1,7 @@
-"""Classes for representing, creating, and handling transactions."""
+"""Abstractions used in the simulator."""
+
+from abc import ABC, abstractmethod
 from collections.abc import MutableSet
-import random
 
 
 class Transaction:
@@ -76,29 +77,10 @@ class TransactionSet(MutableSet):
         return True
 
 
-class TransactionGenerator:
-    """Generates new transactions based on a parametrized distribution."""
+class TransactionGenerator(ABC):
+    """Generates new transactions."""
 
-    def __init__(self, memory_size, n_total_objects, s=1):
-        """Create a new generator for `Transaction`s.
-
-        A pool of objects with size `memory_size` is created, and the read and
-        write sets are chosen from there in accordance with Zipf's law.
-
-        Arguments:
-            memory_size: size of the pool from which objects in the read and
-                         write sets are selected
-            n_total_objects: number of objects that will be needed by the
-                             generated transactions
-            s: parameter of the Zipf's law distribution
-        """
-        self.objects = [object() for _ in range(memory_size)]
-        zipf_weights = [1 / (i + 1) ** s for i in range(memory_size)]
-        self.indices = random.choices(
-            range(memory_size), weights=zipf_weights, k=n_total_objects
-        )
-        self.last_used = 0
-
+    @abstractmethod
     def __call__(self, read_set_size, write_set_size, time, count):
         """Yield new `Transaction`s.
 
@@ -111,23 +93,59 @@ class TransactionGenerator:
             transactions with the specified properties.
 
         """
-        for _ in range(count):
-            if len(self.indices) <= self.last_used:
-                raise RuntimeError(
-                    f"not enough objects generated, "
-                    f"{len(self.indices)} > {self.last_used}."
-                )
-            start = self.last_used
-            mid = start + read_set_size
-            end = mid + write_set_size
-            self.last_used = end
-            read_set = {self.objects[i] for i in self.indices[start:mid]}
-            write_set = {self.objects[i] for i in self.indices[mid:end]}
-            yield Transaction(read_set, write_set, time)
 
-    def swap_most_popular(self, obj):
-        """Swap `obj` with the most popular object in the distribution."""
-        if self.objects[0] is not obj:
-            i = self.objects.index(obj)
-            self.objects[1 : i + 1] = self.objects[:i]
-            self.objects[0] = obj
+
+class TransactionScheduler(ABC):
+    """Represents that scheduling unit within Puppetmaster."""
+
+    @abstractmethod
+    def run(self, pending, ongoing):
+        """Try scheduling a batch of transactions.
+
+        Arguments:
+            pending: set of transactions waiting to be executed
+            ongoing: set of transactions currently being executed
+
+        Returns:
+            a set of transactions ready to be executed concurrently with the
+            currently running ones without conflicts
+
+        """
+
+
+class Core:
+    """Component of `Machine` executing a single transaction.
+
+    Attributes:
+        clock (int): time elapsed since the start of the machine in "ticks"
+        transaction (Transaction): the transaction being executed or None if
+                                   the core is idle
+
+    """
+
+    def __init__(self, clock_start=0, transaction=None):
+        """Create a new core.
+
+        Arguments:
+            clock_start (int): initial value for the clock
+            transaction: initial transaction being executed
+
+        """
+        self.clock = clock_start
+        self.transaction = transaction
+
+
+class Machine:
+    """Device capable of executing transactions in parallel."""
+
+    def __init__(self, n_cores, pool_size):
+        """Create a new machine.
+
+        Arguments:
+            n_cores (int): number of execution units (cores) available
+            pool_size (int): number of tranactions seen by the scheduler
+                             simultaneously (all of them if None)
+
+        """
+        self.cores = [Core() for _ in range(n_cores)]
+        self.pool_size = pool_size

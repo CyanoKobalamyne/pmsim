@@ -2,8 +2,9 @@
 import unittest
 from unittest import TestCase
 
-from machine import Machine, ConstantTimeScheduler
-from transaction import Transaction
+from model import Transaction
+from schedulers import ConstantTimeScheduler
+from simulator import Simulator
 
 
 class TestSimple(TestCase):
@@ -11,8 +12,8 @@ class TestSimple(TestCase):
 
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = ConstantTimeScheduler()
-        m = Machine(n_cores, None, sched)
-        result_time = m.run(transactions)
+        s = Simulator(n_cores, None, sched)
+        result_time = s.run(transactions)
         self.assertEqual(expected_time, result_time)
 
     def test_01(self):
