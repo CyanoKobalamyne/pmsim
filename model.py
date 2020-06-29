@@ -2,6 +2,8 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import MutableSet
+from dataclasses import dataclass
+from typing import Optional
 
 
 class Transaction:
@@ -154,8 +156,9 @@ class TransactionExecutor(TimedComponent, ABC):
         """Return list of currently executing transactions."""
 
 
+@dataclass
 class Core:
-    """Component of `Machine` executing a single transaction.
+    """Component executing a single transaction.
 
     Attributes:
         clock (int): time elapsed since the start of the machine in "ticks"
@@ -164,13 +167,5 @@ class Core:
 
     """
 
-    def __init__(self, clock_start=0, transaction=None):
-        """Create a new core.
-
-        Arguments:
-            clock_start (int): initial value for the clock
-            transaction: initial transaction being executed
-
-        """
-        self.clock = clock_start
-        self.transaction = transaction
+    clock: int = 0
+    transaction: Optional[Transaction] = None
