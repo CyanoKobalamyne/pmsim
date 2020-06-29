@@ -85,11 +85,14 @@ class TimedComponent(ABC):
     @property
     @abstractmethod
     def clock(self):
-        """Return the value of the global clock of processing units."""
+        """Return the value of the global clock of the component."""
 
     @clock.setter
     def clock(self, value):
-        """Set the value of the global clock of processing units."""
+        """Set the value of the global clock of the component.
+
+        The clock is monotonic, i.e. it will never be decreased.
+        """
 
 
 class TransactionGenerator(ABC):

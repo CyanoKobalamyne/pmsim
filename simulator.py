@@ -43,7 +43,7 @@ class Simulator:
             if self.executor.has_free_cores() and scheduled:
                 # If the executor was idle while the scheduler was working,
                 # move its clock forward.
-                self.executor.clock = max(self.scheduler.clock, self.executor.clock)
+                self.executor.clock = self.scheduler.clock
                 # Execute a scheduled transaction.
                 self.executor.push(scheduled)
             else:
@@ -51,7 +51,7 @@ class Simulator:
                 finish = self.executor.pop()
                 # If the scheduler was idle until the first core freed up,
                 # move its clock forward.
-                self.scheduler.clock = max(finish, self.scheduler.clock)
+                self.scheduler.clock = finish
 
         return max(map(self.executor.clock_fn, self.executor.cores))
 

@@ -39,4 +39,4 @@ class ConstantTimeScheduler(TransactionScheduler):
     @clock.setter
     def clock(self, value):
         """See TimedComponent.set_clock."""
-        self._clock = value
+        self._clock = max(self._clock, value)
