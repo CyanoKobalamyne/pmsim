@@ -59,12 +59,12 @@ def _main():
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title = "Average throughput per core"
+    title = "Average total throughput"
     col1_header = "t_sched"
     col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
     precision = 5
-    col_width = max(len(f"{1:.{precision}f}"), len(str(core_counts[-1])))
+    col_width = max(len(f"{10:.{precision}f}"), len(str(core_counts[-1])))
     cols_header_template = "".join(
         f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
     )
@@ -119,7 +119,7 @@ def _main():
                 executor = RandomExecutor(core_count)
                 sim = Simulator(scheduler, executor, args.poolsize)
                 results.append(sim.run(transactions))
-            throughputs.append(total_tr_time / statistics.mean(results) / core_count)
+            throughputs.append(total_tr_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
 
 
