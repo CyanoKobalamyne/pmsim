@@ -34,7 +34,7 @@ class Simulator:
         self.is_tr_left = True
         while self.is_tr_left or self.pending or scheduled or self.executor.is_busy:
             running = self.executor.running
-            if not scheduled:
+            if not scheduled and self.scheduler.clock <= self.executor.clock:
                 # Fill up pending pool.
                 self._fill_pool()
                 # Try scheduling a batch of new transactions.
@@ -49,9 +49,12 @@ class Simulator:
             else:
                 # Remove first finished transaction.
                 finish = self.executor.pop()
-                # If the scheduler was idle until the first core freed up,
-                # move its clock forward.
+                # If the scheduler was idle until the first core freed up, move its
+                # clock forward.
                 self.scheduler.clock = finish
+                # If the free cores are running behind the scheduler, move their clocks
+                # forward.
+                self.executor.clock = self.scheduler.clock
 
         return self.executor.clock
 
