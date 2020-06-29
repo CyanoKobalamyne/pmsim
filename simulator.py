@@ -56,7 +56,7 @@ class Simulator:
                 # move its clock forward.
                 self.scheduler.clock = max(finish, self.scheduler.clock)
 
-        return max(map(self.executor.clock_fn, self.executor.machine.cores))
+        return max(map(self.executor.clock_fn, self.executor.cores))
 
     def _fill_pool(self):
         """Fill up the scheduling pool."""

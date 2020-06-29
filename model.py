@@ -174,16 +174,3 @@ class Core:
         """
         self.clock = clock_start
         self.transaction = transaction
-
-
-class Machine:
-    """Device capable of executing transactions in parallel."""
-
-    def __init__(self, n_cores):
-        """Create a new machine.
-
-        Arguments:
-            n_cores (int): number of execution units (cores) available
-
-        """
-        self.cores = [Core() for _ in range(n_cores)]
