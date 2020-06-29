@@ -77,6 +77,19 @@ class TransactionSet(MutableSet):
         return True
 
 
+class TimedComponent(ABC):
+    """Common superclass for all components with an internal clock."""
+
+    @property
+    @abstractmethod
+    def clock(self):
+        """Return the value of the global clock of processing units."""
+
+    @clock.setter
+    def clock(self, value):
+        """Set the value of the global clock of processing units."""
+
+
 class TransactionGenerator(ABC):
     """Generates new transactions."""
 
@@ -95,7 +108,7 @@ class TransactionGenerator(ABC):
         """
 
 
-class TransactionScheduler(ABC):
+class TransactionScheduler(TimedComponent, ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
     @abstractmethod

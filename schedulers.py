@@ -16,6 +16,7 @@ class ConstantTimeScheduler(TransactionScheduler):
         """
         self.scheduling_time = scheduling_time
         self.n = n_transactions
+        self._clock = 0
 
     def run(self, pending, ongoing):
         """See TransacionScheduler.run."""
@@ -27,4 +28,15 @@ class ConstantTimeScheduler(TransactionScheduler):
                 break
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
-        return candidates, self.scheduling_time
+        self._clock += self.scheduling_time
+        return candidates
+
+    @property
+    def clock(self):
+        """See TimedComponent.clock."""
+        return self._clock
+
+    @clock.setter
+    def clock(self, value):
+        """See TimedComponent.set_clock."""
+        self._clock = value

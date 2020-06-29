@@ -33,7 +33,6 @@ class Simulator:
 
         """
         clock_fn = operator.attrgetter("clock")
-        scheduler_clock = 0
         tr_iter = iter(transactions)
         pending = set()
         scheduled = set()
@@ -57,15 +56,14 @@ class Simulator:
                         is_tr_left = False
                         break
                 # Try scheduling a batch of new transactions.
-                scheduled, sched_time = self.scheduler.run(pending, running)
+                scheduled = self.scheduler.run(pending, running)
                 pending -= scheduled
-                scheduler_clock += sched_time
             if free_cores and scheduled:
                 # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
                 # If the core was idle while the scheduler was working,
                 # move its clock forward.
-                core.clock = max(scheduler_clock, core.clock)
+                core.clock = max(self.scheduler.clock, core.clock)
                 # Execute one transaction.
                 tr = scheduled.pop()
                 core.transaction = tr
@@ -83,7 +81,7 @@ class Simulator:
                     core.clock = finish
                 # If the scheduler was idle until the first core freed up,
                 # move its clock forward.
-                scheduler_clock = max(finish, scheduler_clock)
+                self.scheduler.clock = max(finish, self.scheduler.clock)
                 if len(busy_cores) == 1:
                     is_busy = False
 
