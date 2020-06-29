@@ -14,7 +14,7 @@ from simulator import Simulator
 
 def _main():
     parser = ArgumentParser(
-        description="Run puppetmaster on a range of input " "distributions."
+        description="Run puppetmaster on a range of input distributions."
     )
     parser.add_argument(
         "template", help="transaction template file", type=FileType("rt")
@@ -27,7 +27,7 @@ def _main():
     parser.add_argument(
         "-e",
         "--schedule",
-        help="number of transactions to " "schedule in one round",
+        help="number of transactions to schedule in one round",
         type=int,
         default=1,
     )
@@ -37,8 +37,7 @@ def _main():
     parser.add_argument(
         "-r",
         "--repeats",
-        help="number of times the "
-        "experiment with a given set of parameters is re-run",
+        help="number of times the experiment with a given set of parameters is re-run",
         default=10,
         type=int,
     )
