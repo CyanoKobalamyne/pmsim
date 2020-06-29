@@ -126,6 +126,34 @@ class TransactionScheduler(TimedComponent, ABC):
         """
 
 
+class TransactionExecutor(TimedComponent, ABC):
+    """Represents the execution policy for the processing units in Puppetmaster."""
+
+    @abstractmethod
+    def push(self, scheduled):
+        """Choose transaction(s) to execute from scheduled set.
+
+        Removes the transactions executed, if any.
+        """
+
+    @abstractmethod
+    def pop(self):
+        """Remove the first finished transaction.
+
+        Returns:
+            int: current clock of core that was just flushed.
+        """
+
+    @abstractmethod
+    def has_free_cores(self):
+        """Return true if there are idle cores."""
+
+    @property
+    @abstractmethod
+    def running(self):
+        """Return list of currently executing transactions."""
+
+
 class Core:
     """Component of `Machine` executing a single transaction.
 

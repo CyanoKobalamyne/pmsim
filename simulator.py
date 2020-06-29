@@ -1,8 +1,6 @@
 """Main Puppetmaster simulator class."""
 
-import operator
-
-from model import Machine
+from executors import RandomExecutor
 
 
 class Simulator:
@@ -19,7 +17,7 @@ class Simulator:
                                    the cores
 
         """
-        self.machine = Machine(n_cores)
+        self.executor = RandomExecutor(n_cores)
         self.scheduler = scheduler
         self.poolsize = pool_size
 
@@ -33,52 +31,32 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        clock_fn = operator.attrgetter("clock")
         self.transactions = iter(transactions)
         self.pending = set()
         scheduled = set()
         self.is_tr_left = True
-        is_busy = False
-        while self.is_tr_left or self.pending or scheduled or is_busy:
-            free_cores = [
-                core for core in self.machine.cores if core.transaction is None
-            ]
-            transactions = [core.transaction for core in self.machine.cores]
-            running = [tr for tr in transactions if tr is not None]
+        while self.is_tr_left or self.pending or scheduled or self.executor.is_busy:
+            running = self.executor.running
             if not scheduled:
                 # Fill up pending pool.
                 self._fill_pool()
                 # Try scheduling a batch of new transactions.
                 scheduled = self.scheduler.run(self.pending, running)
                 self.pending -= scheduled
-            if free_cores and scheduled:
-                # Execute scheduled transaction on first idle core.
-                core = min(free_cores, key=clock_fn)
-                # If the core was idle while the scheduler was working,
+            if self.executor.has_free_cores() and scheduled:
+                # If the executor was idle while the scheduler was working,
                 # move its clock forward.
-                core.clock = max(self.scheduler.clock, core.clock)
-                # Execute one transaction.
-                tr = scheduled.pop()
-                core.transaction = tr
-                core.clock += tr.time
-                is_busy = True
+                self.executor.clock = max(self.scheduler.clock, self.executor.clock)
+                # Execute a scheduled transaction.
+                self.executor.push(scheduled)
             else:
                 # Remove first finished transaction.
-                busy_cores = [
-                    core for core in self.machine.cores if core.transaction is not None
-                ]
-                core = min(busy_cores, key=clock_fn)
-                finish = core.clock
-                core.transaction = None
-                for core in free_cores:
-                    core.clock = finish
+                finish = self.executor.pop()
                 # If the scheduler was idle until the first core freed up,
                 # move its clock forward.
                 self.scheduler.clock = max(finish, self.scheduler.clock)
-                if len(busy_cores) == 1:
-                    is_busy = False
 
-        return max(map(clock_fn, self.machine.cores))
+        return max(map(self.executor.clock_fn, self.executor.machine.cores))
 
     def _fill_pool(self):
         """Fill up the scheduling pool."""
