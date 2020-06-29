@@ -96,7 +96,7 @@ class TransactionGenerator(ABC):
 
 
 class TransactionScheduler(ABC):
-    """Represents that scheduling unit within Puppetmaster."""
+    """Represents the scheduling unit within Puppetmaster."""
 
     @abstractmethod
     def run(self, pending, ongoing):
