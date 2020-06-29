@@ -151,14 +151,11 @@ class Core:
 class Machine:
     """Device capable of executing transactions in parallel."""
 
-    def __init__(self, n_cores, pool_size):
+    def __init__(self, n_cores):
         """Create a new machine.
 
         Arguments:
             n_cores (int): number of execution units (cores) available
-            pool_size (int): number of tranactions seen by the scheduler
-                             simultaneously (all of them if None)
 
         """
         self.cores = [Core() for _ in range(n_cores)]
-        self.pool_size = pool_size

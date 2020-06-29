@@ -19,8 +19,9 @@ class Simulator:
                                    the cores
 
         """
-        self.machine = Machine(n_cores, pool_size)
+        self.machine = Machine(n_cores)
         self.scheduler = scheduler
+        self.poolsize = pool_size
 
     def run(self, transactions):
         """Simulate execution of a set of transactions on this machine.
@@ -33,12 +34,12 @@ class Simulator:
 
         """
         clock_fn = operator.attrgetter("clock")
-        tr_iter = iter(transactions)
-        pending = set()
+        self.transactions = iter(transactions)
+        self.pending = set()
         scheduled = set()
-        is_tr_left = True
+        self.is_tr_left = True
         is_busy = False
-        while is_tr_left or pending or scheduled or is_busy:
+        while self.is_tr_left or self.pending or scheduled or is_busy:
             free_cores = [
                 core for core in self.machine.cores if core.transaction is None
             ]
@@ -46,18 +47,10 @@ class Simulator:
             running = [tr for tr in transactions if tr is not None]
             if not scheduled:
                 # Fill up pending pool.
-                while (
-                    self.machine.pool_size is None
-                    or len(pending) < self.machine.pool_size
-                ):
-                    try:
-                        pending.add(next(tr_iter))
-                    except StopIteration:
-                        is_tr_left = False
-                        break
+                self._fill_pool()
                 # Try scheduling a batch of new transactions.
-                scheduled = self.scheduler.run(pending, running)
-                pending -= scheduled
+                scheduled = self.scheduler.run(self.pending, running)
+                self.pending -= scheduled
             if free_cores and scheduled:
                 # Execute scheduled transaction on first idle core.
                 core = min(free_cores, key=clock_fn)
@@ -86,3 +79,12 @@ class Simulator:
                     is_busy = False
 
         return max(map(clock_fn, self.machine.cores))
+
+    def _fill_pool(self):
+        """Fill up the scheduling pool."""
+        while self.poolsize is None or len(self.pending) < self.poolsize:
+            try:
+                self.pending.add(next(self.transactions))
+            except StopIteration:
+                self.is_tr_left = False
+                break
