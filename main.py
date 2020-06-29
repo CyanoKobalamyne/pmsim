@@ -6,6 +6,7 @@ import os
 import random
 import statistics
 
+from executors import RandomExecutor
 from generators import RandomGenerator
 from schedulers import ConstantTimeScheduler
 from simulator import Simulator
@@ -115,7 +116,8 @@ def _main():
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )
-                sim = Simulator(core_count, args.poolsize, scheduler)
+                executor = RandomExecutor(core_count)
+                sim = Simulator(scheduler, executor, args.poolsize)
                 results.append(sim.run(transactions))
             throughputs.append(total_tr_time / statistics.mean(results) / core_count)
         print(body_template.format(f"{sched_time}", *throughputs))

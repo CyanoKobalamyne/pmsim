@@ -1,24 +1,21 @@
 """Main Puppetmaster simulator class."""
 
-from executors import RandomExecutor
-
 
 class Simulator:
     """Simulates executing a set of transactions."""
 
-    def __init__(self, n_cores, pool_size, scheduler):
+    def __init__(self, scheduler, executor, pool_size):
         """Create a new simulator.
 
         Arguments:
-            n_cores (int): number of execution units (cores) available
+            scheduler: component for scheduling transactions
+            executor: component for executing transactions on the processing cores
             pool_size (int): number of tranactions seen by the scheduler
                              simultaneously (all of them if None)
-            scheduler (Scheduler): object used to schedule transactions on
-                                   the cores
 
         """
-        self.executor = RandomExecutor(n_cores)
         self.scheduler = scheduler
+        self.executor = executor
         self.poolsize = pool_size
 
     def run(self, transactions):

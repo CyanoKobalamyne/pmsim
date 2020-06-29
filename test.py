@@ -2,6 +2,7 @@
 import unittest
 from unittest import TestCase
 
+from executors import RandomExecutor
 from model import Transaction
 from schedulers import ConstantTimeScheduler
 from simulator import Simulator
@@ -12,7 +13,8 @@ class TestSimple(TestCase):
 
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = ConstantTimeScheduler()
-        s = Simulator(n_cores, None, sched)
+        exe = RandomExecutor(n_cores)
+        s = Simulator(sched, exe, pool_size=None)
         result_time = s.run(transactions)
         self.assertEqual(expected_time, result_time)
 
