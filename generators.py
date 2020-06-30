@@ -28,21 +28,20 @@ class RandomGenerator(TransactionGenerator):
         )
         self.last_used = 0
 
-    def __call__(self, read_set_size, write_set_size, time, count):
+    def __call__(self, read_set_size, write_set_size, time):
         """See TransactionGenerator.__call__."""
-        for _ in range(count):
-            if len(self.indices) <= self.last_used:
-                raise RuntimeError(
-                    f"not enough objects generated, "
-                    f"{len(self.indices)} > {self.last_used}."
-                )
-            start = self.last_used
-            mid = start + read_set_size
-            end = mid + write_set_size
-            self.last_used = end
-            read_set = {self.objects[i] for i in self.indices[start:mid]}
-            write_set = {self.objects[i] for i in self.indices[mid:end]}
-            yield Transaction(read_set, write_set, time)
+        if len(self.indices) <= self.last_used:
+            raise RuntimeError(
+                f"not enough objects generated, "
+                f"{len(self.indices)} > {self.last_used}."
+            )
+        start = self.last_used
+        mid = start + read_set_size
+        end = mid + write_set_size
+        self.last_used = end
+        read_set = {self.objects[i] for i in self.indices[start:mid]}
+        write_set = {self.objects[i] for i in self.indices[mid:end]}
+        return Transaction(read_set, write_set, time)
 
     def swap_most_popular(self, obj):
         """Swap `obj` with the most popular object in the distribution."""

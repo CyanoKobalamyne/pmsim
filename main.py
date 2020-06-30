@@ -107,7 +107,7 @@ def _main():
                 random.shuffle(tr_data)
                 transactions = []
                 for d in tr_data:
-                    tr = next(tr_gen(d["reads"], d["writes"], d["time"], d["N"]))
+                    tr = tr_gen(d["reads"], d["writes"], d["time"])
                     transactions.append(tr)
                     if "rotate_most_popular" in d and d["rotate_most_popular"]:
                         obj = next(iter(tr.write_set))
