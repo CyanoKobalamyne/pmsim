@@ -13,6 +13,8 @@ from simulator import Simulator
 
 
 def _main():
+    random.seed(0)
+
     parser = ArgumentParser(
         description="Run puppetmaster on a range of input distributions."
     )

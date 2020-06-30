@@ -9,6 +9,15 @@ from typing import Optional
 class Transaction:
     """An atomic operation in the model."""
 
+    _next_id = 0
+
+    def __new__(cls):
+        """Return a new instance of Transaction."""
+        instance = super().__new__(cls)
+        instance.id = Transaction._next_id
+        Transaction._next_id += 1
+        return instance
+
     def __init__(self, read_set, write_set, time):
         """Create a transaction.
 
@@ -25,7 +34,7 @@ class Transaction:
 
     def __hash__(self):
         """Return a hash value for this transaction."""
-        return id(self)
+        return self.id  # pylint: disable=no-member
 
     def __str__(self):
         """Return a human-readable representation of this transaction."""
