@@ -108,20 +108,17 @@ class TransactionGenerator(ABC):
     """Generates new transactions."""
 
     @abstractmethod
-    def __call__(self, tr_types):
+    def __call__(self):
         """Yield new transactions.
 
-        Arguments:
-            tr_types: a list of distinct transaction configurations. Each dictionary
-                      should contain the following entries:
-                "read": size of the read set
-                "write": size of the write set
-                "time": transaction time
-
-        Yields:
-            transactions with the specified properties.
-
+        The number and properties of transactions depend on the specific class and the
+        arguments given to its constructor.
         """
+
+    @property
+    @abstractmethod
+    def total_time(self):
+        """Return the time it takes to execute all transactions serially."""
 
 
 class TransactionScheduler(TimedComponent, ABC):

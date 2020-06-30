@@ -8,7 +8,7 @@ from model import Transaction, TransactionGenerator
 class RandomGenerator(TransactionGenerator):
     """Generates new transactions based on a parametrized distribution."""
 
-    def __init__(self, memory_size, n_total_objects, s=1):
+    def __init__(self, memory_size, tr_types, tr_count, gen_count=1, s=1):
         """Create a new generator for `Transaction`s.
 
         A pool of objects with size `memory_size` is created, and the read and
@@ -17,21 +17,35 @@ class RandomGenerator(TransactionGenerator):
         Arguments:
             memory_size: size of the pool from which objects in the read and
                          write sets are selected
-            n_total_objects: number of objects that will be needed by the
-                             generated transactions
+            tr_types: a list of distinct transaction configurations. Each dictionary
+                      should contain the following entries:
+                "read": size of the read set
+                "write": size of the write set
+                "time": transaction time
+            tr_count: total number of transactions needed per run
+            gen_count: number of runs
             s: parameter of the Zipf's law distribution
         """
         self.objects = [object() for _ in range(memory_size)]
         zipf_weights = [1 / (i + 1) ** s for i in range(memory_size)]
+        self.tr_types = dict(tr_types)
+        total_weight = sum(tr["weight"] for tr in self.tr_types.values())
+        n_total_objects = 0
+        self.total_tr_time = 0
+        for tr in self.tr_types.values():
+            tr["N"] = int(round(tr_count * tr["weight"] / total_weight))
+            n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
+            self.total_tr_time += tr["N"] * tr["time"]
+        n_total_objects *= gen_count
         self.indices = random.choices(
             range(memory_size), weights=zipf_weights, k=n_total_objects
         )
         self.last_used = 0
 
-    def __call__(self, tr_types):
+    def __call__(self):
         """See TransactionGenerator.__call__."""
         tr_data = []
-        for type_ in tr_types.values():
+        for type_ in self.tr_types.values():
             tr_data.extend(type_ for i in range(type_["N"]))
         random.shuffle(tr_data)
         for d in tr_data:
@@ -55,6 +69,11 @@ class RandomGenerator(TransactionGenerator):
         read_set = {self.objects[i] for i in self.indices[start:mid]}
         write_set = {self.objects[i] for i in self.indices[mid:end]}
         return Transaction(read_set, write_set, tr_conf["time"])
+
+    @property
+    def total_time(self):
+        """See TransactionGenerator.total_time."""
+        return self.total_tr_time
 
     def swap_most_popular(self, obj):
         """Swap `obj` with the most popular object in the distribution."""

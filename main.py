@@ -88,29 +88,22 @@ def _main():
     print(header_template.format(col1_header, *core_counts))
 
     tr_types = json.load(args.template)
-    total_weight = sum(tr["weight"] for tr in tr_types.values())
-    n_total_objects = 0
-    total_tr_time = 0
-    for tr in tr_types.values():
-        tr["N"] = int(round(args.n * tr["weight"] / total_weight))
-        n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
-        total_tr_time += tr["N"] * tr["time"]
-    n_total_objects *= len(sched_times) * len(core_counts) * args.repeats
-    tr_gen = RandomGenerator(args.memsize, n_total_objects, args.s)
+    n_runs = len(sched_times) * len(core_counts) * args.repeats
+    tr_gen = RandomGenerator(args.memsize, tr_types, args.n, n_runs, args.s)
 
     for sched_time in sched_times:
         throughputs = []
         for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
-                transactions = tr_gen(tr_types)
+                transactions = tr_gen()
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )
                 executor = RandomExecutor(core_count)
                 sim = Simulator(transactions, scheduler, executor, args.poolsize)
                 results.append(sim.run())
-            throughputs.append(total_tr_time / statistics.mean(results))
+            throughputs.append(tr_gen.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
 
 
