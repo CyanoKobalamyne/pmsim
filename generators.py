@@ -28,8 +28,12 @@ class RandomGenerator(TransactionGenerator):
         )
         self.last_used = 0
 
-    def __call__(self, tr_data):
+    def __call__(self, tr_types):
         """See TransactionGenerator.__call__."""
+        tr_data = []
+        for type_ in tr_types.values():
+            tr_data.extend(type_ for i in range(type_["N"]))
+        random.shuffle(tr_data)
         for d in tr_data:
             tr = self.get_next(d)
             yield tr

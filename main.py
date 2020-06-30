@@ -103,11 +103,7 @@ def _main():
         for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
-                tr_data = []
-                for type_ in tr_types.values():
-                    tr_data.extend(type_ for i in range(type_["N"]))
-                random.shuffle(tr_data)
-                transactions = tr_gen(tr_data)
+                transactions = tr_gen(tr_types)
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )
