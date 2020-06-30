@@ -14,8 +14,8 @@ class TestSimple(TestCase):
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = ConstantTimeScheduler()
         exe = RandomExecutor(n_cores)
-        s = Simulator(sched, exe, pool_size=None)
-        result_time = s.run(transactions)
+        s = Simulator(transactions, sched, exe, pool_size=None)
+        result_time = s.run()
         self.assertEqual(expected_time, result_time)
 
     def test_01(self):

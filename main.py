@@ -116,8 +116,8 @@ def _main():
                     sched_time, n_transactions=args.schedule
                 )
                 executor = RandomExecutor(core_count)
-                sim = Simulator(scheduler, executor, args.poolsize)
-                results.append(sim.run(transactions))
+                sim = Simulator(transactions, scheduler, executor, args.poolsize)
+                results.append(sim.run())
             throughputs.append(total_tr_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
 

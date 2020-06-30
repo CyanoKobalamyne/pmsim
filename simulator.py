@@ -4,31 +4,29 @@
 class Simulator:
     """Simulates executing a set of transactions."""
 
-    def __init__(self, scheduler, executor, pool_size):
+    def __init__(self, transactions, scheduler, executor, pool_size):
         """Create a new simulator.
 
         Arguments:
+            transactions (Iterable[Transaction]): transactions to execute
             scheduler: component for scheduling transactions
             executor: component for executing transactions on the processing cores
             pool_size (int): number of tranactions seen by the scheduler
                              simultaneously (all of them if None)
 
         """
+        self.transactions = iter(transactions)
         self.scheduler = scheduler
         self.executor = executor
         self.poolsize = pool_size
 
-    def run(self, transactions):
+    def run(self):
         """Simulate execution of a set of transactions on this machine.
-
-        Arguments:
-            transactions (Iterable[Transaction]): transactions to execute
 
         Returns:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        self.transactions = iter(transactions)
         self.pending = set()
         scheduled = set()
         self.is_tr_left = True
