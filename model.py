@@ -11,7 +11,7 @@ class Transaction:
 
     _next_id = 0
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         """Return a new instance of Transaction."""
         instance = super().__new__(cls)
         instance.id = Transaction._next_id
