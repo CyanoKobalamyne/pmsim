@@ -107,13 +107,7 @@ def _main():
                 for type_ in tr_types.values():
                     tr_data.extend(type_ for i in range(type_["N"]))
                 random.shuffle(tr_data)
-                transactions = []
-                for d in tr_data:
-                    tr = tr_gen(d["reads"], d["writes"], d["time"])
-                    transactions.append(tr)
-                    if "rotate_most_popular" in d and d["rotate_most_popular"]:
-                        obj = next(iter(tr.write_set))
-                        tr_gen.swap_most_popular(obj)
+                transactions = tr_gen(tr_data)
                 scheduler = ConstantTimeScheduler(
                     sched_time, n_transactions=args.schedule
                 )

@@ -108,16 +108,18 @@ class TransactionGenerator(ABC):
     """Generates new transactions."""
 
     @abstractmethod
-    def __call__(self, read_set_size, write_set_size, time):
-        """Return a new transaction.
+    def __call__(self, tr_data):
+        """Yield new transactions.
 
         Arguments:
-            read_set_size: size of the read sets
-            write_set_size: size of the write sets
-            time: transaction time
+            tr_data: a list of transaction configurations. Each dictionary should
+                     contain the following entries:
+                "read": size of the read set
+                "write": size of the write set
+                "time": transaction time
 
-        Returns:
-            transaction with the specified properties.
+        Yields:
+            transactions with the specified properties.
 
         """
 
