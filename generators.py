@@ -2,10 +2,10 @@
 
 import random
 
-from model import Transaction, TransactionGenerator
+from model import Transaction, TransactionFactory
 
 
-class RandomGenerator(TransactionGenerator):
+class RandomFactory(TransactionFactory):
     """Generates new transactions based on a parametrized distribution."""
 
     def __init__(self, memory_size, tr_types, tr_count, gen_count=1, s=1):

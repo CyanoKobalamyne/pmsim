@@ -7,7 +7,7 @@ import random
 import statistics
 
 from executors import RandomExecutor
-from generators import RandomGenerator
+from generators import RandomFactory
 from schedulers import ConstantTimeScheduler
 from simulator import Simulator
 
@@ -89,7 +89,7 @@ def _main():
 
     tr_types = json.load(args.template)
     n_runs = len(sched_times) * len(core_counts) * args.repeats
-    tr_gen = RandomGenerator(args.memsize, tr_types, args.n, n_runs, args.s)
+    tr_gen = RandomFactory(args.memsize, tr_types, args.n, n_runs, args.s)
 
     for sched_time in sched_times:
         throughputs = []

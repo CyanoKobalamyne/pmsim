@@ -104,12 +104,12 @@ class TimedComponent(ABC):
         """
 
 
-class TransactionGenerator(ABC):
-    """Generates new transactions."""
+class TransactionFactory(ABC):
+    """Factory for generators of transactions."""
 
     @abstractmethod
     def __call__(self):
-        """Yield new transactions.
+        """Return a new generator object that yields transactions.
 
         The number and properties of transactions depend on the specific class and the
         arguments given to its constructor.
