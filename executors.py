@@ -2,7 +2,8 @@
 
 import operator
 
-from model import Core, TransactionExecutor
+from model import TransactionExecutor
+from pmtypes import Core
 
 
 class RandomExecutor(TransactionExecutor):

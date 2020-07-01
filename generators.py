@@ -2,7 +2,8 @@
 
 import random
 
-from model import Transaction, TransactionFactory
+from model import TransactionFactory
+from pmtypes import Transaction
 
 
 class RandomFactory(TransactionFactory):

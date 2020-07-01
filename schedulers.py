@@ -1,6 +1,7 @@
 """Scheduler implementations."""
 
-from model import TransactionScheduler, TransactionSet
+from model import TransactionScheduler
+from pmtypes import TransactionSet
 
 
 class ConstantTimeScheduler(TransactionScheduler):
