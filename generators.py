@@ -36,7 +36,7 @@ class RandomFactory(TransactionFactory):
         """
         self.objects = [object() for _ in range(memory_size)]
         zipf_weights = [1 / (i + 1) ** s for i in range(memory_size)]
-        self.tr_types = tuple(tr_types)
+        self.tr_types = tuple(dict(cfg) for cfg in tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
         n_total_objects = 0
         self.total_tr_time = 0
