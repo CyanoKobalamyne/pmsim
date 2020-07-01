@@ -55,10 +55,10 @@ class RandomFactory(TransactionFactory):
 
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionGenerator.__call__."""
-        addresses = SequenceView(self.addresses)[
-            self.tr_count * self.gens : self.tr_count * (self.gens + 1)
-        ]
+        addr_start = self.tr_count * self.gens
         self.gens += 1
+        addr_end = self.tr_count * self.gens
+        addresses = SequenceView(self.addresses)[addr_start:addr_end]
         return self.TrGenerator(self, addresses)
 
     class TrGenerator(Iterator[Transaction]):
@@ -81,18 +81,15 @@ class RandomFactory(TransactionFactory):
                 raise StopIteration
             tr_conf = self.tr_data[self.index]
             self.index += 1
-            if self.address_index + tr_conf["reads"] + tr_conf["writes"] > len(
-                self.addresses
-            ):
-                raise RuntimeError("not enough addresses available")
-            read_addresses = self.addresses[
-                self.address_index : self.address_index + tr_conf["reads"]
-            ]
+            read_start = self.address_index
             self.address_index += tr_conf["reads"]
-            write_addresses = self.addresses[
-                self.address_index : self.address_index + tr_conf["writes"]
-            ]
+            read_end = write_start = self.address_index
             self.address_index += tr_conf["writes"]
+            write_end = self.address_index
+            if self.address_index > len(self.addresses):
+                raise RuntimeError("not enough addresses available")
+            read_addresses = self.addresses[read_start:read_end]
+            write_addresses = self.addresses[write_start:write_end]
             read_set = {self.factory.objects[addr] for addr in read_addresses}
             write_set = {self.factory.objects[addr] for addr in write_addresses}
             return Transaction(read_set, write_set, tr_conf["time"])
