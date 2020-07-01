@@ -3,6 +3,8 @@
 import random
 from typing import Iterable, Iterator, List, Mapping, Sequence
 
+from more_itertools import SequenceView
+
 from model import TransactionFactory
 from pmtypes import Transaction
 
@@ -53,11 +55,11 @@ class RandomFactory(TransactionFactory):
 
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionGenerator.__call__."""
-        address_range = range(
-            self.tr_count * self.gens, self.tr_count * (self.gens + 1)
-        )
+        addresses = SequenceView(self.addresses)[
+            self.tr_count * self.gens : self.tr_count * (self.gens + 1)
+        ]
         self.gens += 1
-        return self.TrGenerator(self, address_range)
+        return self.TrGenerator(self, addresses)
 
     class TrGenerator(Iterator[Transaction]):
         """Yields new transactions."""
@@ -91,12 +93,8 @@ class RandomFactory(TransactionFactory):
                 self.address_index : self.address_index + tr_conf["writes"]
             ]
             self.address_index += tr_conf["writes"]
-            read_set = {
-                self.factory.objects[self.factory.addresses[i]] for i in read_addresses
-            }
-            write_set = {
-                self.factory.objects[self.factory.addresses[i]] for i in write_addresses
-            }
+            read_set = {self.factory.objects[addr] for addr in read_addresses}
+            write_set = {self.factory.objects[addr] for addr in write_addresses}
             return Transaction(read_set, write_set, tr_conf["time"])
 
     @property
