@@ -1,7 +1,7 @@
 """Classes that generate transactions for Puppetmaster."""
 
 import random
-from typing import Generator, Iterable, List, Mapping
+from typing import Generator, Iterable, Iterator, List, Mapping
 
 from model import TransactionFactory
 from pmtypes import Transaction
@@ -52,28 +52,40 @@ class RandomFactory(TransactionFactory):
 
     def __call__(self) -> Generator[Transaction, None, None]:
         """See TransactionGenerator.__call__."""
-        tr_data: List[Mapping[str, int]] = []
-        for type_ in self.tr_types:
-            tr_data.extend(type_ for i in range(type_["N"]))
-        random.shuffle(tr_data)
-        for d in tr_data:
-            tr = self.get_next(d)
-            yield tr
+        return self.TrGenerator(self)
 
-    def get_next(self, tr_conf: Mapping[str, int]) -> Transaction:
-        """Return next transaction with the given configuration."""
-        if len(self.indices) <= self.last_used:
-            raise RuntimeError(
-                f"not enough objects generated, "
-                f"{len(self.indices)} > {self.last_used}."
-            )
-        start = self.last_used
-        mid = start + tr_conf["reads"]
-        end = mid + tr_conf["writes"]
-        self.last_used = end
-        read_set = {self.objects[i] for i in self.indices[start:mid]}
-        write_set = {self.objects[i] for i in self.indices[mid:end]}
-        return Transaction(read_set, write_set, tr_conf["time"])
+    class TrGenerator(Iterator[Transaction]):
+        """Yields new transactions."""
+
+        def __init__(self, factory: "RandomFactory") -> None:
+            """Create new TrGenerator."""
+            self.factory = factory
+            self.tr_data: List[Mapping[str, int]] = []
+            for type_ in self.factory.tr_types:
+                self.tr_data.extend(type_ for i in range(type_["N"]))
+            random.shuffle(self.tr_data)
+            self.index = 0
+
+        def __next__(self) -> Transaction:
+            """Return next transaction with the given configuration."""
+            if len(self.factory.indices) < self.factory.last_used:
+                raise RuntimeError(
+                    f"not enough objects generated, "
+                    f"{len(self.factory.indices)} < {self.factory.last_used}."
+                )
+            if self.index == len(self.tr_data):
+                raise StopIteration
+            tr_conf = self.tr_data[self.index]
+            self.index += 1
+            start = self.factory.last_used
+            mid = start + tr_conf["reads"]
+            end = mid + tr_conf["writes"]
+            self.factory.last_used = end
+            read_set = {
+                self.factory.objects[i] for i in self.factory.indices[start:mid]
+            }
+            write_set = {self.factory.objects[i] for i in self.factory.indices[mid:end]}
+            return Transaction(read_set, write_set, tr_conf["time"])
 
     @property
     def total_time(self) -> int:
