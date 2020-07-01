@@ -8,7 +8,7 @@ import statistics
 from typing import Dict, List
 
 from executors import RandomExecutor
-from generators import RandomFactory
+from factories import RandomFactory
 from schedulers import ConstantTimeScheduler
 from simulator import Simulator
 
