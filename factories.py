@@ -1,4 +1,4 @@
-"""Classes that generate transactions for Puppetmaster."""
+"""Classes that create transaction generators for Puppetmaster."""
 
 import random
 from typing import Iterable, Iterator, List, Mapping
@@ -11,7 +11,7 @@ from pmtypes import Transaction
 
 
 class RandomFactory(TransactionFactory):
-    """Generates new transactions based on a parametrized distribution."""
+    """Makes new transaction generators based on a parametrized distribution."""
 
     def __init__(
         self,
@@ -21,7 +21,7 @@ class RandomFactory(TransactionFactory):
         gen_count: int = 1,
         s_param: int = 0,
     ) -> None:
-        """Create a new generator for `Transaction`s.
+        """Create a new factory for transactions.
 
         A pool of objects with size `memory_size` is created, and the read and
         write sets are chosen from there in accordance with Zipf's law.
@@ -54,7 +54,7 @@ class RandomFactory(TransactionFactory):
         self.gens = 0
 
     def __call__(self) -> Iterator[Transaction]:
-        """See TransactionGenerator.__call__."""
+        """See TransactionFactory.__call__."""
         tr_data: List[Mapping[str, int]] = []
         for type_ in self.tr_types:
             tr_data.extend(type_ for i in range(type_["N"]))
@@ -67,5 +67,5 @@ class RandomFactory(TransactionFactory):
 
     @property
     def total_time(self) -> int:
-        """See TransactionGenerator.total_time."""
+        """See TransactionFactory.total_time."""
         return self.total_tr_time

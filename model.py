@@ -27,10 +27,9 @@ class TransactionFactory(ABC):
 
     @abstractmethod
     def __call__(self) -> Iterable[Transaction]:
-        """Return a new generator object that yields transactions.
+        """Return an object that yields new transactions.
 
-        The number and properties of transactions depend on the specific class and the
-        arguments given to its constructor.
+        The number and properties of transactions are determined upon construction.
         """
 
     @property
