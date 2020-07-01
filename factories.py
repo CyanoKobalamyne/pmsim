@@ -41,13 +41,13 @@ class RandomFactory(TransactionFactory):
         self.tr_types = tuple(dict(cfg) for cfg in tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
         self.gen_count = gen_count
-        self.tr_count = 0
+        self.obj_count = 0
         self.total_tr_time = 0
         for tr in self.tr_types:
             tr["N"] = int(round(tr_count * tr["weight"] / total_weight))
-            self.tr_count += tr["N"] * (tr["reads"] + tr["writes"])
+            self.obj_count += tr["N"] * (tr["reads"] + tr["writes"])
             self.total_tr_time += tr["N"] * tr["time"]
-        n_total_objects = self.tr_count * gen_count
+        n_total_objects = self.obj_count * gen_count
         self.addresses = random.choices(
             range(memory_size), weights=zipf_weights, k=n_total_objects
         )
@@ -59,9 +59,9 @@ class RandomFactory(TransactionFactory):
         for type_ in self.tr_types:
             tr_data.extend(type_ for i in range(type_["N"]))
         random.shuffle(tr_data)
-        addr_start = self.tr_count * self.gens
+        addr_start = self.obj_count * self.gens
         self.gens += 1
-        addr_end = self.tr_count * self.gens
+        addr_end = self.obj_count * self.gens
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
         return TransactionGenerator(tr_data, addresses)
 
