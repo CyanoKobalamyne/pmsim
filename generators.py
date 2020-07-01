@@ -59,9 +59,6 @@ class RandomFactory(TransactionFactory):
         for d in tr_data:
             tr = self.get_next(d)
             yield tr
-            if "rotate_most_popular" in d and d["rotate_most_popular"]:
-                obj = next(iter(tr.write_set))
-                self.swap_most_popular(obj)
 
     def get_next(self, tr_conf: Mapping[str, int]) -> Transaction:
         """Return next transaction with the given configuration."""
@@ -82,10 +79,3 @@ class RandomFactory(TransactionFactory):
     def total_time(self) -> int:
         """See TransactionGenerator.total_time."""
         return self.total_tr_time
-
-    def swap_most_popular(self, obj: object) -> None:
-        """Swap `obj` with the most popular object in the distribution."""
-        if self.objects[0] is not obj:
-            i = self.objects.index(obj)
-            self.objects[1 : i + 1] = self.objects[:i]
-            self.objects[0] = obj

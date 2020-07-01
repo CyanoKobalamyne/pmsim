@@ -1,13 +1,14 @@
 {
-    "fetch" : {
+    "fetch": {
         "reads": 35,
         "writes": 5,
         "time": 30000,
-        "weight": 1 },
-    "post" : {
+        "weight": 1
+    },
+    "post": {
         "reads": 1,
         "writes": 2,
         "time": 30000,
-        "weight": 1,
-        "rotate_most_popular": true }
+        "weight": 1
+    }
 }
