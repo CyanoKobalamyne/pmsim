@@ -58,17 +58,18 @@ class RandomFactory(TransactionFactory):
         self.gens += 1
         addr_end = self.tr_count * self.gens
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
-        return self.TrGenerator(self, addresses)
+        return self.TrGenerator(self.tr_types, addresses)
 
     class TrGenerator(Iterator[Transaction]):
-        """Yields new transactions."""
+        """Yields new transactions based on configuration and available addresses."""
 
-        def __init__(self, factory: "RandomFactory", addresses: Sequence[int]) -> None:
+        def __init__(
+            self, tr_types: Iterable[Mapping[str, int]], addresses: Sequence[int]
+        ) -> None:
             """Create new TrGenerator."""
-            self.factory = factory
             self.addresses = addresses
             self.tr_data: List[Mapping[str, int]] = []
-            for type_ in self.factory.tr_types:
+            for type_ in tr_types:
                 self.tr_data.extend(type_ for i in range(type_["N"]))
             random.shuffle(self.tr_data)
             self.index = 0
