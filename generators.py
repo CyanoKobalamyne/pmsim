@@ -87,8 +87,8 @@ class RandomFactory(TransactionFactory):
             write_end = self.address_index
             if self.address_index > len(self.addresses):
                 raise RuntimeError("not enough addresses available")
-            read_set = set(self.addresses[read_start:read_end])
-            write_set = set(self.addresses[write_start:write_end])
+            read_set = self.addresses[read_start:read_end]
+            write_set = self.addresses[write_start:write_end]
             return Transaction(read_set, write_set, tr_conf["time"])
 
     @property

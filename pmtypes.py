@@ -1,14 +1,7 @@
 """Data and container types used in Puppetmaster."""
 
 from dataclasses import dataclass
-from typing import (
-    AbstractSet,
-    Iterable,
-    Iterator,
-    MutableSet,
-    Optional,
-    Set,
-)
+from typing import Iterable, Iterator, MutableSet, Optional, Set
 
 
 class Transaction:
@@ -25,7 +18,7 @@ class Transaction:
         return instance
 
     def __init__(
-        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int
+        self, read_set: Iterable[int], write_set: Iterable[int], time: int
     ) -> None:
         """Create a transaction.
 
@@ -36,8 +29,8 @@ class Transaction:
             time: the amount of time units it takes to execute this transaction
 
         """
-        self.read_set = read_set
-        self.write_set = write_set
+        self.read_set = set(read_set)
+        self.write_set = set(write_set)
         self.time = time
 
     def __hash__(self) -> int:
