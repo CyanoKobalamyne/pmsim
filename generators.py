@@ -54,11 +54,15 @@ class RandomFactory(TransactionFactory):
 
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionGenerator.__call__."""
+        tr_data: List[Mapping[str, int]] = []
+        for type_ in self.tr_types:
+            tr_data.extend(type_ for i in range(type_["N"]))
+        random.shuffle(tr_data)
         addr_start = self.tr_count * self.gens
         self.gens += 1
         addr_end = self.tr_count * self.gens
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
-        return TransactionGenerator(self.tr_types, addresses)
+        return TransactionGenerator(tr_data, addresses)
 
     @property
     def total_time(self) -> int:
@@ -70,14 +74,11 @@ class TransactionGenerator(Iterator[Transaction]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_types: Iterable[Mapping[str, int]], addresses: Sequence[int]
+        self, tr_data: Sequence[Mapping[str, int]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator."""
         self.addresses = addresses
-        self.tr_data: List[Mapping[str, int]] = []
-        for type_ in tr_types:
-            self.tr_data.extend(type_ for i in range(type_["N"]))
-        random.shuffle(self.tr_data)
+        self.tr_data = tr_data
         self.index = 0
         self.address_index = 0
 
