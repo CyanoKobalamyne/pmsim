@@ -38,15 +38,17 @@ class RandomFactory(TransactionFactory):
             s_param: parameter of the Zipf's law distribution
         """
         zipf_weights = [1 / (i + 1) ** s_param for i in range(memory_size)]
-        self.tr_types = tuple(dict(cfg) for cfg in tr_types)
+        self.tr_types = tuple(tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
         self.gen_count = gen_count
+        self.tr_counts = []
         self.obj_count = 0
         self.total_tr_time = 0
         for tr in self.tr_types:
-            tr["N"] = int(round(tr_count * tr["weight"] / total_weight))
-            self.obj_count += tr["N"] * (tr["reads"] + tr["writes"])
-            self.total_tr_time += tr["N"] * tr["time"]
+            cur_tr_count = int(round(tr_count * tr["weight"] / total_weight))
+            self.obj_count += cur_tr_count * (tr["reads"] + tr["writes"])
+            self.total_tr_time += cur_tr_count * tr["time"]
+            self.tr_counts.append(cur_tr_count)
         n_total_objects = self.obj_count * gen_count
         self.addresses = random.choices(
             range(memory_size), weights=zipf_weights, k=n_total_objects
@@ -56,8 +58,8 @@ class RandomFactory(TransactionFactory):
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionFactory.__call__."""
         tr_data: List[Mapping[str, int]] = []
-        for type_ in self.tr_types:
-            tr_data.extend(type_ for i in range(type_["N"]))
+        for i, tr_type in enumerate(self.tr_types):
+            tr_data.extend(tr_type for _ in range(self.tr_counts[i]))
         random.shuffle(tr_data)
         addr_start = self.obj_count * self.gens
         self.gens += 1
