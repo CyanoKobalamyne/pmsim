@@ -1,7 +1,7 @@
 """Classes that generate transactions for Puppetmaster."""
 
 import random
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List, Mapping, Sequence
 
 from model import TransactionFactory
 from pmtypes import Transaction
@@ -38,53 +38,65 @@ class RandomFactory(TransactionFactory):
         zipf_weights = [1 / (i + 1) ** s_param for i in range(memory_size)]
         self.tr_types = tuple(dict(cfg) for cfg in tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
-        n_total_objects = 0
+        self.gen_count = gen_count
+        self.tr_count = 0
         self.total_tr_time = 0
         for tr in self.tr_types:
             tr["N"] = int(round(tr_count * tr["weight"] / total_weight))
-            n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
+            self.tr_count += tr["N"] * (tr["reads"] + tr["writes"])
             self.total_tr_time += tr["N"] * tr["time"]
-        n_total_objects *= gen_count
-        self.indices = random.choices(
+        n_total_objects = self.tr_count * gen_count
+        self.addresses = random.choices(
             range(memory_size), weights=zipf_weights, k=n_total_objects
         )
-        self.last_used = 0
+        self.gens = 0
 
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionGenerator.__call__."""
-        return self.TrGenerator(self)
+        address_range = range(
+            self.tr_count * self.gens, self.tr_count * (self.gens + 1)
+        )
+        self.gens += 1
+        return self.TrGenerator(self, address_range)
 
     class TrGenerator(Iterator[Transaction]):
         """Yields new transactions."""
 
-        def __init__(self, factory: "RandomFactory") -> None:
+        def __init__(self, factory: "RandomFactory", addresses: Sequence[int]) -> None:
             """Create new TrGenerator."""
             self.factory = factory
+            self.addresses = addresses
             self.tr_data: List[Mapping[str, int]] = []
             for type_ in self.factory.tr_types:
                 self.tr_data.extend(type_ for i in range(type_["N"]))
             random.shuffle(self.tr_data)
             self.index = 0
+            self.address_index = 0
 
         def __next__(self) -> Transaction:
             """Return next transaction with the given configuration."""
-            if len(self.factory.indices) < self.factory.last_used:
-                raise RuntimeError(
-                    f"not enough objects generated, "
-                    f"{len(self.factory.indices)} < {self.factory.last_used}."
-                )
             if self.index == len(self.tr_data):
                 raise StopIteration
             tr_conf = self.tr_data[self.index]
             self.index += 1
-            start = self.factory.last_used
-            mid = start + tr_conf["reads"]
-            end = mid + tr_conf["writes"]
-            self.factory.last_used = end
+            if self.address_index + tr_conf["reads"] + tr_conf["writes"] > len(
+                self.addresses
+            ):
+                raise RuntimeError("not enough addresses available")
+            read_addresses = self.addresses[
+                self.address_index : self.address_index + tr_conf["reads"]
+            ]
+            self.address_index += tr_conf["reads"]
+            write_addresses = self.addresses[
+                self.address_index : self.address_index + tr_conf["writes"]
+            ]
+            self.address_index += tr_conf["writes"]
             read_set = {
-                self.factory.objects[i] for i in self.factory.indices[start:mid]
+                self.factory.objects[self.factory.addresses[i]] for i in read_addresses
             }
-            write_set = {self.factory.objects[i] for i in self.factory.indices[mid:end]}
+            write_set = {
+                self.factory.objects[self.factory.addresses[i]] for i in write_addresses
+            }
             return Transaction(read_set, write_set, tr_conf["time"])
 
     @property
