@@ -36,7 +36,6 @@ class RandomFactory(TransactionFactory):
             gen_count: number of runs
             s_param: parameter of the Zipf's law distribution
         """
-        self.objects = [object() for _ in range(memory_size)]
         zipf_weights = [1 / (i + 1) ** s_param for i in range(memory_size)]
         self.tr_types = tuple(dict(cfg) for cfg in tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
@@ -88,10 +87,8 @@ class RandomFactory(TransactionFactory):
             write_end = self.address_index
             if self.address_index > len(self.addresses):
                 raise RuntimeError("not enough addresses available")
-            read_addresses = self.addresses[read_start:read_end]
-            write_addresses = self.addresses[write_start:write_end]
-            read_set = {self.factory.objects[addr] for addr in read_addresses}
-            write_set = {self.factory.objects[addr] for addr in write_addresses}
+            read_set = set(self.addresses[read_start:read_end])
+            write_set = set(self.addresses[write_start:write_end])
             return Transaction(read_set, write_set, tr_conf["time"])
 
     @property

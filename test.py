@@ -25,36 +25,34 @@ class TestSimple(TestCase):
 
     def test_02(self):
         """Single transaction with non-empty read and write sets."""
-        tr = Transaction({object(), object()}, {object()}, 77)
+        tr = Transaction({1, 2}, {3}, 77)
         self._validate_transactions(tr.time, {tr})
 
     def test_03(self):
         """Two independent transactions running serially."""
-        tr1 = Transaction({object()}, {object()}, 12)
-        tr2 = Transaction({object()}, {object()}, 23)
+        tr1 = Transaction({1}, {2}, 12)
+        tr2 = Transaction({3}, {4}, 23)
         expected = tr1.time + tr2.time
         self._validate_transactions(expected, {tr1, tr2})
 
     def test_04(self):
         """Two independent transactions running concurrently."""
-        tr1 = Transaction({object()}, {object()}, 12)
-        tr2 = Transaction({object()}, {object()}, 23)
+        tr1 = Transaction({1}, {2}, 12)
+        tr2 = Transaction({3}, {4}, 23)
         expected = max(tr1.time, tr2.time)
         self._validate_transactions(expected, {tr1, tr2}, n_cores=2)
 
     def test_05(self):
         """Two transactions reading the same object."""
-        obj = object()
-        tr1 = Transaction({obj, object()}, {object()}, 31)
-        tr2 = Transaction({obj, object()}, {object()}, 26)
+        tr1 = Transaction({1, 2}, {3}, 31)
+        tr2 = Transaction({1, 4}, {5}, 26)
         expected = max(tr1.time, tr2.time)
         self._validate_transactions(expected, {tr1, tr2}, n_cores=2)
 
     def test_06(self):
         """Two transactions writing the same object."""
-        obj = object()
-        tr1 = Transaction({object(), object()}, {obj, object()}, 31)
-        tr2 = Transaction({object()}, {obj}, 26)
+        tr1 = Transaction({1, 2}, {3, 4}, 31)
+        tr2 = Transaction({5}, {3}, 26)
         expected = tr1.time + tr2.time
         self._validate_transactions(expected, {tr1, tr2}, n_cores=2)
 

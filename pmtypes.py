@@ -25,7 +25,7 @@ class Transaction:
         return instance
 
     def __init__(
-        self, read_set: AbstractSet[object], write_set: AbstractSet[object], time: int
+        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int
     ) -> None:
         """Create a transaction.
 
@@ -55,8 +55,8 @@ class TransactionSet(MutableSet[Transaction]):
     def __init__(self, transactions: Iterable[Transaction] = ()):
         """Create a new set."""
         self.transactions: Set[Transaction] = set()
-        self.read_set: Set[object] = set()
-        self.write_set: Set[object] = set()
+        self.read_set: Set[int] = set()
+        self.write_set: Set[int] = set()
         for t in transactions:
             self.add(t)
 
