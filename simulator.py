@@ -14,7 +14,7 @@ class Simulator:
         transactions: Iterable[Transaction],
         scheduler: TransactionScheduler,
         executor: TransactionExecutor,
-        pool_size: int,
+        pool_size: int = None,
     ) -> None:
         """Create a new simulator.
 

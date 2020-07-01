@@ -10,7 +10,7 @@ from pmtypes import Core, Transaction
 class RandomExecutor(TransactionExecutor):
     """Chooses a random queued transaction to be scheduled on each step."""
 
-    def __init__(self, n_cores: int) -> None:
+    def __init__(self, n_cores: int = 1) -> None:
         """Create new executor.
 
         Arguments:

@@ -16,7 +16,7 @@ class RandomFactory(TransactionFactory):
         tr_types: Iterable[Mapping[str, int]],
         tr_count: int,
         gen_count: int = 1,
-        s: int = 1,
+        s_param: int = 0,
     ) -> None:
         """Create a new generator for `Transaction`s.
 
@@ -32,10 +32,10 @@ class RandomFactory(TransactionFactory):
                 "time": transaction time
             tr_count: total number of transactions needed per run
             gen_count: number of runs
-            s: parameter of the Zipf's law distribution
+            s_param: parameter of the Zipf's law distribution
         """
         self.objects = [object() for _ in range(memory_size)]
-        zipf_weights = [1 / (i + 1) ** s for i in range(memory_size)]
+        zipf_weights = [1 / (i + 1) ** s_param for i in range(memory_size)]
         self.tr_types = tuple(dict(cfg) for cfg in tr_types)
         total_weight = sum(tr["weight"] for tr in self.tr_types)
         n_total_objects = 0

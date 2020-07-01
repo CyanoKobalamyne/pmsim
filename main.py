@@ -24,18 +24,18 @@ def _main() -> None:
     )
     parser.add_argument("n", help="total number of transactions", type=int)
     parser.add_argument(
-        "-m", "--memsize", help="memory size (# of objects)", default=1000, type=int
+        "-m", "--memsize", help="memory size (# of objects)", default=1024, type=int
     )
     parser.add_argument("-p", "--poolsize", help="size of scheduling pool", type=int)
     parser.add_argument(
         "-e",
-        "--schedule",
+        "--schedule-per-round",
         help="number of transactions to schedule in one round",
         type=int,
         default=1,
     )
     parser.add_argument(
-        "-s", help="parameter of the Zipf's law distribution", default=1, type=float
+        "-s", help="parameter of the Zipf's law distribution", default=0, type=float
     )
     parser.add_argument(
         "-r",
@@ -82,8 +82,8 @@ def _main() -> None:
         f"- transactions: {args.n}\n"
         f"- [m]emory size: {args.memsize}\n"
         f"- scheduling [p]ool size: {args.poolsize or 'infinite'}\n"
-        f"- concurr[e]ntly scheduled transactions: {args.schedule}\n"
-        f"- object di[s]tribution parameter: {args.s:.2f}\n"
+        f"- concurr[e]ntly scheduled transactions: {args.schedule_per_round}\n"
+        f"- object address di[s]tribution parameter (Zipf): {args.s:.2f}\n"
     )
     print(" " * col1_width + title)
     print(header_template.format(col1_header, *core_counts))
@@ -98,9 +98,7 @@ def _main() -> None:
             results: List[int] = []
             for _ in range(args.repeats):
                 transactions = tr_gen()
-                scheduler = ConstantTimeScheduler(
-                    sched_time, n_transactions=args.schedule
-                )
+                scheduler = ConstantTimeScheduler(sched_time, args.schedule_per_round)
                 executor = RandomExecutor(core_count)
                 sim = Simulator(transactions, scheduler, executor, args.poolsize)
                 results.append(sim.run())
