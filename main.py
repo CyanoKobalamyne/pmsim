@@ -90,7 +90,7 @@ def _main() -> None:
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     n_runs = len(sched_times) * len(core_counts) * args.repeats
-    tr_gen = RandomFactory(args.memsize, tr_types, args.n, n_runs, args.s)
+    tr_gen = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
 
     for sched_time in sched_times:
         throughputs: List[float] = []

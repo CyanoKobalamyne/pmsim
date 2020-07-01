@@ -13,7 +13,7 @@ class RandomFactory(TransactionFactory):
     def __init__(
         self,
         memory_size: int,
-        tr_types: Mapping[str, Mapping[str, int]],
+        tr_types: Iterable[Mapping[str, int]],
         tr_count: int,
         gen_count: int = 1,
         s: int = 1,
@@ -26,8 +26,7 @@ class RandomFactory(TransactionFactory):
         Arguments:
             memory_size: size of the pool from which objects in the read and
                          write sets are selected
-            tr_types: a mapping from transaction type names to configurations. Each
-                      configuration is a mapping with the following entries:
+            tr_types: transaction configurations, mappings with the following entries:
                 "read": size of the read set
                 "write": size of the write set
                 "time": transaction time
@@ -37,11 +36,11 @@ class RandomFactory(TransactionFactory):
         """
         self.objects = [object() for _ in range(memory_size)]
         zipf_weights = [1 / (i + 1) ** s for i in range(memory_size)]
-        self.tr_types = dict(tr_types)
-        total_weight = sum(tr["weight"] for tr in self.tr_types.values())
+        self.tr_types = tuple(tr_types)
+        total_weight = sum(tr["weight"] for tr in self.tr_types)
         n_total_objects = 0
         self.total_tr_time = 0
-        for tr in self.tr_types.values():
+        for tr in self.tr_types:
             tr["N"] = int(round(tr_count * tr["weight"] / total_weight))
             n_total_objects += tr["N"] * (tr["reads"] + tr["writes"])
             self.total_tr_time += tr["N"] * tr["time"]
@@ -54,7 +53,7 @@ class RandomFactory(TransactionFactory):
     def __call__(self) -> Iterable[Transaction]:
         """See TransactionGenerator.__call__."""
         tr_data: List[Mapping[str, int]] = []
-        for type_ in self.tr_types.values():
+        for type_ in self.tr_types:
             tr_data.extend(type_ for i in range(type_["N"]))
         random.shuffle(tr_data)
         for d in tr_data:
