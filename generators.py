@@ -1,7 +1,7 @@
 """Classes that generate transactions for Puppetmaster."""
 
 import random
-from typing import Generator, Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List, Mapping
 
 from model import TransactionFactory
 from pmtypes import Transaction
@@ -50,7 +50,7 @@ class RandomFactory(TransactionFactory):
         )
         self.last_used = 0
 
-    def __call__(self) -> Generator[Transaction, None, None]:
+    def __call__(self) -> Iterator[Transaction]:
         """See TransactionGenerator.__call__."""
         return self.TrGenerator(self)
 
