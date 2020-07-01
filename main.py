@@ -5,6 +5,7 @@ import json
 import os
 import random
 import statistics
+from typing import Dict, List
 
 from executors import RandomExecutor
 from generators import RandomFactory
@@ -12,7 +13,7 @@ from schedulers import ConstantTimeScheduler
 from simulator import Simulator
 
 
-def _main():
+def _main() -> None:
     random.seed(0)
 
     parser = ArgumentParser(
@@ -87,14 +88,14 @@ def _main():
     print(" " * col1_width + title)
     print(header_template.format(col1_header, *core_counts))
 
-    tr_types = json.load(args.template)
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     n_runs = len(sched_times) * len(core_counts) * args.repeats
     tr_gen = RandomFactory(args.memsize, tr_types, args.n, n_runs, args.s)
 
     for sched_time in sched_times:
-        throughputs = []
+        throughputs: List[float] = []
         for core_count in core_counts:
-            results = []
+            results: List[int] = []
             for _ in range(args.repeats):
                 transactions = tr_gen()
                 scheduler = ConstantTimeScheduler(

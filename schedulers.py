@@ -1,13 +1,15 @@
 """Scheduler implementations."""
 
+from typing import Iterable
+
 from model import TransactionScheduler
-from pmtypes import TransactionSet
+from pmtypes import Transaction, TransactionSet
 
 
 class ConstantTimeScheduler(TransactionScheduler):
     """Implementation of a simple scheduler."""
 
-    def __init__(self, scheduling_time=0, n_transactions=1):
+    def __init__(self, scheduling_time: int = 0, n_transactions: int = 1):
         """Initialize a new scheduler.
 
         Arguments:
@@ -19,7 +21,9 @@ class ConstantTimeScheduler(TransactionScheduler):
         self.n = n_transactions
         self._clock = 0
 
-    def run(self, pending, ongoing):
+    def run(
+        self, pending: Iterable[Transaction], ongoing: Iterable[Transaction]
+    ) -> TransactionSet:
         """See TransacionScheduler.run."""
         # Filter out candidates compatible with ongoing.
         ongoing = TransactionSet(ongoing)
@@ -33,11 +37,11 @@ class ConstantTimeScheduler(TransactionScheduler):
         return candidates
 
     @property
-    def clock(self):
+    def clock(self) -> int:
         """See TimedComponent.clock."""
         return self._clock
 
     @clock.setter
-    def clock(self, value):
+    def clock(self, value: int) -> None:
         """See TimedComponent.set_clock."""
         self._clock = max(self._clock, value)

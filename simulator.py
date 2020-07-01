@@ -1,10 +1,21 @@
 """Main Puppetmaster simulator class."""
 
+from typing import Iterable, MutableSet, Set
+
+from model import TransactionExecutor, TransactionScheduler
+from pmtypes import Transaction
+
 
 class Simulator:
     """Simulates executing a set of transactions."""
 
-    def __init__(self, transactions, scheduler, executor, pool_size):
+    def __init__(
+        self,
+        transactions: Iterable[Transaction],
+        scheduler: TransactionScheduler,
+        executor: TransactionExecutor,
+        pool_size: int,
+    ) -> None:
         """Create a new simulator.
 
         Arguments:
@@ -20,15 +31,15 @@ class Simulator:
         self.executor = executor
         self.poolsize = pool_size
 
-    def run(self):
+    def run(self) -> int:
         """Simulate execution of a set of transactions on this machine.
 
         Returns:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        self.pending = set()
-        scheduled = set()
+        self.pending: Set[Transaction] = set()
+        scheduled: MutableSet[Transaction] = set()
         self.is_tr_left = True
         while self.is_tr_left or self.pending or scheduled or self.executor.is_busy:
             running = self.executor.running
@@ -56,7 +67,7 @@ class Simulator:
 
         return self.executor.clock
 
-    def _fill_pool(self):
+    def _fill_pool(self) -> None:
         """Fill up the scheduling pool."""
         while self.poolsize is None or len(self.pending) < self.poolsize:
             try:

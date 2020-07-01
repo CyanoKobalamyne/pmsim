@@ -1,6 +1,7 @@
 """Classes that generate transactions for Puppetmaster."""
 
 import random
+from typing import Iterable, List, Mapping
 
 from model import TransactionFactory
 from pmtypes import Transaction
@@ -9,7 +10,14 @@ from pmtypes import Transaction
 class RandomFactory(TransactionFactory):
     """Generates new transactions based on a parametrized distribution."""
 
-    def __init__(self, memory_size, tr_types, tr_count, gen_count=1, s=1):
+    def __init__(
+        self,
+        memory_size: int,
+        tr_types: Mapping[str, Mapping[str, int]],
+        tr_count: int,
+        gen_count: int = 1,
+        s: int = 1,
+    ) -> None:
         """Create a new generator for `Transaction`s.
 
         A pool of objects with size `memory_size` is created, and the read and
@@ -18,8 +26,8 @@ class RandomFactory(TransactionFactory):
         Arguments:
             memory_size: size of the pool from which objects in the read and
                          write sets are selected
-            tr_types: a list of distinct transaction configurations. Each dictionary
-                      should contain the following entries:
+            tr_types: a mapping from transaction type names to configurations. Each
+                      configuration is a mapping with the following entries:
                 "read": size of the read set
                 "write": size of the write set
                 "time": transaction time
@@ -43,9 +51,9 @@ class RandomFactory(TransactionFactory):
         )
         self.last_used = 0
 
-    def __call__(self):
+    def __call__(self) -> Iterable[Transaction]:
         """See TransactionGenerator.__call__."""
-        tr_data = []
+        tr_data: List[Mapping[str, int]] = []
         for type_ in self.tr_types.values():
             tr_data.extend(type_ for i in range(type_["N"]))
         random.shuffle(tr_data)
@@ -56,7 +64,7 @@ class RandomFactory(TransactionFactory):
                 obj = next(iter(tr.write_set))
                 self.swap_most_popular(obj)
 
-    def get_next(self, tr_conf):
+    def get_next(self, tr_conf: Mapping[str, int]) -> Transaction:
         """Return next transaction with the given configuration."""
         if len(self.indices) <= self.last_used:
             raise RuntimeError(
@@ -72,11 +80,11 @@ class RandomFactory(TransactionFactory):
         return Transaction(read_set, write_set, tr_conf["time"])
 
     @property
-    def total_time(self):
+    def total_time(self) -> int:
         """See TransactionGenerator.total_time."""
         return self.total_tr_time
 
-    def swap_most_popular(self, obj):
+    def swap_most_popular(self, obj: object) -> None:
         """Swap `obj` with the most popular object in the distribution."""
         if self.objects[0] is not obj:
             i = self.objects.index(obj)
