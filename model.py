@@ -62,6 +62,8 @@ class TransactionScheduler(TimedComponent, ABC):
 class TransactionExecutor(TimedComponent, ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
 
+    is_busy: bool
+
     @abstractmethod
     def push(self, scheduled: MutableSet[Transaction]) -> None:
         """Choose transaction(s) to execute from scheduled set.
