@@ -1,6 +1,6 @@
 """Helper classes for factories that generate transactions."""
 
-from typing import Iterator, Mapping, Sequence
+from typing import Iterable, Iterator, Mapping, Sequence
 
 from pmtypes import Transaction
 
@@ -9,7 +9,7 @@ class TransactionGenerator(Iterator[Transaction]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_data: Sequence[Mapping[str, int]], addresses: Sequence[int]
+        self, tr_data: Iterable[Mapping[str, int]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -21,7 +21,7 @@ class TransactionGenerator(Iterator[Transaction]):
             addresses: addresses available for transactions (assigned sequentially)
         """
         self.addresses = addresses
-        self.tr_data = tr_data
+        self.tr_data = list(tr_data)
         self.index = 0
         self.address_index = 0
 
