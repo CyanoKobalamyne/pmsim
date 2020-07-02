@@ -36,8 +36,6 @@ class TransactionGenerator(Iterator[Transaction]):
         read_end = write_start = self.address_index
         self.address_index += tr_conf["writes"]
         write_end = self.address_index
-        if self.address_index > len(self.addresses):
-            raise RuntimeError("not enough addresses available")
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
         return Transaction(read_set, write_set, tr_conf["time"])

@@ -57,6 +57,8 @@ class RandomFactory(TransactionFactory):
 
     def __call__(self) -> Iterator[Transaction]:
         """See TransactionFactory.__call__."""
+        if self.gen_index == self.gen_count:
+            raise ValueError("number of generators exceeded.")
         random.shuffle(self.tr_data)
         addr_start = self.obj_count * self.gen_index
         self.gen_index += 1
