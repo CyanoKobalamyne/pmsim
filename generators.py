@@ -20,17 +20,17 @@ class TransactionGenerator(Iterator[Transaction]):
                 "time": transaction time
             addresses: addresses available for transactions (assigned sequentially)
         """
-        self.addresses = addresses
         self.tr_data = list(tr_data)
-        self.index = 0
+        self.addresses = addresses
+        self.tr_index = 0
         self.address_index = 0
 
     def __next__(self) -> Transaction:
         """Return next transaction."""
-        if self.index == len(self.tr_data):
+        if self.tr_index == len(self.tr_data):
             raise StopIteration
-        tr_conf = self.tr_data[self.index]
-        self.index += 1
+        tr_conf = self.tr_data[self.tr_index]
+        self.tr_index += 1
         read_start = self.address_index
         self.address_index += tr_conf["reads"]
         read_end = write_start = self.address_index
