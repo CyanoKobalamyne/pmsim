@@ -55,8 +55,8 @@ class RandomFactory(TransactionFactory):
         self.gen_count = gen_count
         self.gen_index = 0
 
-    def __call__(self) -> Iterator[Transaction]:
-        """See TransactionFactory.__call__."""
+    def __iter__(self) -> Iterator[Transaction]:
+        """Create a new iterator of transactions."""
         if self.gen_index == self.gen_count:
             raise ValueError("number of generators exceeded.")
         random.shuffle(self.tr_data)
@@ -65,6 +65,10 @@ class RandomFactory(TransactionFactory):
         addr_end = self.obj_count * self.gen_index
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
         return TransactionGenerator(self.tr_data, addresses)
+
+    def __len__(self):
+        """Return the number of transactions per iterator."""
+        return len(self.tr_data)
 
     @property
     def total_time(self) -> int:

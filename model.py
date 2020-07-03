@@ -1,7 +1,7 @@
 """Abstractions used in the simulator."""
 
 from abc import ABC, abstractmethod
-from typing import Iterable, MutableSet
+from typing import Iterable, MutableSet, Sized
 
 from pmtypes import Transaction
 
@@ -22,15 +22,8 @@ class TimedComponent(ABC):
         """
 
 
-class TransactionFactory(ABC):
+class TransactionFactory(Iterable[Transaction], Sized, ABC):
     """Factory for generators of transactions."""
-
-    @abstractmethod
-    def __call__(self) -> Iterable[Transaction]:
-        """Return an object that yields new transactions.
-
-        The number and properties of transactions are determined upon construction.
-        """
 
     @property
     @abstractmethod

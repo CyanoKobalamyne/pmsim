@@ -1,6 +1,6 @@
 """Main Puppetmaster simulator class."""
 
-from typing import Iterable, MutableSet, Set
+from typing import Iterator, MutableSet, Set
 
 from model import TransactionExecutor, TransactionScheduler
 from pmtypes import Transaction
@@ -11,7 +11,7 @@ class Simulator:
 
     def __init__(
         self,
-        transactions: Iterable[Transaction],
+        transactions: Iterator[Transaction],
         scheduler: TransactionScheduler,
         executor: TransactionExecutor,
         pool_size: int = None,
@@ -26,7 +26,7 @@ class Simulator:
                              simultaneously (all of them if None)
 
         """
-        self.transactions = iter(transactions)
+        self.transactions = transactions
         self.scheduler = scheduler
         self.executor = executor
         self.poolsize = pool_size

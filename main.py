@@ -87,7 +87,7 @@ def _main() -> None:
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     n_runs = len(sched_times) * len(core_counts) * args.repeats * 3
-    tr_gen = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
+    tr_factory = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
 
     print(
         "Constant-time randomized scheduler\n"
@@ -100,12 +100,12 @@ def _main() -> None:
         for core_count in core_counts:
             results: List[int] = []
             for _ in range(args.repeats):
-                transactions = tr_gen()
+                transactions = iter(tr_factory)
                 scheduler_1 = ConstantTimeScheduler(sched_time, args.schedule_per_round)
                 executor = RandomExecutor(core_count)
                 sim = Simulator(transactions, scheduler_1, executor, args.poolsize)
                 results.append(sim.run())
-            throughputs.append(tr_gen.total_time / statistics.mean(results))
+            throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
     print("")
 
@@ -117,12 +117,12 @@ def _main() -> None:
         for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
-                transactions = tr_gen()
+                transactions = iter(tr_factory)
                 scheduler_2 = TournamentScheduler(sched_time, is_pipelined=True)
                 executor = RandomExecutor(core_count)
                 sim = Simulator(transactions, scheduler_2, executor, args.poolsize)
                 results.append(sim.run())
-            throughputs.append(tr_gen.total_time / statistics.mean(results))
+            throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
     print("")
 
@@ -134,12 +134,12 @@ def _main() -> None:
         for core_count in core_counts:
             results = []
             for _ in range(args.repeats):
-                transactions = tr_gen()
+                transactions = iter(tr_factory)
                 scheduler_3 = TournamentScheduler(sched_time, is_pipelined=False)
                 executor = RandomExecutor(core_count)
                 sim = Simulator(transactions, scheduler_3, executor, args.poolsize)
                 results.append(sim.run())
-            throughputs.append(tr_gen.total_time / statistics.mean(results))
+            throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
 
 
