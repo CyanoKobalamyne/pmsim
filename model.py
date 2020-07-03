@@ -41,6 +41,10 @@ class TransactionFactory(ABC):
 class TransactionScheduler(TimedComponent, ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
+    def __init__(self):
+        """Perform common initialization."""
+        self._clock = 0
+
     @abstractmethod
     def run(
         self, pending: Iterable[Transaction], ongoing: Iterable[Transaction]
@@ -56,6 +60,16 @@ class TransactionScheduler(TimedComponent, ABC):
             ones without conflicts
 
         """
+
+    @property
+    def clock(self) -> int:
+        """See TimedComponent.clock."""
+        return self._clock
+
+    @clock.setter
+    def clock(self, value: int) -> None:
+        """See TimedComponent.set_clock."""
+        self._clock = max(self._clock, value)
 
 
 class TransactionExecutor(TimedComponent, ABC):

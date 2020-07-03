@@ -19,9 +19,9 @@ class ConstantTimeScheduler(TransactionScheduler):
             n_transactions: maximum number of transactions returned by the scheduler,
                             unlimited if None
         """
+        super().__init__()
         self.scheduling_time = scheduling_time
         self.n = n_transactions
-        self._clock = 0
 
     def run(
         self, pending: Iterable[Transaction], ongoing: Iterable[Transaction]
@@ -38,16 +38,6 @@ class ConstantTimeScheduler(TransactionScheduler):
         self._clock += self.scheduling_time
         return candidates
 
-    @property
-    def clock(self) -> int:
-        """See TimedComponent.clock."""
-        return self._clock
-
-    @clock.setter
-    def clock(self, value: int) -> None:
-        """See TimedComponent.set_clock."""
-        self._clock = max(self._clock, value)
-
 
 class TournamentScheduler(TransactionScheduler):
     """Implementation of a "tournament" scheduler."""
@@ -59,9 +49,9 @@ class TournamentScheduler(TransactionScheduler):
             cycles_per_merge: time it takes to perform one "merge" operation in hardware
             is_pipelined: whether scheduling time depends on the number of merge steps
         """
+        super().__init__()
         self.cycles_per_merge = cycles_per_merge
         self.is_pipelined = is_pipelined
-        self._clock = 0
 
     def run(
         self, pending: Iterable[Transaction], ongoing: Iterable[Transaction]
@@ -84,13 +74,3 @@ class TournamentScheduler(TransactionScheduler):
             rounds += 1
         self._clock += self.cycles_per_merge * (1 if self.is_pipelined else rounds)
         return candidates[0] if candidates else TransactionSet()
-
-    @property
-    def clock(self) -> int:
-        """See TimedComponent.clock."""
-        return self._clock
-
-    @clock.setter
-    def clock(self, value: int) -> None:
-        """See TimedComponent.set_clock."""
-        self._clock = max(self._clock, value)
