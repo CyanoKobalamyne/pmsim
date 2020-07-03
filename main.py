@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from executors import RandomExecutor
 from factories import RandomFactory
-from schedulers import ConstantTimeScheduler
+from schedulers import ConstantTimeScheduler, TournamentScheduler
 from simulator import Simulator
 
 
@@ -66,7 +66,7 @@ def _main() -> None:
     col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
     precision = 5
-    col_width = max(len(f"{10:.{precision}f}"), len(str(core_counts[-1])))
+    col_width = max(len(f"{100:.{precision}f}"), len(str(core_counts[-1])))
     cols_header_template = "".join(
         f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
     )
@@ -82,25 +82,62 @@ def _main() -> None:
         f"- transactions: {args.n}\n"
         f"- [m]emory size: {args.memsize}\n"
         f"- scheduling [p]ool size: {args.poolsize or 'infinite'}\n"
-        f"- concurr[e]ntly scheduled transactions: {args.schedule_per_round}\n"
         f"- object address di[s]tribution parameter (Zipf): {args.s:.2f}\n"
+    )
+
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    n_runs = len(sched_times) * len(core_counts) * args.repeats * 3
+    tr_gen = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
+
+    print(
+        "Constant-time randomized scheduler\n"
+        f"- concurr[e]ntly scheduled transactions: {args.schedule_per_round}\n"
     )
     print(" " * col1_width + title)
     print(header_template.format(col1_header, *core_counts))
-
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    n_runs = len(sched_times) * len(core_counts) * args.repeats
-    tr_gen = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
-
     for sched_time in sched_times:
         throughputs: List[float] = []
         for core_count in core_counts:
             results: List[int] = []
             for _ in range(args.repeats):
                 transactions = tr_gen()
-                scheduler = ConstantTimeScheduler(sched_time, args.schedule_per_round)
+                scheduler_1 = ConstantTimeScheduler(sched_time, args.schedule_per_round)
                 executor = RandomExecutor(core_count)
-                sim = Simulator(transactions, scheduler, executor, args.poolsize)
+                sim = Simulator(transactions, scheduler_1, executor, args.poolsize)
+                results.append(sim.run())
+            throughputs.append(tr_gen.total_time / statistics.mean(results))
+        print(body_template.format(f"{sched_time}", *throughputs))
+    print("")
+
+    print("Tournament scheduler (pipelined)\n")
+    print(" " * col1_width + title)
+    print(header_template.format(col1_header, *core_counts))
+    for sched_time in sched_times:
+        throughputs = []
+        for core_count in core_counts:
+            results = []
+            for _ in range(args.repeats):
+                transactions = tr_gen()
+                scheduler_2 = TournamentScheduler(sched_time, is_pipelined=True)
+                executor = RandomExecutor(core_count)
+                sim = Simulator(transactions, scheduler_2, executor, args.poolsize)
+                results.append(sim.run())
+            throughputs.append(tr_gen.total_time / statistics.mean(results))
+        print(body_template.format(f"{sched_time}", *throughputs))
+    print("")
+
+    print("Tournament scheduler (non-pipelined)\n")
+    print(" " * col1_width + title)
+    print(header_template.format(col1_header, *core_counts))
+    for sched_time in sched_times:
+        throughputs = []
+        for core_count in core_counts:
+            results = []
+            for _ in range(args.repeats):
+                transactions = tr_gen()
+                scheduler_3 = TournamentScheduler(sched_time, is_pipelined=False)
+                executor = RandomExecutor(core_count)
+                sim = Simulator(transactions, scheduler_3, executor, args.poolsize)
                 results.append(sim.run())
             throughputs.append(tr_gen.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
