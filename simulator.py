@@ -40,8 +40,7 @@ class Simulator:
         """
         self.pending: Set[Transaction] = set()
         scheduled: MutableSet[Transaction] = set()
-        self.is_tr_left = True
-        while self.is_tr_left or self.pending or scheduled or self.executor.is_busy:
+        while self.transactions or self.pending or scheduled or self.executor.is_busy:
             running = self.executor.running
             if not scheduled and self.scheduler.clock <= self.executor.clock:
                 # Fill up pending pool.
@@ -73,5 +72,4 @@ class Simulator:
             try:
                 self.pending.add(next(self.transactions))
             except StopIteration:
-                self.is_tr_left = False
                 break

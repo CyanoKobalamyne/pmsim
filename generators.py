@@ -27,7 +27,7 @@ class TransactionGenerator(Iterator[Transaction]):
 
     def __next__(self) -> Transaction:
         """Return next transaction."""
-        if self.tr_index == len(self.tr_data):
+        if not self:
             raise StopIteration
         tr_conf = self.tr_data[self.tr_index]
         self.tr_index += 1
@@ -39,3 +39,7 @@ class TransactionGenerator(Iterator[Transaction]):
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
         return Transaction(read_set, write_set, tr_conf["time"])
+
+    def __bool__(self) -> bool:
+        """Return true if there are transactions left."""
+        return self.tr_index != len(self.tr_data)
