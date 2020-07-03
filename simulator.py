@@ -1,9 +1,9 @@
 """Main Puppetmaster simulator class."""
 
-from typing import Iterator, MutableSet, Set
+from typing import Iterator
 
 from model import TransactionExecutor, TransactionScheduler
-from pmtypes import Transaction
+from pmtypes import MachineState, Transaction
 
 
 class Simulator:
@@ -38,22 +38,26 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        self.pending: Set[Transaction] = set()
-        scheduled: MutableSet[Transaction] = set()
-        while self.transactions or self.pending or scheduled or self.executor.is_busy:
+        self.state = MachineState()
+        while (
+            self.transactions
+            or self.state.pending
+            or self.state.scheduled
+            or self.executor.is_busy
+        ):
             running = self.executor.running
-            if not scheduled and self.scheduler.clock <= self.executor.clock:
+            if not self.state.scheduled and self.scheduler.clock <= self.executor.clock:
                 # Fill up pending pool.
                 self._fill_pool()
                 # Try scheduling a batch of new transactions.
-                scheduled = self.scheduler.run(self.pending, running)
-                self.pending -= scheduled
-            if self.executor.has_free_cores() and scheduled:
+                self.state.scheduled = self.scheduler.run(self.state.pending, running)
+                self.state.pending -= self.state.scheduled
+            if self.executor.has_free_cores() and self.state.scheduled:
                 # If the executor was idle while the scheduler was working,
                 # move its clock forward.
                 self.executor.clock = self.scheduler.clock
                 # Execute a scheduled transaction.
-                self.executor.push(scheduled)
+                self.executor.push(self.state.scheduled)
             else:
                 # Remove first finished transaction.
                 finish = self.executor.pop()
@@ -68,8 +72,8 @@ class Simulator:
 
     def _fill_pool(self) -> None:
         """Fill up the scheduling pool."""
-        while self.poolsize is None or len(self.pending) < self.poolsize:
+        while self.poolsize is None or len(self.state.pending) < self.poolsize:
             try:
-                self.pending.add(next(self.transactions))
+                self.state.pending.add(next(self.transactions))
             except StopIteration:
                 break

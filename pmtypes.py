@@ -1,6 +1,6 @@
 """Data and container types used in Puppetmaster."""
 
-from dataclasses import dataclass
+import dataclasses
 from typing import Iterable, Iterator, MutableSet, Optional, Set
 
 
@@ -89,7 +89,7 @@ class TransactionSet(MutableSet[Transaction]):
         return True
 
 
-@dataclass
+@dataclasses.dataclass
 class Core:
     """Component executing a single transaction.
 
@@ -102,3 +102,11 @@ class Core:
 
     clock: int = 0
     transaction: Optional[Transaction] = None
+
+
+@dataclasses.dataclass
+class MachineState:
+    """Represents the full state of the machine. Useful for state space search."""
+
+    pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
+    scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
