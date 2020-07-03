@@ -69,7 +69,7 @@ class TournamentScheduler(TransactionScheduler):
         while len(candidates) > 1:
             for t1, t2 in itertools.zip_longest(candidates[::2], candidates[1::2]):
                 if t2 is not None and t1.compatible(t2):
-                    t1.add(t2)
+                    t1 |= t2
             candidates = candidates[::2]
             rounds += 1
         self._clock += self.cycles_per_merge * (1 if self.is_pipelined else rounds)
