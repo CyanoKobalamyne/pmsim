@@ -48,27 +48,27 @@ class Simulator:
             or self.state.scheduled
             or self.state.is_busy
         ):
-            running = self.executor.running(self.state)
-            if (
-                not self.state.scheduled
-                and self.scheduler.clock <= self.executor.get_clock(self.state)
+            transactions = [core.transaction for core in self.state.cores]
+            running = [tr for tr in transactions if tr is not None]
+            free_cores = [core for core in self.state.cores if core.transaction is None]
+            if not self.state.scheduled and self.scheduler.clock <= min(
+                core.clock for core in self.state.cores
             ):
                 # Fill up pending pool.
                 self._fill_pool()
                 # Try scheduling a batch of new transactions.
                 self.state.scheduled = self.scheduler.run(self.state.pending, running)
                 self.state.pending -= self.state.scheduled
-            if self.executor.has_free_cores(self.state) and self.state.scheduled:
+            if free_cores and self.state.scheduled:
                 # If the executor was idle while the scheduler was working,
                 # move its clock forward.
-                self.executor.set_clock(self.state, self.scheduler.clock)
+                for core in self.state.cores:
+                    if core.transaction is None and core.clock < self.scheduler.clock:
+                        core.clock = self.scheduler.clock
                 # Execute a scheduled transaction.
                 self.executor.push(self.state)
             else:
                 # Remove first finished transaction.
-                free_cores = [
-                    core for core in self.state.cores if core.transaction is None
-                ]
                 busy_cores = [
                     core for core in self.state.cores if core.transaction is not None
                 ]
@@ -84,9 +84,11 @@ class Simulator:
                 self.scheduler.clock = finish
                 # If the free cores are running behind the scheduler, move their clocks
                 # forward.
-                self.executor.set_clock(self.state, self.scheduler.clock)
+                for core in self.state.cores:
+                    if core.transaction is None and core.clock < self.scheduler.clock:
+                        core.clock = self.scheduler.clock
 
-        return self.executor.get_clock(self.state)
+        return min(core.clock for core in self.state.cores)
 
     def _fill_pool(self) -> None:
         """Fill up the scheduling pool."""
