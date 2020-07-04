@@ -19,16 +19,3 @@ class RandomExecutor(TransactionExecutor):
         core.transaction = tr
         core.clock += tr.time
         state.is_busy = True
-
-    def pop(self, state: MachineState) -> int:
-        """See TransactionExecutor.pop."""
-        free_cores = [core for core in state.cores if core.transaction is None]
-        busy_cores = [core for core in state.cores if core.transaction is not None]
-        core = min(busy_cores, key=operator.attrgetter("clock"))
-        finish = core.clock
-        core.transaction = None
-        for core in free_cores:
-            core.clock = finish
-        if len(busy_cores) == 1:
-            state.is_busy = False
-        return finish

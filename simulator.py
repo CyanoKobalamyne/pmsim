@@ -1,5 +1,6 @@
 """Main Puppetmaster simulator class."""
 
+import operator
 from typing import Iterator
 
 from model import TransactionExecutor, TransactionScheduler
@@ -65,7 +66,19 @@ class Simulator:
                 self.executor.push(self.state)
             else:
                 # Remove first finished transaction.
-                finish = self.executor.pop(self.state)
+                free_cores = [
+                    core for core in self.state.cores if core.transaction is None
+                ]
+                busy_cores = [
+                    core for core in self.state.cores if core.transaction is not None
+                ]
+                core = min(busy_cores, key=operator.attrgetter("clock"))
+                finish = core.clock
+                core.transaction = None
+                for core in free_cores:
+                    core.clock = finish
+                if len(busy_cores) == 1:
+                    self.state.is_busy = False
                 # If the scheduler was idle until the first core freed up, move its
                 # clock forward.
                 self.scheduler.clock = finish

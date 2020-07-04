@@ -77,14 +77,6 @@ class TransactionExecutor(ABC):
         Removes the transactions executed, if any.
         """
 
-    @abstractmethod
-    def pop(self, state: MachineState) -> int:
-        """Remove the first finished transaction.
-
-        Returns:
-            current clock of core that was just flushed.
-        """
-
     @staticmethod
     def has_free_cores(state: MachineState) -> bool:
         """Return true if there are idle cores."""
