@@ -86,21 +86,24 @@ class TransactionExecutor(ABC):
         """
 
     @staticmethod
-    @abstractmethod
     def has_free_cores(state: MachineState) -> bool:
         """Return true if there are idle cores."""
+        return any(core.transaction is None for core in state.cores)
 
     @staticmethod
-    @abstractmethod
     def running(state: MachineState) -> Iterable[Transaction]:
         """Return list of currently executing transactions."""
+        transactions = [core.transaction for core in state.cores]
+        return [tr for tr in transactions if tr is not None]
 
     @staticmethod
-    @abstractmethod
     def get_clock(state: MachineState) -> int:
         """See TimedComponent.clock."""
+        return min(core.clock for core in state.cores)
 
     @staticmethod
-    @abstractmethod
     def set_clock(state: MachineState, value: int) -> None:
         """See TimedComponent.set_clock."""
+        for core in state.cores:
+            if core.transaction is None and core.clock < value:
+                core.clock = value
