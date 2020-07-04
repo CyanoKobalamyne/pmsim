@@ -10,15 +10,11 @@ from pmtypes import MachineState, Transaction
 class RandomExecutor(TransactionExecutor):
     """Chooses a random queued transaction to be scheduled on each step."""
 
-    def __init__(self) -> None:
-        """Create new executor."""
-        self.clock_fn = operator.attrgetter("clock")
-
     def push(self, state: MachineState) -> None:
         """See TransactionExecutor.push."""
         free_cores = [core for core in state.cores if core.transaction is None]
         # Execute scheduled transaction on first idle core.
-        core = min(free_cores, key=self.clock_fn)
+        core = min(free_cores, key=operator.attrgetter("clock"))
         # Execute one transaction.
         tr = state.scheduled.pop()
         core.transaction = tr
@@ -29,7 +25,7 @@ class RandomExecutor(TransactionExecutor):
         """See TransactionExecutor.pop."""
         free_cores = [core for core in state.cores if core.transaction is None]
         busy_cores = [core for core in state.cores if core.transaction is not None]
-        core = min(busy_cores, key=self.clock_fn)
+        core = min(busy_cores, key=operator.attrgetter("clock"))
         finish = core.clock
         core.transaction = None
         for core in free_cores:
