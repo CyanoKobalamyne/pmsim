@@ -102,8 +102,10 @@ def _main() -> None:
             for _ in range(args.repeats):
                 transactions = iter(tr_factory)
                 scheduler_1 = ConstantTimeScheduler(sched_time, args.schedule_per_round)
-                executor = RandomExecutor(core_count)
-                sim = Simulator(transactions, scheduler_1, executor, args.poolsize)
+                executor = RandomExecutor()
+                sim = Simulator(
+                    transactions, scheduler_1, executor, core_count, args.poolsize
+                )
                 results.append(sim.run())
             throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
@@ -119,8 +121,10 @@ def _main() -> None:
             for _ in range(args.repeats):
                 transactions = iter(tr_factory)
                 scheduler_2 = TournamentScheduler(sched_time, is_pipelined=True)
-                executor = RandomExecutor(core_count)
-                sim = Simulator(transactions, scheduler_2, executor, args.poolsize)
+                executor = RandomExecutor()
+                sim = Simulator(
+                    transactions, scheduler_2, executor, core_count, args.poolsize
+                )
                 results.append(sim.run())
             throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))
@@ -136,8 +140,10 @@ def _main() -> None:
             for _ in range(args.repeats):
                 transactions = iter(tr_factory)
                 scheduler_3 = TournamentScheduler(sched_time, is_pipelined=False)
-                executor = RandomExecutor(core_count)
-                sim = Simulator(transactions, scheduler_3, executor, args.poolsize)
+                executor = RandomExecutor()
+                sim = Simulator(
+                    transactions, scheduler_3, executor, core_count, args.poolsize
+                )
                 results.append(sim.run())
             throughputs.append(tr_factory.total_time / statistics.mean(results))
         print(body_template.format(f"{sched_time}", *throughputs))

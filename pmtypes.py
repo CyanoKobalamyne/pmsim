@@ -1,7 +1,7 @@
 """Data and container types used in Puppetmaster."""
 
 import dataclasses
-from typing import Iterable, Iterator, MutableSet, Optional, Set
+from typing import Iterable, Iterator, MutableSet, Optional, Set, Sequence
 
 
 class Transaction:
@@ -110,3 +110,10 @@ class MachineState:
 
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
+    core_count: dataclasses.InitVar[int] = 1
+    cores: Sequence[Core] = dataclasses.field(default_factory=list)
+    is_busy: bool = False
+
+    def __post_init__(self, core_count, *args, **kwargs):
+        """Perform extra field initialization."""
+        self.cores = [Core() for _ in range(core_count)]

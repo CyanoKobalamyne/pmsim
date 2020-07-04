@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, MutableSet, Sized
 
-from pmtypes import Transaction
+from pmtypes import MachineState, Transaction
 
 
 class TimedComponent(ABC):
@@ -65,31 +65,42 @@ class TransactionScheduler(TimedComponent, ABC):
         self._clock = max(self._clock, value)
 
 
-class TransactionExecutor(TimedComponent, ABC):
+class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
 
     is_busy: bool
 
     @abstractmethod
-    def push(self, scheduled: MutableSet[Transaction]) -> None:
+    def push(self, state: MachineState) -> None:
         """Choose transaction(s) to execute from scheduled set.
 
         Removes the transactions executed, if any.
         """
 
     @abstractmethod
-    def pop(self) -> int:
+    def pop(self, state: MachineState) -> int:
         """Remove the first finished transaction.
 
         Returns:
             current clock of core that was just flushed.
         """
 
+    @staticmethod
     @abstractmethod
-    def has_free_cores(self) -> bool:
+    def has_free_cores(state: MachineState) -> bool:
         """Return true if there are idle cores."""
 
-    @property
+    @staticmethod
     @abstractmethod
-    def running(self) -> Iterable[Transaction]:
+    def running(state: MachineState) -> Iterable[Transaction]:
         """Return list of currently executing transactions."""
+
+    @staticmethod
+    @abstractmethod
+    def get_clock(state: MachineState) -> int:
+        """See TimedComponent.clock."""
+
+    @staticmethod
+    @abstractmethod
+    def set_clock(state: MachineState, value: int) -> None:
+        """See TimedComponent.set_clock."""
