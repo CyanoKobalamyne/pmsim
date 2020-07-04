@@ -60,11 +60,10 @@ class Simulator:
                 self.state.scheduled = self.scheduler.run(self.state.pending, running)
                 self.state.pending -= self.state.scheduled
             if free_cores and self.state.scheduled:
-                # If the executor was idle while the scheduler was working,
-                # move its clock forward.
-                for core in self.state.cores:
-                    if core.transaction is None and core.clock < self.scheduler.clock:
-                        core.clock = self.scheduler.clock
+                # If some core were idle while the scheduler was working,
+                # move their clocks forward.
+                for core in free_cores:
+                    core.clock = max(core.clock, self.scheduler.clock)
                 # Execute a scheduled transaction.
                 self.executor.push(self.state)
             else:
@@ -72,11 +71,9 @@ class Simulator:
                 busy_cores = [
                     core for core in self.state.cores if core.transaction is not None
                 ]
-                core = min(busy_cores, key=operator.attrgetter("clock"))
-                finish = core.clock
-                core.transaction = None
-                for core in free_cores:
-                    core.clock = finish
+                finished_core = min(busy_cores, key=operator.attrgetter("clock"))
+                finish = finished_core.clock
+                finished_core.transaction = None
                 if len(busy_cores) == 1:
                     self.state.is_busy = False
                 # If the scheduler was idle until the first core freed up, move its
@@ -84,9 +81,9 @@ class Simulator:
                 self.scheduler.clock = finish
                 # If the free cores are running behind the scheduler, move their clocks
                 # forward.
-                for core in self.state.cores:
-                    if core.transaction is None and core.clock < self.scheduler.clock:
-                        core.clock = self.scheduler.clock
+                for core in free_cores:
+                    core.clock = self.scheduler.clock
+                finished_core.clock = self.scheduler.clock
 
         return min(core.clock for core in self.state.cores)
 
