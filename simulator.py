@@ -28,11 +28,10 @@ class Simulator:
                              simultaneously (all of them if None)
 
         """
-        self.transactions = transactions
         self.scheduler = scheduler
         self.executor = executor
-        self.core_count = core_count
         self.poolsize = pool_size
+        self.start_state = MachineState(transactions, core_count=core_count)
 
     def run(self) -> int:
         """Simulate execution of a set of transactions on this machine.
@@ -41,7 +40,7 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        state = MachineState(self.transactions, core_count=self.core_count)
+        state = self.start_state
         while state.incoming or state.pending or state.scheduled or state.is_busy:
             free_cores = [core for core in state.cores if core.transaction is None]
             if not state.scheduled and state.scheduler_clock <= min(
