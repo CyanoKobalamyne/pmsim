@@ -112,6 +112,7 @@ class MachineState:
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: dataclasses.InitVar[int] = 1
     cores: Sequence[Core] = dataclasses.field(default_factory=list)
+    scheduler_clock: int = 0
     is_busy: bool = False
 
     def __post_init__(self, core_count, *args, **kwargs):
