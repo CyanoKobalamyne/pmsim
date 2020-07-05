@@ -7,7 +7,7 @@ import random
 import statistics
 from typing import Dict, List
 
-from executors import RandomExecutor
+from executors import FullExecutor, RandomExecutor
 from factories import RandomFactory
 from schedulers import ConstantTimeScheduler, TournamentScheduler
 from simulator import Simulator
@@ -76,7 +76,7 @@ def _main() -> None:
     header_template = col1_template + cols_header_template
     body_template = col1_template + cols_body_template
 
-    def run_sim(sched_cls, sched_args, exec_cls, exec_args):
+    def run_sim(sched_cls, sched_args, exec_cls, exec_args, use_pool=True):
         print(" " * col1_width + title)
         print(header_template.format(col1_header, *core_counts))
         for sched_time in sched_times:
@@ -88,7 +88,11 @@ def _main() -> None:
                     scheduler = sched_cls(sched_time, **sched_args)
                     executor = RandomExecutor(**exec_args)
                     sim = Simulator(
-                        transactions, scheduler, executor, core_count, args.poolsize
+                        transactions,
+                        scheduler,
+                        executor,
+                        core_count,
+                        args.poolsize if use_pool else None,
                     )
                     results.append(sim.run())
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
@@ -104,8 +108,18 @@ def _main() -> None:
     )
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    n_runs = len(sched_times) * len(core_counts) * args.repeats * 3
+    n_runs = len(sched_times) * len(core_counts) * args.repeats * 4
     tr_factory = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
+
+    print("Constant-time optimal scheduler\n")
+    run_sim(
+        ConstantTimeScheduler,
+        {"n_transactions": None},
+        FullExecutor,
+        {},
+        use_pool=False,
+    )
+    print("")
 
     print(
         "Constant-time randomized scheduler\n"
