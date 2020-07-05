@@ -76,6 +76,24 @@ def _main() -> None:
     header_template = col1_template + cols_header_template
     body_template = col1_template + cols_body_template
 
+    def run_sim(sched_cls, sched_args, exec_cls, exec_args):
+        print(" " * col1_width + title)
+        print(header_template.format(col1_header, *core_counts))
+        for sched_time in sched_times:
+            throughputs: List[float] = []
+            for core_count in core_counts:
+                results: List[int] = []
+                for _ in range(args.repeats):
+                    transactions = iter(tr_factory)
+                    scheduler = sched_cls(sched_time, **sched_args)
+                    executor = RandomExecutor(**exec_args)
+                    sim = Simulator(
+                        transactions, scheduler, executor, core_count, args.poolsize
+                    )
+                    results.append(sim.run())
+                throughputs.append(tr_factory.total_time / statistics.mean(results))
+            print(body_template.format(f"{sched_time}", *throughputs))
+
     print(
         f"Parameters:\n"
         f"- template: {os.path.basename(args.template.name)}\n"
@@ -93,60 +111,24 @@ def _main() -> None:
         "Constant-time randomized scheduler\n"
         f"- concurr[e]ntly scheduled transactions: {args.schedule_per_round}\n"
     )
-    print(" " * col1_width + title)
-    print(header_template.format(col1_header, *core_counts))
-    for sched_time in sched_times:
-        throughputs: List[float] = []
-        for core_count in core_counts:
-            results: List[int] = []
-            for _ in range(args.repeats):
-                transactions = iter(tr_factory)
-                scheduler_1 = ConstantTimeScheduler(sched_time, args.schedule_per_round)
-                executor = RandomExecutor()
-                sim = Simulator(
-                    transactions, scheduler_1, executor, core_count, args.poolsize
-                )
-                results.append(sim.run())
-            throughputs.append(tr_factory.total_time / statistics.mean(results))
-        print(body_template.format(f"{sched_time}", *throughputs))
+    run_sim(
+        ConstantTimeScheduler,
+        {"n_transactions": args.schedule_per_round},
+        RandomExecutor,
+        {},
+    )
     print("")
 
     print("Tournament scheduler (pipelined)\n")
-    print(" " * col1_width + title)
-    print(header_template.format(col1_header, *core_counts))
-    for sched_time in sched_times:
-        throughputs = []
-        for core_count in core_counts:
-            results = []
-            for _ in range(args.repeats):
-                transactions = iter(tr_factory)
-                scheduler_2 = TournamentScheduler(sched_time, is_pipelined=True)
-                executor = RandomExecutor()
-                sim = Simulator(
-                    transactions, scheduler_2, executor, core_count, args.poolsize
-                )
-                results.append(sim.run())
-            throughputs.append(tr_factory.total_time / statistics.mean(results))
-        print(body_template.format(f"{sched_time}", *throughputs))
+    run_sim(
+        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
+    )
     print("")
 
     print("Tournament scheduler (non-pipelined)\n")
-    print(" " * col1_width + title)
-    print(header_template.format(col1_header, *core_counts))
-    for sched_time in sched_times:
-        throughputs = []
-        for core_count in core_counts:
-            results = []
-            for _ in range(args.repeats):
-                transactions = iter(tr_factory)
-                scheduler_3 = TournamentScheduler(sched_time, is_pipelined=False)
-                executor = RandomExecutor()
-                sim = Simulator(
-                    transactions, scheduler_3, executor, core_count, args.poolsize
-                )
-                results.append(sim.run())
-            throughputs.append(tr_factory.total_time / statistics.mean(results))
-        print(body_template.format(f"{sched_time}", *throughputs))
+    run_sim(
+        TournamentScheduler, {"is_pipelined": False}, RandomExecutor, {},
+    )
 
 
 if __name__ == "__main__":
