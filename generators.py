@@ -1,5 +1,8 @@
 """Helper classes for factories that generate transactions."""
 
+from __future__ import annotations
+
+import copy
 from typing import Iterable, Iterator, Mapping, Sequence
 
 from pmtypes import Transaction
@@ -58,3 +61,10 @@ class TransactionGenerator(Iterator[Transaction]):
             f"{self.__class__.__name__}(Transaction {self.tr_index}/"
             f"{len(self.tr_data)})"
         )
+
+    def __deepcopy__(self, memo: dict) -> TransactionGenerator:
+        """Make a deep copy of the object.
+
+        Since these generators are immutable, we actually make a shallow copy.
+        """
+        return copy.copy(self)

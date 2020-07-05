@@ -1,5 +1,8 @@
 """Data and container types used in Puppetmaster."""
 
+from __future__ import annotations
+
+import copy
 import dataclasses
 from typing import Iterable, Iterator, MutableSequence, MutableSet, Optional, Set
 
@@ -48,6 +51,13 @@ class Transaction:
     def __str__(self) -> str:
         """Return a user-friendly string representation of this object."""
         return f"{self.__class__.__name__}(id={self.id}, time={self.time})"
+
+    def __deepcopy__(self, memo: dict) -> Transaction:
+        """Make a deep copy of the object.
+
+        Since transactions are immutable, we actually make a shallow copy.
+        """
+        return copy.copy(self)
 
 
 class TransactionSet(MutableSet[Transaction]):
