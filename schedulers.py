@@ -62,19 +62,17 @@ class TournamentScheduler(TransactionScheduler):
         ongoing = TransactionSet(
             core.transaction for core in state.cores if core.transaction is not None
         )
-        candidates = [
-            TransactionSet([tr]) for tr in state.pending if ongoing.compatible(tr)
-        ]
+        sets = [TransactionSet([tr]) for tr in state.pending if ongoing.compatible(tr)]
         rounds = 0
-        while len(candidates) > 1:
-            for t1, t2 in itertools.zip_longest(candidates[::2], candidates[1::2]):
+        while len(sets) > 1:
+            for t1, t2 in itertools.zip_longest(sets[::2], sets[1::2]):
                 if t2 is not None and t1.compatible(t2):
                     t1 |= t2
-            candidates = candidates[::2]
+            sets = sets[::2]
             rounds += 1
         state.scheduler_clock += self.cycles_per_merge * (
             1 if self.is_pipelined else rounds
         )
-        if candidates:
-            state.scheduled = candidates[0]
-            state.pending -= candidates[0]
+        if sets:
+            state.scheduled = sets[0]
+            state.pending -= sets[0]
