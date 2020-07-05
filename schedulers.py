@@ -67,5 +67,5 @@ class TournamentScheduler(TransactionScheduler):
             rounds += 1
         return (
             (sets[0] if sets else TransactionSet()),
-            self.cycles_per_merge * (1 if self.is_pipelined else rounds),
+            self.cycles_per_merge * (1 if self.is_pipelined else max(1, rounds)),
         )
