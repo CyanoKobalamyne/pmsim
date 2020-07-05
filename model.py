@@ -48,8 +48,9 @@ class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
 
     @abstractmethod
-    def run(self, state: MachineState) -> None:
+    def run(self, state: MachineState) -> Iterable[MachineState]:
         """Choose transaction(s) to execute from scheduled set.
 
-        Removes the transactions executed, if any.
+        The input state should not be used by the caller after this method returns,
+        because it might be the same object as one of the returned states.
         """

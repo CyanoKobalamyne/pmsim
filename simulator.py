@@ -1,7 +1,8 @@
 """Main Puppetmaster simulator class."""
 
+import heapq
 import operator
-from typing import Iterator
+from typing import Iterator, List, Tuple
 
 from model import TransactionExecutor, TransactionScheduler
 from pmtypes import MachineState, Transaction
@@ -40,9 +41,18 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        state = self.start_state
-        while state:
+        queue: List[Tuple[int, MachineState]] = []
+        heapq.heappush(queue, (0, self.start_state))
+        while queue:
+            # Get next state off the queue.
+            time, state = heapq.heappop(queue)
+
+            if not state:
+                return time
+
             free_cores = [core for core in state.cores if core.transaction is None]
+
+            # Run scheduler if conditions are satisfied.
             if not state.scheduled and state.scheduler_clock <= min(
                 core.clock for core in state.cores
             ):
@@ -50,13 +60,17 @@ class Simulator:
                 self._fill_pool(state)
                 # Try scheduling a batch of new transactions.
                 self.scheduler.run(state)
+
+            # Compute next states for the execution units.
             if free_cores and state.scheduled:
                 # If some core were idle while the scheduler was working,
                 # move their clocks forward.
                 for core in free_cores:
                     core.clock = max(core.clock, state.scheduler_clock)
                 # Execute a scheduled transaction.
-                self.executor.run(state)
+                for next_state in self.executor.run(state):
+                    next_time = min(c.clock for c in next_state.cores)
+                    heapq.heappush(queue, (next_time, next_state))
             else:
                 # Remove first finished transaction.
                 busy_cores = [
@@ -75,8 +89,9 @@ class Simulator:
                 for core in free_cores:
                     core.clock = state.scheduler_clock
                 finished_core.clock = state.scheduler_clock
+                heapq.heappush(queue, (state.scheduler_clock, state))
 
-        return min(core.clock for core in state.cores)
+        raise RuntimeError  # We should never get here.
 
     def _fill_pool(self, state: MachineState) -> None:
         """Fill up the scheduling pool."""

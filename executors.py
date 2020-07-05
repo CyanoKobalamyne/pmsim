@@ -1,6 +1,7 @@
 """Implementations of the execution policy of Puppetmaster."""
 
 import operator
+from typing import Iterable
 
 from model import TransactionExecutor
 from pmtypes import MachineState
@@ -9,7 +10,7 @@ from pmtypes import MachineState
 class RandomExecutor(TransactionExecutor):
     """Chooses a random queued transaction to be scheduled on each step."""
 
-    def run(self, state: MachineState) -> None:
+    def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
         free_cores = [core for core in state.cores if core.transaction is None]
         # Execute scheduled transaction on first idle core.
@@ -19,3 +20,4 @@ class RandomExecutor(TransactionExecutor):
         core.transaction = tr
         core.clock += tr.time
         state.is_busy = True
+        return [state]
