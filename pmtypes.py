@@ -119,3 +119,7 @@ class MachineState:
     def __post_init__(self, core_count, *args, **kwargs):
         """Perform extra field initialization."""
         self.cores = [Core() for _ in range(core_count)]
+
+    def __bool__(self):
+        """Return true if this is not an end state."""
+        return bool(self.incoming or self.pending or self.scheduled or self.is_busy)

@@ -41,7 +41,7 @@ class Simulator:
 
         """
         state = self.start_state
-        while state.incoming or state.pending or state.scheduled or state.is_busy:
+        while state:
             free_cores = [core for core in state.cores if core.transaction is None]
             if not state.scheduled and state.scheduler_clock <= min(
                 core.clock for core in state.cores
