@@ -1,7 +1,7 @@
 """Data and container types used in Puppetmaster."""
 
 import dataclasses
-from typing import Iterable, Iterator, MutableSet, Optional, Set, Sequence
+from typing import Iterable, Iterator, MutableSequence, MutableSet, Optional, Set
 
 
 class Transaction:
@@ -112,7 +112,7 @@ class MachineState:
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: dataclasses.InitVar[int] = 1
-    cores: Sequence[Core] = dataclasses.field(default_factory=list)
+    cores: MutableSequence[Core] = dataclasses.field(default_factory=list)
     scheduler_clock: int = 0
     is_busy: bool = False
 
