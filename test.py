@@ -1,4 +1,5 @@
 """Unit tests for puppetmaster."""
+from typing import Iterator
 import unittest
 from unittest import TestCase
 
@@ -8,13 +9,32 @@ from schedulers import ConstantTimeScheduler
 from simulator import Simulator
 
 
+class TrIter(Iterator[Transaction]):
+    """Iterator implementing the boolean check that the simulator expects."""
+
+    def __init__(self, transactions):
+        """Create a new iterator."""
+        self.it = iter(transactions)
+        self.length = len(transactions)
+        self.index = 0
+
+    def __next__(self):
+        """Return next transaction."""
+        self.index += 1
+        return next(self.it)
+
+    def __bool__(self):
+        """Return true if there are still transactions left."""
+        return self.index < self.length
+
+
 class TestSimple(TestCase):
     """Simple tests for scheduling 1-2 transactions."""
 
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = ConstantTimeScheduler()
         exe = RandomExecutor()
-        s = Simulator(iter(transactions), sched, exe, n_cores, pool_size=None)
+        s = Simulator(TrIter(transactions), sched, exe, n_cores, pool_size=None)
         result_time = s.run()
         self.assertEqual(expected_time, result_time)
 
