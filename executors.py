@@ -45,7 +45,7 @@ class FullExecutor(TransactionExecutor):
         for i in core_ixs:
             core = state.cores[i]
             for tr in state.scheduled:
-                new_state = copy.copy(state)
+                new_state = copy.deepcopy(state)
                 new_state.scheduled = {t for t in state.scheduled if t != tr}
                 new_state.cores[i] = Core(core.clock + tr.time, tr)
                 new_state.is_busy = True
