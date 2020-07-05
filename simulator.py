@@ -41,9 +41,9 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        self.state = MachineState(core_count=self.core_count)
+        self.state = MachineState(self.transactions, core_count=self.core_count)
         while (
-            self.transactions
+            self.state.incoming
             or self.state.pending
             or self.state.scheduled
             or self.state.is_busy
@@ -88,6 +88,6 @@ class Simulator:
         """Fill up the scheduling pool."""
         while self.poolsize is None or len(self.state.pending) < self.poolsize:
             try:
-                self.state.pending.add(next(self.transactions))
+                self.state.pending.add(next(self.state.incoming))
             except StopIteration:
                 break

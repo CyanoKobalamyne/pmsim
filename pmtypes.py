@@ -108,6 +108,7 @@ class Core:
 class MachineState:
     """Represents the full state of the machine. Useful for state space search."""
 
+    incoming: Iterator[Transaction]
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: dataclasses.InitVar[int] = 1
