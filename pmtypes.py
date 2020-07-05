@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import typing
 from typing import Iterable, Iterator, MutableSequence, MutableSet, Optional, Set
 
 
@@ -35,6 +36,12 @@ class Transaction:
         self.read_set = set(read_set)
         self.write_set = set(write_set)
         self.time = time
+
+    def __eq__(self, other: object) -> bool:
+        """Return true if the two transactions are the same."""
+        return (
+            type(self) == type(other) and self.id == typing.cast(Transaction, other).id
+        )
 
     def __hash__(self) -> int:
         """Return a hash value for this transaction."""

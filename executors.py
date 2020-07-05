@@ -5,7 +5,7 @@ import operator
 from typing import Iterable
 
 from model import TransactionExecutor
-from pmtypes import Core, MachineState
+from pmtypes import MachineState
 
 
 class RandomExecutor(TransactionExecutor):
@@ -29,25 +29,15 @@ class FullExecutor(TransactionExecutor):
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
-        # Find all idle cores.
-        core_ixs = []
-        min_clock = state.cores[0].clock
-        for i, core in enumerate(state.cores):
-            if core.transaction is not None:
-                continue
-            if core.clock == min_clock:
-                core_ixs.append(i)
-            elif core.clock < min_clock:
-                min_clock = core.clock
-                core_ixs = [i]
-        # Generate output states for all core-transaction pairs.
+        # Find an idle core.
+        i_min = min(range(len(state.cores)), key=lambda i: state.cores[i].clock)
+        # Generate output state for each scheduled transaction.
         out_states = []
-        for i in core_ixs:
-            core = state.cores[i]
-            for tr in state.scheduled:
-                new_state = copy.deepcopy(state)
-                new_state.scheduled = {t for t in state.scheduled if t != tr}
-                new_state.cores[i] = Core(core.clock + tr.time, tr)
-                new_state.is_busy = True
-                out_states.append(new_state)
+        for tr in state.scheduled:
+            new_state = copy.deepcopy(state)
+            new_state.scheduled.remove(tr)
+            new_state.cores[i_min].transaction = tr
+            new_state.cores[i_min].clock += tr.time
+            new_state.is_busy = True
+            out_states.append(new_state)
         return out_states
