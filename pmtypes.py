@@ -37,9 +37,17 @@ class Transaction:
         """Return a hash value for this transaction."""
         return self.id  # pylint: disable=no-member
 
+    def __repr__(self) -> str:
+        """Return a string representation of this object."""
+        return (
+            f"{self.__class__.__name__}(id={self.id!r}, read_set="
+            f"{self.read_set!r}, write_set={self.write_set!r}, time="
+            f"{self.time!r})"
+        )
+
     def __str__(self) -> str:
-        """Return a human-readable representation of this transaction."""
-        return f"<Transaction: id {id(self)}, length {self.time}"
+        """Return a user-friendly string representation of this object."""
+        return f"{self.__class__.__name__}(id={self.id}, time={self.time})"
 
 
 class TransactionSet(MutableSet[Transaction]):
@@ -64,6 +72,14 @@ class TransactionSet(MutableSet[Transaction]):
     def __len__(self) -> int:
         """Return the number of transactions in the set."""
         return len(self.transactions)
+
+    def __repr__(self) -> str:
+        """Return a string representation of this object."""
+        return f"{self.__class__.__name__}({self.transactions})"
+
+    def __str__(self) -> str:
+        """Return a user-friendly string representation of this object."""
+        return repr(self)
 
     def add(self, transaction: Transaction) -> None:
         """Add a new transaction to the set."""

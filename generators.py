@@ -43,3 +43,18 @@ class TransactionGenerator(Iterator[Transaction]):
     def __bool__(self) -> bool:
         """Return true if there are transactions left."""
         return self.tr_index != len(self.tr_data)
+
+    def __repr__(self) -> str:
+        """Return a string representation of this object."""
+        return (
+            f"{self.__class__.__name__}(tr_data={self.tr_data!r}, addresses="
+            f"{self.addresses!r}, tr_index={self.tr_index!r}, address_index="
+            f"{self.address_index!r})"
+        )
+
+    def __str__(self) -> str:
+        """Return a user-friendly string representation of this object."""
+        return (
+            f"{self.__class__.__name__}(Transaction {self.tr_index}/"
+            f"{len(self.tr_data)})"
+        )
