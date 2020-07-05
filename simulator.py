@@ -41,53 +41,48 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        self.state = MachineState(self.transactions, core_count=self.core_count)
-        while (
-            self.state.incoming
-            or self.state.pending
-            or self.state.scheduled
-            or self.state.is_busy
-        ):
-            free_cores = [core for core in self.state.cores if core.transaction is None]
-            if not self.state.scheduled and self.state.scheduler_clock <= min(
-                core.clock for core in self.state.cores
+        state = MachineState(self.transactions, core_count=self.core_count)
+        while state.incoming or state.pending or state.scheduled or state.is_busy:
+            free_cores = [core for core in state.cores if core.transaction is None]
+            if not state.scheduled and state.scheduler_clock <= min(
+                core.clock for core in state.cores
             ):
                 # Fill up pending pool.
-                self._fill_pool()
+                self._fill_pool(state)
                 # Try scheduling a batch of new transactions.
-                self.scheduler.run(self.state)
-            if free_cores and self.state.scheduled:
+                self.scheduler.run(state)
+            if free_cores and state.scheduled:
                 # If some core were idle while the scheduler was working,
                 # move their clocks forward.
                 for core in free_cores:
-                    core.clock = max(core.clock, self.state.scheduler_clock)
+                    core.clock = max(core.clock, state.scheduler_clock)
                 # Execute a scheduled transaction.
-                self.executor.run(self.state)
+                self.executor.run(state)
             else:
                 # Remove first finished transaction.
                 busy_cores = [
-                    core for core in self.state.cores if core.transaction is not None
+                    core for core in state.cores if core.transaction is not None
                 ]
                 finished_core = min(busy_cores, key=operator.attrgetter("clock"))
                 finish = finished_core.clock
                 finished_core.transaction = None
                 if len(busy_cores) == 1:
-                    self.state.is_busy = False
+                    state.is_busy = False
                 # If the scheduler was idle until the first core freed up, move its
                 # clock forward.
-                self.state.scheduler_clock = max(self.state.scheduler_clock, finish)
+                state.scheduler_clock = max(state.scheduler_clock, finish)
                 # If the free cores are running behind the scheduler, move their clocks
                 # forward.
                 for core in free_cores:
-                    core.clock = self.state.scheduler_clock
-                finished_core.clock = self.state.scheduler_clock
+                    core.clock = state.scheduler_clock
+                finished_core.clock = state.scheduler_clock
 
-        return min(core.clock for core in self.state.cores)
+        return min(core.clock for core in state.cores)
 
-    def _fill_pool(self) -> None:
+    def _fill_pool(self, state: MachineState) -> None:
         """Fill up the scheduling pool."""
-        while self.poolsize is None or len(self.state.pending) < self.poolsize:
+        while self.poolsize is None or len(state.pending) < self.poolsize:
             try:
-                self.state.pending.add(next(self.state.incoming))
+                state.pending.add(next(state.incoming))
             except StopIteration:
                 break
