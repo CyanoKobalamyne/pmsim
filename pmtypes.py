@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-import typing
 from typing import Iterable, Iterator, MutableSequence, MutableSet, Optional, Set
 
 
@@ -37,12 +36,6 @@ class Transaction:
         self.write_set = set(write_set)
         self.time = time
 
-    def __eq__(self, other: object) -> bool:
-        """Return true if the two transactions are the same."""
-        return (
-            type(self) == type(other) and self.id == typing.cast(Transaction, other).id
-        )
-
     def __hash__(self) -> int:
         """Return a hash value for this transaction."""
         return self.id  # pylint: disable=no-member
@@ -58,13 +51,6 @@ class Transaction:
     def __str__(self) -> str:
         """Return a user-friendly string representation of this object."""
         return f"{self.__class__.__name__}(id={self.id}, time={self.time})"
-
-    def __deepcopy__(self, memo: dict) -> Transaction:
-        """Make a deep copy of the object.
-
-        Since transactions are immutable, we actually make a shallow copy.
-        """
-        return copy.copy(self)
 
 
 class TransactionSet(MutableSet[Transaction]):
@@ -156,3 +142,15 @@ class MachineState:
     def __bool__(self):
         """Return true if this is not an end state."""
         return bool(self.incoming or self.pending or self.scheduled or self.is_busy)
+
+    def copy(self) -> MachineState:
+        """Make a 1-deep copy of this object.
+
+        Collection fields are recreated, but the contained object will be the same.
+        """
+        new = copy.copy(self)
+        new.incoming = copy.copy(self.incoming)
+        new.pending = set(self.pending)
+        new.scheduled = set(self.scheduled)
+        new.cores = list(Core(c.clock, c.transaction) for c in self.cores)
+        return new

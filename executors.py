@@ -1,6 +1,5 @@
 """Implementations of the execution policy of Puppetmaster."""
 
-import copy
 import operator
 from typing import Iterable
 
@@ -34,7 +33,7 @@ class FullExecutor(TransactionExecutor):
         # Generate output state for each scheduled transaction.
         out_states = []
         for tr in state.scheduled:
-            new_state = copy.deepcopy(state)
+            new_state = state.copy()
             new_state.scheduled.remove(tr)
             new_state.cores[i_min].transaction = tr
             new_state.cores[i_min].clock += tr.time
