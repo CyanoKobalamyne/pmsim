@@ -55,8 +55,7 @@ class Simulator:
                 # Fill up pending pool.
                 self._fill_pool()
                 # Try scheduling a batch of new transactions.
-                self.state.scheduled = self.scheduler.run(self.state)
-                self.state.pending -= self.state.scheduled
+                self.scheduler.run(self.state)
             if free_cores and self.state.scheduled:
                 # If some core were idle while the scheduler was working,
                 # move their clocks forward.

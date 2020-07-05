@@ -1,7 +1,7 @@
 """Abstractions used in the simulator."""
 
 from abc import ABC, abstractmethod
-from typing import Iterable, MutableSet, Sized
+from typing import Iterable, Sized
 
 from pmtypes import MachineState, Transaction
 
@@ -19,7 +19,7 @@ class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
     @abstractmethod
-    def run(self, state: MachineState) -> MutableSet[Transaction]:
+    def run(self, state: MachineState) -> None:
         """Try scheduling a batch of transactions.
 
         Arguments:

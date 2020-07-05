@@ -21,7 +21,7 @@ class ConstantTimeScheduler(TransactionScheduler):
         self.scheduling_time = scheduling_time
         self.n = n_transactions
 
-    def run(self, state: MachineState) -> TransactionSet:
+    def run(self, state: MachineState) -> None:
         """See TransacionScheduler.run."""
         # Filter out candidates compatible with ongoing.
         ongoing = TransactionSet(
@@ -34,7 +34,8 @@ class ConstantTimeScheduler(TransactionScheduler):
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
         state.scheduler_clock += self.scheduling_time
-        return candidates
+        state.scheduled = candidates
+        state.pending -= candidates
 
 
 class TournamentScheduler(TransactionScheduler):
@@ -47,11 +48,10 @@ class TournamentScheduler(TransactionScheduler):
             cycles_per_merge: time it takes to perform one "merge" operation in hardware
             is_pipelined: whether scheduling time depends on the number of merge steps
         """
-        super().__init__()
         self.cycles_per_merge = cycles_per_merge
         self.is_pipelined = is_pipelined
 
-    def run(self, state: MachineState) -> TransactionSet:
+    def run(self, state: MachineState) -> None:
         """See TransacionScheduler.run.
 
         Filters out all transactions that conflict with currently running ones, then
@@ -75,4 +75,6 @@ class TournamentScheduler(TransactionScheduler):
         state.scheduler_clock += self.cycles_per_merge * (
             1 if self.is_pipelined else rounds
         )
-        return candidates[0] if candidates else TransactionSet()
+        if candidates:
+            state.scheduled = candidates[0]
+            state.pending -= candidates[0]
