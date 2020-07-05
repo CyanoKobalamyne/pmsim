@@ -41,11 +41,12 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
-        queue: List[Tuple[int, MachineState]] = []
-        heapq.heappush(queue, (0, self.start_state))
+        queue: List[Tuple[int, int, MachineState]] = []
+        heapq.heappush(queue, (0, 0, self.start_state))
+        step = 1
         while queue:
             # Get next state off the queue.
-            time, state = heapq.heappop(queue)
+            time, _, state = heapq.heappop(queue)
 
             if not state:
                 return time
@@ -70,7 +71,8 @@ class Simulator:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
                     next_time = min(c.clock for c in next_state.cores)
-                    heapq.heappush(queue, (next_time, next_state))
+                    heapq.heappush(queue, (next_time, step, next_state))
+                    step += 1
             else:
                 # Remove first finished transaction.
                 busy_cores = [
@@ -89,7 +91,8 @@ class Simulator:
                 for core in free_cores:
                     core.clock = state.scheduler_clock
                 finished_core.clock = state.scheduler_clock
-                heapq.heappush(queue, (state.scheduler_clock, state))
+                heapq.heappush(queue, (state.scheduler_clock, step, state))
+                step += 1
 
         raise RuntimeError  # We should never get here.
 
