@@ -1,7 +1,8 @@
 """Abstractions used in the simulator."""
 
 from abc import ABC, abstractmethod
-from typing import Iterable, MutableSet, Sized, Tuple
+from collections.abc import Sized
+from typing import Iterable, MutableSet, Tuple
 
 from pmtypes import MachineState, Transaction, TransactionSet
 
