@@ -86,7 +86,7 @@ def _main() -> None:
                 for _ in range(args.repeats):
                     transactions = iter(tr_factory)
                     scheduler = sched_cls(sched_time, **sched_args)
-                    executor = RandomExecutor(**exec_args)
+                    executor = exec_cls(**exec_args)
                     sim = Simulator(
                         transactions,
                         scheduler,
