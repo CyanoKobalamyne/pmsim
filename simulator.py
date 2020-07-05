@@ -65,7 +65,7 @@ class Simulator:
                 for core in free_cores:
                     core.clock = max(core.clock, self.scheduler.clock)
                 # Execute a scheduled transaction.
-                self.executor.push(self.state)
+                self.executor.run(self.state)
             else:
                 # Remove first finished transaction.
                 busy_cores = [

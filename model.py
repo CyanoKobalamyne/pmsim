@@ -69,7 +69,7 @@ class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
 
     @abstractmethod
-    def push(self, state: MachineState) -> None:
+    def run(self, state: MachineState) -> None:
         """Choose transaction(s) to execute from scheduled set.
 
         Removes the transactions executed, if any.
