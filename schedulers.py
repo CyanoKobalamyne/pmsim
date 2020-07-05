@@ -1,9 +1,10 @@
 """Scheduler implementations."""
 
 import itertools
+from typing import Iterable, MutableSet, Tuple
 
 from model import TransactionScheduler
-from pmtypes import MachineState, TransactionSet
+from pmtypes import Transaction, TransactionSet
 
 
 class ConstantTimeScheduler(TransactionScheduler):
@@ -21,21 +22,17 @@ class ConstantTimeScheduler(TransactionScheduler):
         self.scheduling_time = scheduling_time
         self.n = n_transactions
 
-    def run(self, state: MachineState) -> None:
-        """See TransacionScheduler.run."""
-        # Filter out candidates compatible with ongoing.
-        ongoing = TransactionSet(
-            core.transaction for core in state.cores if core.transaction is not None
-        )
+    def schedule(
+        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+    ) -> Tuple[MutableSet[Transaction], int]:
+        """See TransacionScheduler.schedule."""
         candidates = TransactionSet()
-        for tr in state.pending:
+        for tr in pending:
             if self.n is not None and len(candidates) == self.n:
                 break
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
-        state.scheduler_clock += self.scheduling_time
-        state.scheduled = candidates
-        state.pending -= candidates
+        return candidates, self.scheduling_time
 
 
 class TournamentScheduler(TransactionScheduler):
@@ -51,18 +48,16 @@ class TournamentScheduler(TransactionScheduler):
         self.cycles_per_merge = cycles_per_merge
         self.is_pipelined = is_pipelined
 
-    def run(self, state: MachineState) -> None:
-        """See TransacionScheduler.run.
+    def schedule(
+        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+    ) -> Tuple[MutableSet[Transaction], int]:
+        """See TransacionScheduler.schedule.
 
         Filters out all transactions that conflict with currently running ones, then
         checks the available transactions pairwise against each other repeatedly, until
         a single non-conflicting group remains.
         """
-        # Filter out candidates compatible with ongoing.
-        ongoing = TransactionSet(
-            core.transaction for core in state.cores if core.transaction is not None
-        )
-        sets = [TransactionSet([tr]) for tr in state.pending if ongoing.compatible(tr)]
+        sets = [TransactionSet([tr]) for tr in pending if ongoing.compatible(tr)]
         rounds = 0
         while len(sets) > 1:
             for t1, t2 in itertools.zip_longest(sets[::2], sets[1::2]):
@@ -70,9 +65,7 @@ class TournamentScheduler(TransactionScheduler):
                     t1 |= t2
             sets = sets[::2]
             rounds += 1
-        state.scheduler_clock += self.cycles_per_merge * (
-            1 if self.is_pipelined else rounds
+        return (
+            (sets[0] if sets else TransactionSet()),
+            self.cycles_per_merge * (1 if self.is_pipelined else rounds),
         )
-        if sets:
-            state.scheduled = sets[0]
-            state.pending -= sets[0]
