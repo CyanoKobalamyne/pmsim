@@ -65,7 +65,9 @@ class Simulator:
             if len(state.cores) < state.core_count and state.scheduled:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
-                    next_time = next_state.cores[0].clock
+                    next_time = min(
+                        next_state.scheduler_clock, next_state.cores[0].clock
+                    )
                     heapq.heappush(queue, (next_time, step, next_state))
                     step += 1
             else:
@@ -73,7 +75,12 @@ class Simulator:
                 finished_core = heapq.heappop(state.cores)
                 # If the scheduler was idle, move its clock forward.
                 state.scheduler_clock = max(state.scheduler_clock, finished_core.clock)
-                heapq.heappush(queue, (state.scheduler_clock, step, state))
+                time = (
+                    min(state.scheduler_clock, state.cores[0].clock)
+                    if state.cores
+                    else state.scheduler_clock
+                )
+                heapq.heappush(queue, (time, step, state))
                 step += 1
 
         raise RuntimeError  # We should never get here.
