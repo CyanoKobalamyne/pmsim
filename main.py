@@ -116,33 +116,33 @@ def _main() -> None:
         args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
     )
 
-    print("Tournament scheduler (pipelined)\n")
+    print("Tournament scheduler (pipelined)")
     run_sim(
         TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
     )
 
-    print("Tournament scheduler (non-pipelined)\n")
+    print("Tournament scheduler (non-pipelined)")
     run_sim(
         TournamentScheduler, {"is_pipelined": False}, RandomExecutor, {},
     )
 
-    print("Constant-time scheduler\n")
+    print("Constant-time scheduler")
     run_sim(
         ConstantTimeScheduler, {}, RandomExecutor, {},
     )
 
-    print("Constant-time scheduler with infinite lookahead\n")
+    print("Constant-time scheduler with infinite lookahead")
     run_sim(
         ConstantTimeScheduler, {}, RandomExecutor, {}, use_pool=False,
     )
 
-    print("Constant-time scheduler with optimal execution policy\n")
+    print("Constant-time scheduler with optimal execution policy")
     run_sim(
         ConstantTimeScheduler, {}, FullExecutor, {},
     )
 
     print(
-        "Constant-time scheduler with infinite lookahead and optimal execution policy\n"
+        "Constant-time scheduler with infinite lookahead and optimal execution policy"
     )
     run_sim(
         ConstantTimeScheduler, {}, FullExecutor, {}, use_pool=False,
