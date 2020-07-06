@@ -39,12 +39,6 @@ class Simulator:
         Returns:
             amount of time (cycles) it took to execute all transactions
         """
-
-        def cores_clock(state):
-            if not state.cores:
-                return state.scheduler_clock
-            return state.cores[0].clock
-
         queue = [(0, 0, self.start_state)]  # time, step, state
         step = 1
         while queue:
@@ -55,7 +49,9 @@ class Simulator:
                 return time
 
             # Run scheduler if conditions are satisfied.
-            if not state.scheduled and state.scheduler_clock <= cores_clock(state):
+            if not state.scheduled and (
+                not state.cores or state.scheduler_clock <= state.cores[0].clock
+            ):
                 # Fill up pending pool.
                 while self.pool_size is None or len(state.pending) < self.pool_size:
                     try:
@@ -69,7 +65,7 @@ class Simulator:
             if len(state.cores) < state.core_count and state.scheduled:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
-                    next_time = cores_clock(next_state)
+                    next_time = next_state.cores[0].clock
                     heapq.heappush(queue, (next_time, step, next_state))
                     step += 1
             else:
