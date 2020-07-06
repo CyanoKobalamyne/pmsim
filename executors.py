@@ -2,10 +2,11 @@
 
 import heapq
 import itertools
+import typing
 from typing import Iterable
 
 from model import TransactionExecutor
-from pmtypes import Core, MachineState
+from pmtypes import Core, MachineState, Transaction
 
 
 class RandomExecutor(TransactionExecutor):
@@ -34,7 +35,7 @@ class OptimalExecutor(TransactionExecutor):
         tr_combos = (
             itertools.combinations(state.scheduled, n_free_cores)
             if n_free_cores < len(state.scheduled)
-            else [state.scheduled]
+            else typing.cast(Iterable[Iterable[Transaction]], [state.scheduled])
         )
         out_states = []
         for tr_combo in tr_combos:
