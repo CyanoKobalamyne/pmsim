@@ -7,7 +7,7 @@ from model import TransactionScheduler
 from pmtypes import Transaction, TransactionSet
 
 
-class ConstantTimeScheduler(TransactionScheduler):
+class GreedyScheduler(TransactionScheduler):
     """Implementation of a simple scheduler."""
 
     def __init__(self, scheduling_time: int = 0, queue_size: int = None):
@@ -23,7 +23,10 @@ class ConstantTimeScheduler(TransactionScheduler):
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
     ) -> Tuple[MutableSet[Transaction], int]:
-        """See TransacionScheduler.schedule."""
+        """See TransacionScheduler.schedule.
+
+        Iterates through pending transactions once and adds all compatible ones.
+        """
         candidates = TransactionSet()
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):

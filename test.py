@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from executors import RandomExecutor
 from model import Transaction
-from schedulers import ConstantTimeScheduler
+from schedulers import GreedyScheduler
 from simulator import Simulator
 
 
@@ -32,7 +32,7 @@ class TestSimple(TestCase):
     """Simple tests for scheduling 1-2 transactions."""
 
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
-        sched = ConstantTimeScheduler()
+        sched = GreedyScheduler()
         exe = RandomExecutor()
         s = Simulator(TrIter(transactions), sched, exe, n_cores, pool_size=None)
         result_time = s.run()
