@@ -50,7 +50,7 @@ class Simulator:
 
             # Run scheduler if conditions are satisfied.
             if not state.scheduled and (
-                not state.cores or state.scheduler_clock <= state.cores[0].clock
+                not state.cores or state.clock <= state.cores[0].clock
             ):
                 # Fill up pending pool.
                 while self.pool_size is None or len(state.pending) < self.pool_size:
@@ -65,20 +65,18 @@ class Simulator:
             if len(state.cores) < state.core_count and state.scheduled:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
-                    next_time = min(
-                        next_state.scheduler_clock, next_state.cores[0].clock
-                    )
+                    next_time = min(next_state.clock, next_state.cores[0].clock)
                     heapq.heappush(queue, (next_time, step, next_state))
                     step += 1
             else:
                 # Remove first finished transaction.
                 finished_core = heapq.heappop(state.cores)
                 # If the scheduler was idle, move its clock forward.
-                state.scheduler_clock = max(state.scheduler_clock, finished_core.clock)
+                state.clock = max(state.clock, finished_core.clock)
                 time = (
-                    min(state.scheduler_clock, state.cores[0].clock)
+                    min(state.clock, state.cores[0].clock)
                     if state.cores
-                    else state.scheduler_clock
+                    else state.clock
                 )
                 heapq.heappush(queue, (time, step, state))
                 step += 1

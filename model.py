@@ -31,7 +31,7 @@ class TransactionScheduler(ABC):
         """
         ongoing = TransactionSet(core.transaction for core in state.cores)
         scheduled, time = self.schedule(ongoing, state.pending)
-        state.scheduler_clock += time
+        state.clock += time
         state.scheduled = scheduled
         state.pending -= scheduled
 

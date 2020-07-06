@@ -14,7 +14,7 @@ class RandomExecutor(TransactionExecutor):
         """See TransactionExecutor.push."""
         # Execute one transaction.
         tr = state.scheduled.pop()
-        core = Core(state.scheduler_clock + tr.time, tr)
+        core = Core(state.clock + tr.time, tr)
         heapq.heappush(state.cores, core)
         return [state]
 
@@ -27,7 +27,7 @@ class FullExecutor(TransactionExecutor):
         # Generate output state for each scheduled transaction.
         out_states = []
         for tr in state.scheduled:
-            new_core = Core(state.scheduler_clock + tr.time, tr)
+            new_core = Core(state.clock + tr.time, tr)
             new_state = state.copy()
             new_state.scheduled.remove(tr)
             heapq.heappush(new_state.cores, new_core)

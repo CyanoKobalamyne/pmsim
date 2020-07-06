@@ -132,7 +132,7 @@ class MachineState:
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
     cores: List[Core] = dataclasses.field(default_factory=list)
-    scheduler_clock: int = 0
+    clock: int = 0  # global clock, same as clock of the scheduler.
 
     def __bool__(self):
         """Return true if this is not an end state."""
