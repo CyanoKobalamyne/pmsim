@@ -109,6 +109,7 @@ def _main() -> None:
         f"No. of transactions: {args.n}\n"
         f"Memory size (-m): {args.memsize}\n"
         f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
+        f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
         f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
         f"Runs per configuration (-r): {args.repeats}\n"
     )
