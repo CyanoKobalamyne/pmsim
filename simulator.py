@@ -1,7 +1,7 @@
 """Main Puppetmaster simulator class."""
 
 import heapq
-from typing import Iterator, List, Tuple
+from typing import Iterator
 
 from model import TransactionExecutor, TransactionScheduler
 from pmtypes import MachineState, Transaction
@@ -21,24 +21,23 @@ class Simulator:
         """Create a new simulator.
 
         Arguments:
-            transactions (Iterable[Transaction]): transactions to execute
+            transactions: generator of transactions to execute
             scheduler: component for scheduling transactions
             executor: component for executing transactions on the processing cores
-            pool_size (int): number of tranactions seen by the scheduler
-                             simultaneously (all of them if None)
+            pool_size: number of tranactions seen by the scheduler simultaneously
+                       (all of them if None)
 
         """
         self.scheduler = scheduler
         self.executor = executor
-        self.poolsize = pool_size
+        self.pool_size = pool_size
         self.start_state = MachineState(transactions, core_count=core_count)
 
     def run(self) -> int:
         """Simulate execution of a set of transactions on this machine.
 
         Returns:
-            int: amount of time (ticks) it took to execute all transactions
-
+            amount of time (cycles) it took to execute all transactions
         """
 
         def cores_clock(state):
@@ -48,8 +47,7 @@ class Simulator:
                 return state.free_cores[0].clock
             return min(state.busy_cores[0].clock, state.free_cores[0].clock)
 
-        queue: List[Tuple[int, int, MachineState]] = []
-        heapq.heappush(queue, (0, 0, self.start_state))
+        queue = [(0, 0, self.start_state)]  # time, step, state
         step = 1
         while queue:
             # Get next state off the queue.
@@ -61,7 +59,11 @@ class Simulator:
             # Run scheduler if conditions are satisfied.
             if not state.scheduled and state.scheduler_clock <= cores_clock(state):
                 # Fill up pending pool.
-                self._fill_pool(state)
+                while self.pool_size is None or len(state.pending) < self.pool_size:
+                    try:
+                        state.pending.add(next(state.incoming))
+                    except StopIteration:
+                        break
                 # Try scheduling a batch of new transactions.
                 self.scheduler.run(state)
 
@@ -80,11 +82,10 @@ class Simulator:
             else:
                 # Remove first finished transaction.
                 finished_core = heapq.heappop(state.busy_cores)
-                finish = finished_core.clock
                 finished_core.transaction = None
                 # If the scheduler was idle until the first core freed up, move its
                 # clock forward.
-                state.scheduler_clock = max(state.scheduler_clock, finish)
+                state.scheduler_clock = max(state.scheduler_clock, finished_core.clock)
                 # If the free cores are running behind the scheduler, move their clocks
                 # forward.
                 for core in state.free_cores:
@@ -96,11 +97,3 @@ class Simulator:
                 step += 1
 
         raise RuntimeError  # We should never get here.
-
-    def _fill_pool(self, state: MachineState) -> None:
-        """Fill up the scheduling pool."""
-        while self.poolsize is None or len(state.pending) < self.poolsize:
-            try:
-                state.pending.add(next(state.incoming))
-            except StopIteration:
-                break

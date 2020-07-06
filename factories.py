@@ -24,8 +24,12 @@ class RandomFactory(TransactionFactory):
     ) -> None:
         """Create a new factory for transactions.
 
-        A pool of objects with size `memory_size` is created, and the read and
-        write sets are chosen from there in accordance with Zipf's law.
+        A random order of transactions is created for each run, with the addresses in
+        the read and write sets for each transaction chosen from the range
+        [0, mem_size) in accordance with Zipf's law.
+
+        After the __iter__ method has been called run_count times, the factory wraps
+        around and returns the same iterators again.
 
         Arguments:
             mem_size: size of the pool from which objects in the read and
@@ -87,7 +91,7 @@ class RandomFactory(TransactionFactory):
 
     def __len__(self):
         """Return the number of transactions per iterator."""
-        return len(self.tr_data)
+        return self.tr_count
 
     @property
     def total_time(self) -> int:

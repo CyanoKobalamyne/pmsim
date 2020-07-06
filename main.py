@@ -34,7 +34,11 @@ def _main() -> None:
         default=1,
     )
     parser.add_argument(
-        "-s", help="parameter of the Zipf's law distribution", default=0, type=float
+        "-z",
+        "--zipf-param",
+        help="parameter of the Zipf's law distribution",
+        default=0,
+        type=float,
     )
     parser.add_argument(
         "-r",
@@ -99,17 +103,16 @@ def _main() -> None:
         print("")
 
     print(
-        f"Parameters:\n"
-        f"- template: {os.path.basename(args.template.name)}\n"
-        f"- transactions: {args.n}\n"
-        f"- [m]emory size: {args.memsize}\n"
-        f"- scheduling [p]ool size (lookahead): {args.poolsize or 'infinite'}\n"
-        f"- object address di[s]tribution parameter (Zipf): {args.s:.2f}\n"
+        f"Template: {os.path.basename(args.template.name)}\n"
+        f"No. of transactions: {args.n}\n"
+        f"Memory size (-m): {args.memsize}\n"
+        f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
+        f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
     )
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     tr_factory = RandomFactory(
-        args.memsize, tr_types.values(), args.n, args.repeats, args.s
+        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
     )
 
     print("Tournament scheduler (pipelined)\n")
