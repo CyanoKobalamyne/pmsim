@@ -19,7 +19,7 @@ class RandomFactory(TransactionFactory):
         mem_size: int,
         tr_types: Iterable[Mapping[str, int]],
         tr_count: int,
-        gen_count: int = 1,
+        run_count: int = 1,
         zipf_param: int = 0,
     ) -> None:
         """Create a new factory for transactions.
@@ -35,12 +35,12 @@ class RandomFactory(TransactionFactory):
                 "write": size of the write set
                 "time": transaction time
             tr_count: total number of transactions needed per run
-            gen_count: number of runs
+            run_count: number of simulation runs (that should have different input)
             zipf_param: parameter of the Zipf's law distribution
         """
         self.tr_count = tr_count
-        self.gen_count = gen_count
-        self.gen_index = 0
+        self.run_count = run_count
+        self.run_index = 0
 
         # Compute exact transaction and object counts and total time.
         tr_counts = []
@@ -63,24 +63,24 @@ class RandomFactory(TransactionFactory):
             )
         )
         self.tr_data = []
-        for _ in range(gen_count):
+        for _ in range(run_count):
             random.shuffle(one_tr_data)
             self.tr_data.extend(one_tr_data)
 
         # Generate memory addresses according to distribution.
-        addr_count = self.obj_count * gen_count
+        addr_count = self.obj_count * run_count
         weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
 
     def __iter__(self) -> Iterator[Transaction]:
         """Create a new iterator of transactions."""
-        if self.gen_index == self.gen_count:
-            self.gen_index = 0
-        tr_start = self.tr_count * self.gen_index
-        addr_start = self.obj_count * self.gen_index
-        self.gen_index += 1
-        tr_end = self.tr_count * self.gen_index
-        addr_end = self.obj_count * self.gen_index
+        if self.run_index == self.run_count:
+            self.run_index = 0
+        tr_start = self.tr_count * self.run_index
+        addr_start = self.obj_count * self.run_index
+        self.run_index += 1
+        tr_end = self.tr_count * self.run_index
+        addr_end = self.obj_count * self.run_index
         tr_data = SequenceView(self.tr_data)[tr_start:tr_end]
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
         return TransactionGenerator(tr_data, addresses)
