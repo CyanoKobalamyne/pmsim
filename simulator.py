@@ -48,10 +48,8 @@ class Simulator:
             if not state:
                 return time
 
-            # Run scheduler if conditions are satisfied.
-            if not state.scheduled and (
-                not state.cores or state.clock <= state.cores[0].clock
-            ):
+            # Run scheduler if there are no finished cores.
+            if not state.cores or state.clock <= state.cores[0].clock:
                 # Fill up pending pool.
                 while self.pool_size is None or len(state.pending) < self.pool_size:
                     try:

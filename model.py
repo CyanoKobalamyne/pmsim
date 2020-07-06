@@ -30,10 +30,13 @@ class TransactionScheduler(ABC):
             ones without conflicts
         """
         ongoing = TransactionSet(core.transaction for core in state.cores)
+        for tr in state.scheduled:
+            ongoing.add(tr)
         scheduled, time = self.schedule(ongoing, state.pending)
         state.clock += time
-        state.scheduled = scheduled
-        state.pending -= scheduled
+        if scheduled:
+            state.scheduled |= scheduled
+            state.pending -= scheduled
 
     @abstractmethod
     def schedule(
