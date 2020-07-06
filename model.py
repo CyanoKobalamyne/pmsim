@@ -29,9 +29,7 @@ class TransactionScheduler(ABC):
             transactions ready to be executed concurrently with the currently running
             ones without conflicts
         """
-        ongoing = TransactionSet(
-            core.transaction for core in state.cores if core.transaction is not None
-        )
+        ongoing = TransactionSet(core.transaction for core in state.busy_cores)
         scheduled, time = self.schedule(ongoing, state.pending)
         state.scheduler_clock += time
         state.scheduled = scheduled

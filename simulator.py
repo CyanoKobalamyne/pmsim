@@ -1,7 +1,6 @@
 """Main Puppetmaster simulator class."""
 
 import heapq
-import operator
 from typing import Iterator, List, Tuple
 
 from model import TransactionExecutor, TransactionScheduler
@@ -41,6 +40,14 @@ class Simulator:
             int: amount of time (ticks) it took to execute all transactions
 
         """
+
+        def cores_clock(state):
+            if not state.free_cores:
+                return state.busy_cores[0].clock
+            elif not state.busy_cores:
+                return state.free_cores[0].clock
+            return min(state.busy_cores[0].clock, state.free_cores[0].clock)
+
         queue: List[Tuple[int, int, MachineState]] = []
         heapq.heappush(queue, (0, 0, self.start_state))
         step = 1
@@ -51,46 +58,40 @@ class Simulator:
             if not state:
                 return time
 
-            free_cores = [core for core in state.cores if core.transaction is None]
-
             # Run scheduler if conditions are satisfied.
-            if not state.scheduled and state.scheduler_clock <= min(
-                core.clock for core in state.cores
-            ):
+            if not state.scheduled and state.scheduler_clock <= cores_clock(state):
                 # Fill up pending pool.
                 self._fill_pool(state)
                 # Try scheduling a batch of new transactions.
                 self.scheduler.run(state)
 
             # Compute next states for the execution units.
-            if free_cores and state.scheduled:
+            if state.free_cores and state.scheduled:
                 # If some core were idle while the scheduler was working,
                 # move their clocks forward.
-                for core in free_cores:
+                for core in state.free_cores:
                     core.clock = max(core.clock, state.scheduler_clock)
+                heapq.heapify(state.free_cores)
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
-                    next_time = min(c.clock for c in next_state.cores)
+                    next_time = cores_clock(next_state)
                     heapq.heappush(queue, (next_time, step, next_state))
                     step += 1
             else:
                 # Remove first finished transaction.
-                busy_cores = [
-                    core for core in state.cores if core.transaction is not None
-                ]
-                finished_core = min(busy_cores, key=operator.attrgetter("clock"))
+                finished_core = heapq.heappop(state.busy_cores)
                 finish = finished_core.clock
                 finished_core.transaction = None
-                if len(busy_cores) == 1:
-                    state.is_busy = False
                 # If the scheduler was idle until the first core freed up, move its
                 # clock forward.
                 state.scheduler_clock = max(state.scheduler_clock, finish)
                 # If the free cores are running behind the scheduler, move their clocks
                 # forward.
-                for core in free_cores:
+                for core in state.free_cores:
                     core.clock = state.scheduler_clock
+                heapq.heapify(state.free_cores)
                 finished_core.clock = state.scheduler_clock
+                heapq.heappush(state.free_cores, finished_core)
                 heapq.heappush(queue, (state.scheduler_clock, step, state))
                 step += 1
 

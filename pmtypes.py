@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-from typing import Iterable, Iterator, MutableSequence, MutableSet, Optional, Set
+from typing import Iterable, Iterator, List, MutableSet, Optional, Set
 
 
 class Transaction:
@@ -108,7 +108,7 @@ class TransactionSet(MutableSet[Transaction]):
         return True
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(order=True)
 class Core:
     """Component executing a single transaction.
 
@@ -120,7 +120,7 @@ class Core:
     """
 
     clock: int = 0
-    transaction: Optional[Transaction] = None
+    transaction: Optional[Transaction] = dataclasses.field(default=None, compare=False)
 
 
 @dataclasses.dataclass
@@ -131,17 +131,17 @@ class MachineState:
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: dataclasses.InitVar[int] = 1
-    cores: MutableSequence[Core] = dataclasses.field(default_factory=list)
+    free_cores: List[Core] = dataclasses.field(default_factory=list)
+    busy_cores: List[Core] = dataclasses.field(default_factory=list)
     scheduler_clock: int = 0
-    is_busy: bool = False
 
     def __post_init__(self, core_count, *args, **kwargs):
         """Perform extra field initialization."""
-        self.cores = [Core() for _ in range(core_count)]
+        self.free_cores = [Core() for _ in range(core_count)]
 
     def __bool__(self):
         """Return true if this is not an end state."""
-        return bool(self.incoming or self.pending or self.scheduled or self.is_busy)
+        return bool(self.incoming or self.pending or self.scheduled or self.busy_cores)
 
     def copy(self) -> MachineState:
         """Make a 1-deep copy of this object.
@@ -152,5 +152,6 @@ class MachineState:
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)
-        new.cores = list(Core(c.clock, c.transaction) for c in self.cores)
+        new.free_cores = list(Core(c.clock, c.transaction) for c in self.free_cores)
+        new.busy_cores = list(Core(c.clock, c.transaction) for c in self.busy_cores)
         return new

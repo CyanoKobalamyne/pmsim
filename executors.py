@@ -1,10 +1,10 @@
 """Implementations of the execution policy of Puppetmaster."""
 
-import operator
+import heapq
 from typing import Iterable
 
 from model import TransactionExecutor
-from pmtypes import MachineState
+from pmtypes import Core, MachineState
 
 
 class RandomExecutor(TransactionExecutor):
@@ -12,14 +12,13 @@ class RandomExecutor(TransactionExecutor):
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
-        free_cores = [core for core in state.cores if core.transaction is None]
         # Execute scheduled transaction on first idle core.
-        core = min(free_cores, key=operator.attrgetter("clock"))
+        core = heapq.heappop(state.free_cores)
         # Execute one transaction.
         tr = state.scheduled.pop()
         core.transaction = tr
         core.clock += tr.time
-        state.is_busy = True
+        heapq.heappush(state.busy_cores, core)
         return [state]
 
 
@@ -29,14 +28,13 @@ class FullExecutor(TransactionExecutor):
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
         # Find an idle core.
-        i_min = min(range(len(state.cores)), key=lambda i: state.cores[i].clock)
+        core = heapq.heappop(state.free_cores)
         # Generate output state for each scheduled transaction.
         out_states = []
         for tr in state.scheduled:
+            new_core = Core(core.clock + tr.time, tr)
             new_state = state.copy()
             new_state.scheduled.remove(tr)
-            new_state.cores[i_min].transaction = tr
-            new_state.cores[i_min].clock += tr.time
-            new_state.is_busy = True
+            heapq.heappush(new_state.busy_cores, new_core)
             out_states.append(new_state)
         return out_states
