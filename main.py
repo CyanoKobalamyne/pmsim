@@ -108,8 +108,9 @@ def _main() -> None:
     )
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    n_runs = len(sched_times) * len(core_counts) * args.repeats * 5
-    tr_factory = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
+    tr_factory = RandomFactory(
+        args.memsize, tr_types.values(), args.n, args.repeats, args.s
+    )
 
     print("Tournament scheduler (pipelined)\n")
     run_sim(

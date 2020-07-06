@@ -46,25 +46,32 @@ class RandomFactory(TransactionFactory):
             self.tr_counts.append(cur_tr_count)
             self.obj_count += cur_tr_count * (tr["reads"] + tr["writes"])
             self.total_tr_time += cur_tr_count * tr["time"]
-        self.tr_data: List[Mapping[str, int]] = []
+        one_tr_data: List[Mapping[str, int]] = []
         for i, tr_type in enumerate(tr_types):
-            self.tr_data.extend(tr_type for _ in range(self.tr_counts[i]))
+            one_tr_data.extend(tr_type for _ in range(self.tr_counts[i]))
+        self.tr_data = []
+        for _ in range(gen_count):
+            random.shuffle(one_tr_data)
+            self.tr_data.extend(one_tr_data)
         addr_count = self.obj_count * gen_count
         weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
+        self.tr_count = tr_count
         self.gen_count = gen_count
         self.gen_index = 0
 
     def __iter__(self) -> Iterator[Transaction]:
         """Create a new iterator of transactions."""
         if self.gen_index == self.gen_count:
-            raise ValueError("number of generators exceeded.")
-        random.shuffle(self.tr_data)
+            self.gen_index = 0
+        tr_start = self.tr_count * self.gen_index
         addr_start = self.obj_count * self.gen_index
         self.gen_index += 1
+        tr_end = self.tr_count * self.gen_index
         addr_end = self.obj_count * self.gen_index
+        tr_data = SequenceView(self.tr_data)[tr_start:tr_end]
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
-        return TransactionGenerator(self.tr_data, addresses)
+        return TransactionGenerator(tr_data, addresses)
 
     def __len__(self):
         """Return the number of transactions per iterator."""
