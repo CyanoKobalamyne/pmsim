@@ -97,51 +97,57 @@ def _main() -> None:
                     results.append(sim.run())
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
             print(body_template.format(f"{sched_time}", *throughputs))
+        print("")
 
     print(
         f"Parameters:\n"
         f"- template: {os.path.basename(args.template.name)}\n"
         f"- transactions: {args.n}\n"
         f"- [m]emory size: {args.memsize}\n"
-        f"- scheduling [p]ool size: {args.poolsize or 'infinite'}\n"
+        f"- scheduling [p]ool size (lookahead): {args.poolsize or 'infinite'}\n"
         f"- object address di[s]tribution parameter (Zipf): {args.s:.2f}\n"
     )
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    n_runs = len(sched_times) * len(core_counts) * args.repeats * 4
+    n_runs = len(sched_times) * len(core_counts) * args.repeats * 5
     tr_factory = RandomFactory(args.memsize, tr_types.values(), args.n, n_runs, args.s)
 
-    print("Constant-time optimal scheduler\n")
+    print("Tournament scheduler (pipelined)\n")
     run_sim(
-        ConstantTimeScheduler,
-        {"n_transactions": None},
-        FullExecutor,
-        {},
-        use_pool=False,
+        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
     )
-    print("")
 
-    print(
-        "Constant-time randomized scheduler\n"
-        f"- concurr[e]ntly scheduled transactions: {args.schedule_per_round}\n"
+    print("Tournament scheduler (non-pipelined)\n")
+    run_sim(
+        TournamentScheduler, {"is_pipelined": False}, RandomExecutor, {},
     )
+
+    print("Constant-time scheduler\n")
     run_sim(
         ConstantTimeScheduler,
         {"n_transactions": args.schedule_per_round},
         RandomExecutor,
         {},
     )
-    print("")
 
-    print("Tournament scheduler (pipelined)\n")
+    print("Constant-time scheduler with infinite lookahead\n")
     run_sim(
-        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
+        ConstantTimeScheduler,
+        {"n_transactions": None},
+        RandomExecutor,
+        {},
+        use_pool=False,
     )
-    print("")
 
-    print("Tournament scheduler (non-pipelined)\n")
+    print(
+        "Constant-time scheduler with infinite lookahead and optimal execution policy\n"
+    )
     run_sim(
-        TournamentScheduler, {"is_pipelined": False}, RandomExecutor, {},
+        ConstantTimeScheduler,
+        {"n_transactions": None},
+        FullExecutor,
+        {},
+        use_pool=False,
     )
 
 
