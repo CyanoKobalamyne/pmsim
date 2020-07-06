@@ -31,6 +31,40 @@ class ConstantTimeScheduler(TransactionScheduler):
         return candidates, self.scheduling_time
 
 
+class MaximalScheduler(TransactionScheduler):
+    """Scheduler that tries to maximize the number of transactions scheduled."""
+
+    def __init__(self, scheduling_time: int = 0, queue_size: int = None):
+        """Initialize a new scheduler.
+
+        Arguments:
+            scheduling_time: number of cycles the scheduler takes to choose the next
+                             transaction(s) to execute
+        """
+        super().__init__(queue_size)
+        self.scheduling_time = scheduling_time
+
+    def schedule(
+        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+    ) -> Tuple[MutableSet[Transaction], int]:
+        """See TransacionScheduler.schedule."""
+        pending_list = list(pending)
+
+        def all_candidate_sets(prefix, i):
+            if i == len(pending_list):
+                yield prefix
+                return
+            yield from all_candidate_sets(prefix, i + 1)
+            tr = pending_list[i]
+            if ongoing.compatible(tr) and prefix.compatible(tr):
+                new_prefix = TransactionSet(prefix)
+                new_prefix.add(tr)
+                yield from all_candidate_sets(new_prefix, i + 1)
+
+        canddates = max(all_candidate_sets(TransactionSet(), 0), key=len)
+        return canddates, self.scheduling_time
+
+
 class TournamentScheduler(TransactionScheduler):
     """Implementation of a "tournament" scheduler."""
 

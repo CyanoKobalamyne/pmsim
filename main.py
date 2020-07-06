@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
-from schedulers import ConstantTimeScheduler, TournamentScheduler
+from schedulers import ConstantTimeScheduler, MaximalScheduler, TournamentScheduler
 from simulator import Simulator
 
 
@@ -132,6 +132,11 @@ def _main() -> None:
     print("Constant-time scheduler")
     run_sim(
         ConstantTimeScheduler, {}, RandomExecutor, {},
+    )
+
+    print("Maximal scheduler")
+    run_sim(
+        MaximalScheduler, {}, RandomExecutor, {},
     )
 
     print("Constant-time scheduler with optimal execution policy")
