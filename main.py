@@ -67,9 +67,6 @@ def _main() -> None:
     )
     args = parser.parse_args()
 
-    if args.queuesize is None:
-        args.queuesize = args.poolsize
-
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
