@@ -108,6 +108,7 @@ def _main() -> None:
         f"Memory size (-m): {args.memsize}\n"
         f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
         f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
+        f"Runs per configuration (-r): {args.repeats}\n"
     )
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
