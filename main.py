@@ -119,14 +119,14 @@ def _main() -> None:
         args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
     )
 
-    print("Tournament scheduler (pipelined)")
+    print("Tournament scheduler")
     run_sim(
-        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
+        TournamentScheduler, {}, RandomExecutor, {},
     )
 
-    print("Tournament scheduler (non-pipelined)")
+    print("Tournament scheduler (fully pipelined)")
     run_sim(
-        TournamentScheduler, {"is_pipelined": False}, RandomExecutor, {},
+        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
     )
 
     print("Greedy scheduler")
