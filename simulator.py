@@ -41,11 +41,9 @@ class Simulator:
         """
 
         def cores_clock(state):
-            if not state.free_cores:
-                return state.busy_cores[0].clock
-            elif not state.busy_cores:
-                return state.free_cores[0].clock
-            return min(state.busy_cores[0].clock, state.free_cores[0].clock)
+            if not state.busy_cores:
+                return state.scheduler_clock
+            return state.busy_cores[0].clock
 
         queue = [(0, 0, self.start_state)]  # time, step, state
         step = 1
@@ -68,12 +66,7 @@ class Simulator:
                 self.scheduler.run(state)
 
             # Compute next states for the execution units.
-            if state.free_cores and state.scheduled:
-                # If some core were idle while the scheduler was working,
-                # move their clocks forward.
-                for core in state.free_cores:
-                    core.clock = max(core.clock, state.scheduler_clock)
-                heapq.heapify(state.free_cores)
+            if len(state.busy_cores) < state.core_count and state.scheduled:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
                     next_time = cores_clock(next_state)
@@ -82,17 +75,8 @@ class Simulator:
             else:
                 # Remove first finished transaction.
                 finished_core = heapq.heappop(state.busy_cores)
-                finished_core.transaction = None
-                # If the scheduler was idle until the first core freed up, move its
-                # clock forward.
+                # If the scheduler was idle, move its clock forward.
                 state.scheduler_clock = max(state.scheduler_clock, finished_core.clock)
-                # If the free cores are running behind the scheduler, move their clocks
-                # forward.
-                for core in state.free_cores:
-                    core.clock = state.scheduler_clock
-                heapq.heapify(state.free_cores)
-                finished_core.clock = state.scheduler_clock
-                heapq.heappush(state.free_cores, finished_core)
                 heapq.heappush(queue, (state.scheduler_clock, step, state))
                 step += 1
 

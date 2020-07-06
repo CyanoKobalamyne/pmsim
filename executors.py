@@ -12,12 +12,9 @@ class RandomExecutor(TransactionExecutor):
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
-        # Execute scheduled transaction on first idle core.
-        core = heapq.heappop(state.free_cores)
         # Execute one transaction.
         tr = state.scheduled.pop()
-        core.transaction = tr
-        core.clock += tr.time
+        core = Core(state.scheduler_clock + tr.time, tr)
         heapq.heappush(state.busy_cores, core)
         return [state]
 
@@ -27,12 +24,10 @@ class FullExecutor(TransactionExecutor):
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
-        # Find an idle core.
-        core = heapq.heappop(state.free_cores)
         # Generate output state for each scheduled transaction.
         out_states = []
         for tr in state.scheduled:
-            new_core = Core(core.clock + tr.time, tr)
+            new_core = Core(state.scheduler_clock + tr.time, tr)
             new_state = state.copy()
             new_state.scheduled.remove(tr)
             heapq.heappush(new_state.busy_cores, new_core)

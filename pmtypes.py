@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
-from typing import Iterable, Iterator, List, MutableSet, Optional, Set
+from typing import Iterable, Iterator, List, MutableSet, Set
 
 
 class Transaction:
@@ -119,8 +119,8 @@ class Core:
 
     """
 
-    clock: int = 0
-    transaction: Optional[Transaction] = dataclasses.field(default=None, compare=False)
+    clock: int
+    transaction: Transaction = dataclasses.field(compare=False)
 
 
 @dataclasses.dataclass
@@ -130,14 +130,9 @@ class MachineState:
     incoming: Iterator[Transaction]
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
-    core_count: dataclasses.InitVar[int] = 1
-    free_cores: List[Core] = dataclasses.field(default_factory=list)
+    core_count: int = 1
     busy_cores: List[Core] = dataclasses.field(default_factory=list)
     scheduler_clock: int = 0
-
-    def __post_init__(self, core_count, *args, **kwargs):
-        """Perform extra field initialization."""
-        self.free_cores = [Core() for _ in range(core_count)]
 
     def __bool__(self):
         """Return true if this is not an end state."""
@@ -152,6 +147,5 @@ class MachineState:
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)
-        new.free_cores = list(Core(c.clock, c.transaction) for c in self.free_cores)
         new.busy_cores = list(Core(c.clock, c.transaction) for c in self.busy_cores)
         return new
