@@ -7,7 +7,7 @@ import random
 import statistics
 from typing import Dict, List
 
-from executors import OptimalExecutor, RandomExecutor
+from executors import RandomExecutor
 from factories import RandomFactory
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from simulator import Simulator
@@ -137,11 +137,6 @@ def _main() -> None:
     print("Maximal scheduler")
     run_sim(
         MaximalScheduler, {}, RandomExecutor, {},
-    )
-
-    print("Greedy scheduler with optimal execution policy")
-    run_sim(
-        GreedyScheduler, {}, OptimalExecutor, {},
     )
 
 
