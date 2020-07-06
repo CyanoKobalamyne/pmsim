@@ -135,6 +135,11 @@ def _main() -> None:
         ConstantTimeScheduler, {}, RandomExecutor, {}, use_pool=False,
     )
 
+    print("Constant-time scheduler with optimal execution policy\n")
+    run_sim(
+        ConstantTimeScheduler, {}, FullExecutor, {},
+    )
+
     print(
         "Constant-time scheduler with infinite lookahead and optimal execution policy\n"
     )
