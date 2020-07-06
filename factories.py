@@ -1,7 +1,8 @@
 """Classes that create transaction generators for Puppetmaster."""
 
+import itertools
 import random
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, Mapping
 
 from more_itertools import SequenceView
 
@@ -53,9 +54,14 @@ class RandomFactory(TransactionFactory):
             self.total_tr_time += cur_tr_count * tr["time"]
 
         # Generate transaction metadata in randomized order.
-        one_tr_data: List[Mapping[str, int]] = []
-        for i, tr_type in enumerate(tr_types):
-            one_tr_data.extend(tr_type for _ in range(tr_counts[i]))
+        one_tr_data = list(
+            itertools.chain(
+                *(
+                    (tr_type for _ in range(tr_counts[i]))
+                    for i, tr_type in enumerate(tr_types)
+                )
+            )
+        )
         self.tr_data = []
         for _ in range(gen_count):
             random.shuffle(one_tr_data)
