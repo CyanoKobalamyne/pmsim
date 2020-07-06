@@ -34,6 +34,12 @@ def _main() -> None:
         default=1,
     )
     parser.add_argument(
+        "-q",
+        "--queuesize",
+        help="size of queue for transactions waiting to be executed",
+        type=int,
+    )
+    parser.add_argument(
         "-z",
         "--zipf-param",
         help="parameter of the Zipf's law distribution",
@@ -60,6 +66,9 @@ def _main() -> None:
         type=int,
     )
     args = parser.parse_args()
+
+    if args.queuesize is None:
+        args.queuesize = args.poolsize
 
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
@@ -88,7 +97,7 @@ def _main() -> None:
                 results: List[int] = []
                 for _ in range(args.repeats):
                     transactions = iter(tr_factory)
-                    scheduler = sched_cls(sched_time, **sched_args)
+                    scheduler = sched_cls(sched_time, args.queuesize, **sched_args)
                     executor = exec_cls(**exec_args)
                     sim = Simulator(
                         transactions, scheduler, executor, core_count, args.poolsize,

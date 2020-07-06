@@ -10,13 +10,14 @@ from pmtypes import Transaction, TransactionSet
 class ConstantTimeScheduler(TransactionScheduler):
     """Implementation of a simple scheduler."""
 
-    def __init__(self, scheduling_time: int = 0):
+    def __init__(self, scheduling_time: int = 0, queue_size: int = None):
         """Initialize a new scheduler.
 
         Arguments:
             scheduling_time: number of cycles the scheduler takes to choose the next
                              transaction(s) to execute
         """
+        super().__init__(queue_size)
         self.scheduling_time = scheduling_time
 
     def schedule(
@@ -33,13 +34,16 @@ class ConstantTimeScheduler(TransactionScheduler):
 class TournamentScheduler(TransactionScheduler):
     """Implementation of a "tournament" scheduler."""
 
-    def __init__(self, cycles_per_merge: int, is_pipelined=False):
+    def __init__(
+        self, cycles_per_merge: int, queue_size: int = None, is_pipelined=False
+    ):
         """Initialize a new scheduler.
 
         Arguments:
             cycles_per_merge: time it takes to perform one "merge" operation in hardware
             is_pipelined: whether scheduling time depends on the number of merge steps
         """
+        super().__init__(queue_size)
         self.cycles_per_merge = cycles_per_merge
         self.is_pipelined = is_pipelined
 
