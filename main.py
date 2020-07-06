@@ -79,7 +79,7 @@ def _main() -> None:
     header_template = col1_template + cols_header_template
     body_template = col1_template + cols_body_template
 
-    def run_sim(sched_cls, sched_args, exec_cls, exec_args, use_pool=True):
+    def run_sim(sched_cls, sched_args, exec_cls, exec_args):
         print(" " * col1_width + title)
         print(header_template.format(col1_header, *core_counts))
         for sched_time in sched_times:
@@ -91,11 +91,7 @@ def _main() -> None:
                     scheduler = sched_cls(sched_time, **sched_args)
                     executor = exec_cls(**exec_args)
                     sim = Simulator(
-                        transactions,
-                        scheduler,
-                        executor,
-                        core_count,
-                        args.poolsize if use_pool else None,
+                        transactions, scheduler, executor, core_count, args.poolsize,
                     )
                     results.append(sim.run())
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
@@ -131,21 +127,9 @@ def _main() -> None:
         ConstantTimeScheduler, {}, RandomExecutor, {},
     )
 
-    print("Constant-time scheduler with infinite lookahead")
-    run_sim(
-        ConstantTimeScheduler, {}, RandomExecutor, {}, use_pool=False,
-    )
-
     print("Constant-time scheduler with optimal execution policy")
     run_sim(
         ConstantTimeScheduler, {}, FullExecutor, {},
-    )
-
-    print(
-        "Constant-time scheduler with infinite lookahead and optimal execution policy"
-    )
-    run_sim(
-        ConstantTimeScheduler, {}, FullExecutor, {}, use_pool=False,
     )
 
 
