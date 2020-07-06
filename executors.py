@@ -19,8 +19,8 @@ class RandomExecutor(TransactionExecutor):
         return [state]
 
 
-class FullExecutor(TransactionExecutor):
-    """Chooses every possible execution path."""
+class OptimalExecutor(TransactionExecutor):
+    """Explores every possible execution path."""
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
