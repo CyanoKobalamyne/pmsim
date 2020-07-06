@@ -10,17 +10,14 @@ from pmtypes import Transaction, TransactionSet
 class ConstantTimeScheduler(TransactionScheduler):
     """Implementation of a simple scheduler."""
 
-    def __init__(self, scheduling_time: int = 0, n_transactions: int = 1):
+    def __init__(self, scheduling_time: int = 0):
         """Initialize a new scheduler.
 
         Arguments:
             scheduling_time: number of cycles the scheduler takes to choose the next
                              transaction(s) to execute
-            n_transactions: maximum number of transactions returned by the scheduler,
-                            unlimited if None
         """
         self.scheduling_time = scheduling_time
-        self.n = n_transactions
 
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
@@ -28,8 +25,6 @@ class ConstantTimeScheduler(TransactionScheduler):
         """See TransacionScheduler.schedule."""
         candidates = TransactionSet()
         for tr in pending:
-            if self.n is not None and len(candidates) == self.n:
-                break
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
         return candidates, self.scheduling_time

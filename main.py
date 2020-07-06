@@ -26,11 +26,10 @@ def _main() -> None:
     parser.add_argument(
         "-m", "--memsize", help="memory size (# of objects)", default=1024, type=int
     )
-    parser.add_argument("-p", "--poolsize", help="size of scheduling pool", type=int)
     parser.add_argument(
-        "-e",
-        "--schedule-per-round",
-        help="number of transactions to schedule in one round",
+        "-p",
+        "--poolsize",
+        help="size of scheduling pool (lookahead)",
         type=int,
         default=1,
     )
@@ -124,30 +123,19 @@ def _main() -> None:
 
     print("Constant-time scheduler\n")
     run_sim(
-        ConstantTimeScheduler,
-        {"n_transactions": args.schedule_per_round},
-        RandomExecutor,
-        {},
+        ConstantTimeScheduler, {}, RandomExecutor, {},
     )
 
     print("Constant-time scheduler with infinite lookahead\n")
     run_sim(
-        ConstantTimeScheduler,
-        {"n_transactions": None},
-        RandomExecutor,
-        {},
-        use_pool=False,
+        ConstantTimeScheduler, {}, RandomExecutor, {}, use_pool=False,
     )
 
     print(
         "Constant-time scheduler with infinite lookahead and optimal execution policy\n"
     )
     run_sim(
-        ConstantTimeScheduler,
-        {"n_transactions": None},
-        FullExecutor,
-        {},
-        use_pool=False,
+        ConstantTimeScheduler, {}, FullExecutor, {}, use_pool=False,
     )
 
 
