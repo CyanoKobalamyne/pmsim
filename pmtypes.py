@@ -128,8 +128,8 @@ class MachineState:
     """Represents the full state of the machine. Useful for state space search."""
 
     incoming: Iterator[Transaction]
-    pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
-    scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
+    pending: Set[Transaction] = dataclasses.field(default_factory=set)
+    scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
     cores: List[Core] = dataclasses.field(default_factory=list)
     clock: int = 0  # global clock, same as clock of the scheduler.
