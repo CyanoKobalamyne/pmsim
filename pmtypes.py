@@ -131,12 +131,12 @@ class MachineState:
     pending: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     scheduled: MutableSet[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
-    busy_cores: List[Core] = dataclasses.field(default_factory=list)
+    cores: List[Core] = dataclasses.field(default_factory=list)
     scheduler_clock: int = 0
 
     def __bool__(self):
         """Return true if this is not an end state."""
-        return bool(self.incoming or self.pending or self.scheduled or self.busy_cores)
+        return bool(self.incoming or self.pending or self.scheduled or self.cores)
 
     def copy(self) -> MachineState:
         """Make a 1-deep copy of this object.
@@ -147,5 +147,5 @@ class MachineState:
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)
-        new.busy_cores = list(Core(c.clock, c.transaction) for c in self.busy_cores)
+        new.cores = list(Core(c.clock, c.transaction) for c in self.cores)
         return new

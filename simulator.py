@@ -41,9 +41,9 @@ class Simulator:
         """
 
         def cores_clock(state):
-            if not state.busy_cores:
+            if not state.cores:
                 return state.scheduler_clock
-            return state.busy_cores[0].clock
+            return state.cores[0].clock
 
         queue = [(0, 0, self.start_state)]  # time, step, state
         step = 1
@@ -66,7 +66,7 @@ class Simulator:
                 self.scheduler.run(state)
 
             # Compute next states for the execution units.
-            if len(state.busy_cores) < state.core_count and state.scheduled:
+            if len(state.cores) < state.core_count and state.scheduled:
                 # Execute a scheduled transaction.
                 for next_state in self.executor.run(state):
                     next_time = cores_clock(next_state)
@@ -74,7 +74,7 @@ class Simulator:
                     step += 1
             else:
                 # Remove first finished transaction.
-                finished_core = heapq.heappop(state.busy_cores)
+                finished_core = heapq.heappop(state.cores)
                 # If the scheduler was idle, move its clock forward.
                 state.scheduler_clock = max(state.scheduler_clock, finished_core.clock)
                 heapq.heappush(queue, (state.scheduler_clock, step, state))
