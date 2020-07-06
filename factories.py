@@ -37,28 +37,34 @@ class RandomFactory(TransactionFactory):
             gen_count: number of runs
             zipf_param: parameter of the Zipf's law distribution
         """
-        total_weight = sum(tr["weight"] for tr in tr_types)
-        self.tr_counts = []
+        self.tr_count = tr_count
+        self.gen_count = gen_count
+        self.gen_index = 0
+
+        # Compute exact transaction and object counts and total time.
+        tr_counts = []
         self.obj_count = 0
         self.total_tr_time = 0
+        total_weight = sum(tr["weight"] for tr in tr_types)
         for tr in tr_types:
             cur_tr_count = int(round(tr_count * tr["weight"] / total_weight))
-            self.tr_counts.append(cur_tr_count)
+            tr_counts.append(cur_tr_count)
             self.obj_count += cur_tr_count * (tr["reads"] + tr["writes"])
             self.total_tr_time += cur_tr_count * tr["time"]
+
+        # Generate transaction metadata in randomized order.
         one_tr_data: List[Mapping[str, int]] = []
         for i, tr_type in enumerate(tr_types):
-            one_tr_data.extend(tr_type for _ in range(self.tr_counts[i]))
+            one_tr_data.extend(tr_type for _ in range(tr_counts[i]))
         self.tr_data = []
         for _ in range(gen_count):
             random.shuffle(one_tr_data)
             self.tr_data.extend(one_tr_data)
+
+        # Generate memory addresses according to distribution.
         addr_count = self.obj_count * gen_count
         weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
-        self.tr_count = tr_count
-        self.gen_count = gen_count
-        self.gen_index = 0
 
     def __iter__(self) -> Iterator[Transaction]:
         """Create a new iterator of transactions."""
