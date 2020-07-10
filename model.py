@@ -20,13 +20,15 @@ class TransactionFactory(Iterable[Transaction], Sized, ABC):
 class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
-    def __init__(self, queue_size: int = None):
+    def __init__(self, op_time: int = 0, queue_size: int = None):
         """Create a new scheduler.
 
         Arguments:
+            op_time: number of cycles the scheduler takes to execute a single operation
             queue_size: maximum number of transactions that can be waiting for execution
                         (unlimited if None)
         """
+        self.op_time = op_time
         self.queue_size = queue_size
 
     def run(self, state: MachineState) -> None:

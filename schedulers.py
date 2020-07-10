@@ -10,16 +10,6 @@ from pmtypes import Transaction, TransactionSet
 class GreedyScheduler(TransactionScheduler):
     """Implementation of a simple scheduler."""
 
-    def __init__(self, scheduling_time: int = 0, queue_size: int = None):
-        """Initialize a new scheduler.
-
-        Arguments:
-            scheduling_time: number of cycles the scheduler takes to choose the next
-                             transaction(s) to execute
-        """
-        super().__init__(queue_size)
-        self.scheduling_time = scheduling_time
-
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
     ) -> Tuple[MutableSet[Transaction], int]:
@@ -31,21 +21,11 @@ class GreedyScheduler(TransactionScheduler):
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
-        return candidates, self.scheduling_time
+        return candidates, self.op_time
 
 
 class MaximalScheduler(TransactionScheduler):
     """Scheduler that tries to maximize the number of transactions scheduled."""
-
-    def __init__(self, scheduling_time: int = 0, queue_size: int = None):
-        """Initialize a new scheduler.
-
-        Arguments:
-            scheduling_time: number of cycles the scheduler takes to choose the next
-                             transaction(s) to execute
-        """
-        super().__init__(queue_size)
-        self.scheduling_time = scheduling_time
 
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
@@ -65,23 +45,19 @@ class MaximalScheduler(TransactionScheduler):
                 yield from all_candidate_sets(new_prefix, i + 1)
 
         canddates = max(all_candidate_sets(TransactionSet(), 0), key=len)
-        return canddates, self.scheduling_time
+        return canddates, self.op_time
 
 
 class TournamentScheduler(TransactionScheduler):
     """Implementation of a "tournament" scheduler."""
 
-    def __init__(
-        self, cycles_per_merge: int, queue_size: int = None, is_pipelined=False
-    ):
+    def __init__(self, *args, is_pipelined=False):
         """Initialize a new scheduler.
 
         Arguments:
-            cycles_per_merge: time it takes to perform one "merge" operation in hardware
             is_pipelined: whether scheduling time depends on the number of merge steps
         """
-        super().__init__(queue_size)
-        self.cycles_per_merge = cycles_per_merge
+        super().__init__(*args)
         self.is_pipelined = is_pipelined
 
     def schedule(
@@ -103,5 +79,5 @@ class TournamentScheduler(TransactionScheduler):
             rounds += 1
         return (
             (sets[0] if sets else TransactionSet()),
-            self.cycles_per_merge * (1 if self.is_pipelined else max(1, rounds)),
+            self.op_time * (1 if self.is_pipelined else max(1, rounds)),
         )
