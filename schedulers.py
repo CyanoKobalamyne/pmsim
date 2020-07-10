@@ -1,5 +1,6 @@
 """Scheduler implementations."""
 
+import heapq
 import itertools
 from typing import Iterable, MutableSet, Tuple
 
@@ -12,7 +13,7 @@ class GreedyScheduler(TransactionScheduler):
 
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
-    ) -> Tuple[MutableSet[Transaction], int]:
+    ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See TransacionScheduler.schedule.
 
         Iterates through pending transactions once and adds all compatible ones.
@@ -21,15 +22,24 @@ class GreedyScheduler(TransactionScheduler):
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
-        return candidates, self.op_time
+        return [(candidates, self.op_time)]
 
 
 class MaximalScheduler(TransactionScheduler):
     """Scheduler that tries to maximize the number of transactions scheduled."""
 
+    def __init__(self, *args, n_schedules=1):
+        """Initialize a new scheduler.
+
+        Arguments:
+            n_schedules: the number of possible sets to return
+        """
+        super().__init__(*args)
+        self.n_schedules = n_schedules
+
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
-    ) -> Tuple[MutableSet[Transaction], int]:
+    ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See TransacionScheduler.schedule."""
         pending_list = list(pending)
 
@@ -44,8 +54,9 @@ class MaximalScheduler(TransactionScheduler):
                 new_prefix.add(tr)
                 yield from all_candidate_sets(new_prefix, i + 1)
 
-        canddates = max(all_candidate_sets(TransactionSet(), 0), key=len)
-        return canddates, self.op_time
+        sets = all_candidate_sets(TransactionSet(), 0)
+        out = heapq.nlargest(self.n_schedules, sets, key=len)
+        return map(lambda x: (x, self.op_time), out)
 
 
 class TournamentScheduler(TransactionScheduler):
@@ -62,7 +73,7 @@ class TournamentScheduler(TransactionScheduler):
 
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
-    ) -> Tuple[MutableSet[Transaction], int]:
+    ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See TransacionScheduler.schedule.
 
         Filters out all transactions that conflict with currently running ones, then
@@ -77,7 +88,9 @@ class TournamentScheduler(TransactionScheduler):
                     t1 |= t2
             sets = sets[::2]
             rounds += 1
-        return (
-            (sets[0] if sets else TransactionSet()),
-            self.op_time * (1 if self.is_pipelined else max(1, rounds)),
-        )
+        return [
+            (
+                (sets[0] if sets else TransactionSet()),
+                self.op_time * (1 if self.is_pipelined else max(1, rounds)),
+            )
+        ]

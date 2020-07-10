@@ -31,7 +31,7 @@ class TransactionScheduler(ABC):
         self.op_time = op_time
         self.queue_size = queue_size
 
-    def run(self, state: MachineState) -> None:
+    def run(self, state: MachineState) -> Iterable[MachineState]:
         """Try scheduling a batch of transactions.
 
         Arguments:
@@ -42,26 +42,30 @@ class TransactionScheduler(ABC):
             ones without conflicts
         """
         if self.queue_size == len(state.scheduled):
-            return
+            return [state]
         ongoing = TransactionSet(core.transaction for core in state.cores)
         for tr in state.scheduled:
             ongoing.add(tr)
-        scheduled, time = self.schedule(ongoing, state.pending)
-        state.clock += time
-        if scheduled:
-            count = (
-                self.queue_size - len(state.scheduled)
-                if self.queue_size is not None
-                else None
-            )
-            scheduled = set(itertools.islice(scheduled, count))
-            state.scheduled |= scheduled
-            state.pending -= scheduled
+        out_states = []
+        for scheduled, time in self.schedule(ongoing, state.pending):
+            new_state = state.copy()
+            new_state.clock += time
+            if scheduled:
+                count = (
+                    self.queue_size - len(new_state.scheduled)
+                    if self.queue_size is not None
+                    else None
+                )
+                scheduled = set(itertools.islice(scheduled, count))
+                new_state.scheduled |= scheduled
+                new_state.pending -= scheduled
+            out_states.append(new_state)
+        return out_states
 
     @abstractmethod
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
-    ) -> Tuple[MutableSet[Transaction], int]:
+    ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """Schedule one or more transactions."""
 
 

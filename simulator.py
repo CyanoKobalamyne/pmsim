@@ -57,26 +57,29 @@ class Simulator:
                     except StopIteration:
                         break
                 # Try scheduling a batch of new transactions.
-                self.scheduler.run(state)
-
-            # Compute next states for the execution units.
-            if len(state.cores) < state.core_count and state.scheduled:
-                # Execute a scheduled transaction.
-                for next_state in self.executor.run(state):
-                    next_time = min(next_state.clock, next_state.cores[0].clock)
-                    heapq.heappush(queue, (next_time, step, next_state))
-                    step += 1
+                temp_states = self.scheduler.run(state)
             else:
-                # Remove first finished transaction.
-                finished_core = heapq.heappop(state.cores)
-                # If the scheduler was idle, move its clock forward.
-                state.clock = max(state.clock, finished_core.clock)
-                time = (
-                    min(state.clock, state.cores[0].clock)
-                    if state.cores
-                    else state.clock
-                )
-                heapq.heappush(queue, (time, step, state))
-                step += 1
+                temp_states = [state]
+
+            for state in temp_states:
+                # Compute next states for the execution units.
+                if len(state.cores) < state.core_count and state.scheduled:
+                    # Execute a scheduled transaction.
+                    for next_state in self.executor.run(state):
+                        next_time = min(next_state.clock, next_state.cores[0].clock)
+                        heapq.heappush(queue, (next_time, step, next_state))
+                        step += 1
+                else:
+                    # Remove first finished transaction.
+                    finished_core = heapq.heappop(state.cores)
+                    # If the scheduler was idle, move its clock forward.
+                    state.clock = max(state.clock, finished_core.clock)
+                    time = (
+                        min(state.clock, state.cores[0].clock)
+                        if state.cores
+                        else state.clock
+                    )
+                    heapq.heappush(queue, (time, step, state))
+                    step += 1
 
         raise RuntimeError  # We should never get here.
