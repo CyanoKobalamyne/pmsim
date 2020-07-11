@@ -99,7 +99,8 @@ def _main() -> None:
                     sim = Simulator(
                         transactions, scheduler, executor, core_count, args.poolsize,
                     )
-                    results.append(sim.run())
+                    path = sim.run()
+                    results.append(path[-1].clock)
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
             print(body_template.format(f"{sched_time}", *throughputs))
         print("")

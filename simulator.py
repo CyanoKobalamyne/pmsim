@@ -1,7 +1,7 @@
 """Main Puppetmaster simulator class."""
 
 import heapq
-from typing import Iterator
+from typing import Iterator, List
 
 from model import TransactionExecutor, TransactionScheduler
 from pmtypes import MachineState, Transaction
@@ -33,20 +33,21 @@ class Simulator:
         self.pool_size = pool_size
         self.start_state = MachineState(transactions, core_count=core_count)
 
-    def run(self) -> int:
+    def run(self) -> List[MachineState]:
         """Simulate execution of a set of transactions on this machine.
 
         Returns:
             amount of time (cycles) it took to execute all transactions
         """
-        queue = [(0, 0, self.start_state)]  # time, step, state
+        queue = [(0, 0, [self.start_state])]  # time, step, state
         step = 1
         while queue:
             # Get next state off the queue.
-            time, _, state = heapq.heappop(queue)
+            time, _, path = heapq.heappop(queue)
+            state = path[-1]
 
             if not state:
-                return time
+                return path
 
             # Run scheduler if there are no finished cores.
             if not state.cores or state.clock <= state.cores[0].clock:
@@ -67,7 +68,7 @@ class Simulator:
                     # Execute a scheduled transaction.
                     for next_state in self.executor.run(state):
                         next_time = min(next_state.clock, next_state.cores[0].clock)
-                        heapq.heappush(queue, (next_time, step, next_state))
+                        heapq.heappush(queue, (next_time, step, path + [next_state]))
                         step += 1
                 else:
                     # Remove first finished transaction.
@@ -79,7 +80,7 @@ class Simulator:
                         if state.cores
                         else state.clock
                     )
-                    heapq.heappush(queue, (time, step, state))
+                    heapq.heappush(queue, (time, step, path + [state]))
                     step += 1
 
         raise RuntimeError  # We should never get here.
