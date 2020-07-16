@@ -39,7 +39,7 @@ class TestSimple(TestCase):
         sched = GreedyScheduler()
         exe = RandomExecutor()
         s = Simulator(TrIter(transactions), sched, exe, n_cores, pool_size=None)
-        result_time = s.run()
+        result_time = s.run()[-1].clock
         self.assertEqual(expected_time, result_time)
 
     def test_01(self):
