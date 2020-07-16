@@ -38,7 +38,7 @@ class TestSimple(TestCase):
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = GreedyScheduler()
         exe = RandomExecutor()
-        s = Simulator(TrIter(transactions), sched, exe, n_cores, pool_size=None)
+        s = Simulator(TrIter(transactions), sched, exe, n_cores)
         result_time = s.run()[-1].clock
         self.assertEqual(expected_time, result_time)
 

@@ -94,11 +94,11 @@ def _main() -> None:
                 results: List[int] = []
                 for _ in range(args.repeats):
                     transactions = iter(tr_factory)
-                    scheduler = sched_cls(sched_time, args.queuesize, **sched_args)
-                    executor = exec_cls(**exec_args)
-                    sim = Simulator(
-                        transactions, scheduler, executor, core_count, args.poolsize,
+                    scheduler = sched_cls(
+                        sched_time, args.poolsize, args.queuesize, **sched_args
                     )
+                    executor = exec_cls(**exec_args)
+                    sim = Simulator(transactions, scheduler, executor, core_count)
                     path = sim.run()
                     results.append(path[-1].clock)
                 throughputs.append(tr_factory.total_time / statistics.mean(results))

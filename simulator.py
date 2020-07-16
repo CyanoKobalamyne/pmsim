@@ -16,7 +16,6 @@ class Simulator:
         scheduler: TransactionScheduler,
         executor: TransactionExecutor,
         core_count: int = 1,
-        pool_size: int = None,
     ) -> None:
         """Create a new simulator.
 
@@ -24,13 +23,10 @@ class Simulator:
             transactions: generator of transactions to execute
             scheduler: component for scheduling transactions
             executor: component for executing transactions on the processing cores
-            pool_size: number of tranactions seen by the scheduler simultaneously
-                       (all of them if None)
 
         """
         self.scheduler = scheduler
         self.executor = executor
-        self.pool_size = pool_size
         self.start_state = MachineState(transactions, core_count=core_count)
 
     def run(self) -> List[MachineState]:
@@ -51,13 +47,6 @@ class Simulator:
 
             # Run scheduler if there are no finished cores.
             if not state.cores or state.clock <= state.cores[0].clock:
-                # Fill up pending pool.
-                while self.pool_size is None or len(state.pending) < self.pool_size:
-                    try:
-                        state.pending.add(next(state.incoming))
-                    except StopIteration:
-                        break
-                # Try scheduling a batch of new transactions.
                 temp_states = self.scheduler.run(state)
             else:
                 temp_states = [state]

@@ -20,15 +20,18 @@ class TransactionFactory(Iterable[Transaction], Sized, ABC):
 class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
-    def __init__(self, op_time: int = 0, queue_size: int = None):
+    def __init__(self, op_time: int = 0, pool_size: int = None, queue_size: int = None):
         """Create a new scheduler.
 
         Arguments:
             op_time: number of cycles the scheduler takes to execute a single operation
+            pool_size: number of tranactions seen by the scheduler simultaneously
+                       (all of them if None)
             queue_size: maximum number of transactions that can be waiting for execution
                         (unlimited if None)
         """
         self.op_time = op_time
+        self.pool_size = pool_size
         self.queue_size = queue_size
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
@@ -41,8 +44,16 @@ class TransactionScheduler(ABC):
             transactions ready to be executed concurrently with the currently running
             ones without conflicts
         """
+        # Don't do anything if queue is full.
         if self.queue_size == len(state.scheduled):
             return [state]
+        # Fill up pending pool.
+        while self.pool_size is None or len(state.pending) < self.pool_size:
+            try:
+                state.pending.add(next(state.incoming))
+            except StopIteration:
+                break
+        # Try scheduling a batch of new transactions.
         ongoing = TransactionSet(core.transaction for core in state.cores)
         for tr in state.scheduled:
             ongoing.add(tr)
