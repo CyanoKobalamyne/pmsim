@@ -21,7 +21,7 @@ def _main() -> None:
     random.seed(0)
 
     parser = ArgumentParser(
-        description="Run puppetmaster on a range of input distributions."
+        description="Puppetmaster, a hardware accelerator for transactional memory"
     )
     subparsers = parser.add_subparsers(title="commands")
 
