@@ -29,8 +29,11 @@ class Simulator:
         self.executor = executor
         self.start_state = MachineState(transactions, core_count=core_count)
 
-    def run(self) -> List[MachineState]:
+    def run(self, verbose=False) -> List[MachineState]:
         """Simulate execution of a set of transactions on this machine.
+
+        Arguments:
+            verbose: print additional debugging info if True
 
         Returns:
             amount of time (cycles) it took to execute all transactions
@@ -43,6 +46,8 @@ class Simulator:
             state = path[-1]
 
             if not state:
+                if verbose:
+                    print(f"States: {step} total, {len(queue)} unexplored")
                 return path
 
             # Run scheduler if there are no finished cores.
@@ -71,5 +76,8 @@ class Simulator:
                     )
                     heapq.heappush(queue, (time, step, path + [state]))
                     step += 1
+
+            if verbose:
+                print(time, step, len(queue), end="\r")
 
         raise RuntimeError  # We should never get here.

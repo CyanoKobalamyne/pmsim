@@ -54,6 +54,9 @@ def _main() -> None:
         type=int,
     )
     parser.add_argument(
+        "-v", "--verbose", help="print debugging information", action="store_true",
+    )
+    parser.add_argument(
         "--log-max-stime",
         help="Log-2 of the maximum scheduling time",
         default=10,
@@ -99,7 +102,7 @@ def _main() -> None:
                     )
                     executor = exec_cls(**exec_args)
                     sim = Simulator(transactions, scheduler, executor, core_count)
-                    path = sim.run()
+                    path = sim.run(args.verbose)
                     results.append(path[-1].clock)
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
             print(body_template.format(f"{sched_time}", *throughputs))
