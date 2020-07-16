@@ -209,3 +209,11 @@ class MachineState:
         new.scheduled = set(self.scheduled)
         new.cores = list(Core(c.clock, c.transaction) for c in self.cores)
         return new
+
+    def __str__(self):
+        """Return user-friendly string representation of this object."""
+        return (
+            f"<{self.__class__.__name__} at {self.clock}: {len(self.incoming)} "
+            f"incoming, {len(self.pending)} pending, {len(self.scheduled)} scheduled, "
+            f"{len(self.cores)} running>"
+        )
