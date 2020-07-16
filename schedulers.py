@@ -24,6 +24,11 @@ class GreedyScheduler(TransactionScheduler):
                 candidates.add(tr)
         return [(candidates, self.op_time)]
 
+    @property
+    def name(self):
+        """See TransacionScheduler.name."""
+        return "Greedy scheduler"
+
 
 class MaximalScheduler(TransactionScheduler):
     """Scheduler that tries to maximize the number of transactions scheduled."""
@@ -57,6 +62,11 @@ class MaximalScheduler(TransactionScheduler):
         sets = all_candidate_sets(TransactionSet(), 0)
         out = heapq.nlargest(self.n_schedules, sets, key=len)
         return map(lambda x: (x, self.op_time), out)
+
+    @property
+    def name(self):
+        """See TransacionScheduler.name."""
+        return "Maximal scheduler"
 
 
 class TournamentScheduler(TransactionScheduler):
@@ -94,3 +104,10 @@ class TournamentScheduler(TransactionScheduler):
                 self.op_time * (1 if self.is_pipelined else max(1, rounds)),
             )
         ]
+
+    @property
+    def name(self):
+        """See TransacionScheduler.name."""
+        return (
+            f"Tournament scheduler{' (fully pipelined)' if self.is_pipelined else ''}"
+        )

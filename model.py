@@ -79,6 +79,11 @@ class TransactionScheduler(ABC):
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """Schedule one or more transactions."""
 
+    @property
+    @abstractmethod
+    def name(self):
+        """Return a human-readable name for this scheduler."""
+
 
 class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""

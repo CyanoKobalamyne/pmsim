@@ -91,14 +91,19 @@ def _main() -> None:
     )
 
     args = parser.parse_args()
-    args.func(args)
+
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    tr_factory = RandomFactory(
+        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
+    )
+
+    args.func(args, tr_factory)
 
 
-def _make_throughput_table(args) -> None:
+def _make_throughput_table(args, tr_factory) -> None:
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title = "Average total throughput"
     col1_header = "t_sched"
     col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
@@ -113,26 +118,6 @@ def _make_throughput_table(args) -> None:
     header_template = col1_template + cols_header_template
     body_template = col1_template + cols_body_template
 
-    def run_sim(sched_cls, sched_args, exec_cls, exec_args):
-        print(" " * col1_width + title)
-        print(header_template.format(col1_header, *core_counts))
-        for sched_time in sched_times:
-            throughputs: List[float] = []
-            for core_count in core_counts:
-                results: List[int] = []
-                for _ in range(args.repeats):
-                    transactions = iter(tr_factory)
-                    scheduler = sched_cls(
-                        sched_time, args.poolsize, args.queuesize, **sched_args
-                    )
-                    executor = exec_cls(**exec_args)
-                    sim = Simulator(transactions, scheduler, executor, core_count)
-                    path = sim.run(args.verbose)
-                    results.append(path[-1].clock)
-                throughputs.append(tr_factory.total_time / statistics.mean(results))
-            print(body_template.format(f"{sched_time}", *throughputs))
-        print("")
-
     print(
         f"Template: {os.path.basename(args.template.name)}\n"
         f"No. of transactions: {args.n}\n"
@@ -143,33 +128,40 @@ def _make_throughput_table(args) -> None:
         f"Runs per configuration (-r): {args.repeats}\n"
     )
 
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    tr_factory = RandomFactory(
-        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
-    )
+    def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
+        print(sched_cls(**sched_args).name)
+        print(" " * col1_width + "Average total throughput")
+        print(header_template.format(col1_header, *core_counts))
+        for sched_time in sched_times:
+            throughputs: List[float] = []
+            for core_count in core_counts:
+                results = [
+                    path[-1].clock
+                    for _, path in _run_sim(
+                        args,
+                        sched_time,
+                        core_count,
+                        tr_factory,
+                        sched_cls,
+                        sched_args,
+                        exec_cls,
+                        exec_args,
+                    )
+                ]
+                throughputs.append(tr_factory.total_time / statistics.mean(results))
+            print(body_template.format(f"{sched_time}", *throughputs))
+        print()
 
-    print("Tournament scheduler")
-    run_sim(
-        TournamentScheduler, {}, RandomExecutor, {},
-    )
+    run_sims(TournamentScheduler)
 
-    print("Tournament scheduler (fully pipelined)")
-    run_sim(
-        TournamentScheduler, {"is_pipelined": True}, RandomExecutor, {},
-    )
+    run_sims(TournamentScheduler, {"is_pipelined": True})
 
-    print("Greedy scheduler")
-    run_sim(
-        GreedyScheduler, {}, RandomExecutor, {},
-    )
+    run_sims(GreedyScheduler)
 
-    print("Maximal scheduler")
-    run_sim(
-        MaximalScheduler, {}, RandomExecutor, {},
-    )
+    run_sims(MaximalScheduler)
 
 
-def _make_stats_plot(args) -> None:
+def _make_stats_plot(args, tr_factory) -> None:
     filename = (
         f"{PurePath(args.template.name).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
         f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
@@ -178,25 +170,16 @@ def _make_stats_plot(args) -> None:
 
     fig, axes = plt.subplots(args.repeats, 4)
 
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    tr_factory = RandomFactory(
-        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
-    )
-
     j = 0
 
-    def run_sim(title, sched_cls, sched_args):
+    def run_sims(sched_cls, sched_args={}):
         nonlocal j
+        title = sched_cls(**sched_args).name
         print(title)
         lines = []
-        for i in range(args.repeats):
-            transactions = iter(tr_factory)
-            scheduler = sched_cls(
-                args.op_time, args.poolsize, args.queuesize, **sched_args
-            )
-            executor = RandomExecutor()
-            sim = Simulator(transactions, scheduler, executor, args.num_cores)
-            path = sim.run()
+        for i, path in _run_sim(
+            args, args.op_time, args.num_cores, tr_factory, sched_cls, sched_args
+        ):
             merged_path = {
                 state.clock: [
                     len(state.pending),
@@ -214,18 +197,14 @@ def _make_stats_plot(args) -> None:
         j += 1
         return lines
 
-    run_sim("Tournament scheduler", TournamentScheduler, {})
+    run_sims(TournamentScheduler)
 
-    midlines = run_sim(
-        "Tournament scheduler (fully pipelined)",
-        TournamentScheduler,
-        {"is_pipelined": True},
-    )
+    midlines = run_sims(TournamentScheduler, {"is_pipelined": True})
 
-    run_sim("Greedy scheduler", GreedyScheduler, {})
+    run_sims(GreedyScheduler)
 
     if args.poolsize <= 20:
-        run_sim("Maximal scheduler", MaximalScheduler, {})
+        run_sims(MaximalScheduler)
 
     axes[-1][1].legend(
         handles=midlines[-1],
@@ -238,6 +217,24 @@ def _make_stats_plot(args) -> None:
     )
     plt.show()
     fig.savefig(filename)
+
+
+def _run_sim(
+    args,
+    op_time,
+    num_cores,
+    tr_factory,
+    sched_cls,
+    sched_args,
+    exec_cls=RandomExecutor,
+    exec_args={},
+):
+    for i in range(args.repeats):
+        transactions = iter(tr_factory)
+        scheduler = sched_cls(op_time, args.poolsize, args.queuesize, **sched_args)
+        executor = exec_cls(**exec_args)
+        sim = Simulator(transactions, scheduler, executor, num_cores)
+        yield i, sim.run(args.verbose)
 
 
 if __name__ == "__main__":
