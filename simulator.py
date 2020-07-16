@@ -1,10 +1,10 @@
 """Main Puppetmaster simulator class."""
 
 import heapq
-from typing import Iterator, List
+from typing import List
 
 from model import TransactionExecutor, TransactionScheduler
-from pmtypes import MachineState, Transaction
+from pmtypes import MachineState, TransactionGenerator
 
 
 class Simulator:
@@ -12,7 +12,7 @@ class Simulator:
 
     def __init__(
         self,
-        transactions: Iterator[Transaction],
+        transactions: TransactionGenerator,
         scheduler: TransactionScheduler,
         executor: TransactionExecutor,
         core_count: int = 1,

@@ -1,13 +1,12 @@
 """Classes that create transaction generators for Puppetmaster."""
 
 import random
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, List, Mapping
 
 from more_itertools import SequenceView
 
-from generators import TransactionGenerator
 from model import TransactionFactory
-from pmtypes import Transaction
+from pmtypes import TransactionGenerator
 
 
 class RandomFactory(TransactionFactory):
@@ -70,7 +69,7 @@ class RandomFactory(TransactionFactory):
         weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
 
-    def __iter__(self) -> Iterator[Transaction]:
+    def __iter__(self) -> TransactionGenerator:
         """Create a new iterator of transactions."""
         if self.run_index == self.run_count:
             self.run_index = 0

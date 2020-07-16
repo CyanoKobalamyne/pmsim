@@ -1,16 +1,16 @@
 """Unit tests for puppetmaster."""
-from typing import Iterator
 import unittest
 from unittest import TestCase
 
 from executors import RandomExecutor
 from model import Transaction
+from pmtypes import TransactionGenerator
 from schedulers import GreedyScheduler
 from simulator import Simulator
 
 
-class TrIter(Iterator[Transaction]):
-    """Iterator implementing the boolean check that the simulator expects."""
+class TrIter(TransactionGenerator):
+    """TransactionGenerator implementation for tests."""
 
     def __init__(self, transactions):
         """Create a new iterator."""
@@ -26,6 +26,10 @@ class TrIter(Iterator[Transaction]):
     def __bool__(self):
         """Return true if there are still transactions left."""
         return self.index < self.length
+
+    def __len__(self):
+        """Return number of transactions left."""
+        return self.length - self.length
 
 
 class TestSimple(TestCase):
