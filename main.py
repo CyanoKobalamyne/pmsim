@@ -3,9 +3,13 @@
 from argparse import ArgumentParser, FileType
 import json
 import os
+from pathlib import PurePath
 import random
 import statistics
 from typing import Dict, List
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 from executors import RandomExecutor
 from factories import RandomFactory
@@ -19,6 +23,35 @@ def _main() -> None:
     parser = ArgumentParser(
         description="Run puppetmaster on a range of input distributions."
     )
+    subparsers = parser.add_subparsers(title="commands")
+
+    # Options for tabulation script.
+    tput_parser = subparsers.add_parser("tput", help="tabulate throughputs")
+    tput_parser.add_argument(
+        "--log-max-stime",
+        help="Log-2 of the maximum scheduling time",
+        default=10,
+        type=int,
+    )
+    tput_parser.add_argument(
+        "--log-max-cores",
+        help="Log-2 of the maximum number of cores",
+        default=10,
+        type=int,
+    )
+    tput_parser.set_defaults(func=_make_throughput_table)
+
+    # Options for statistics plotting script.
+    stat_parser = subparsers.add_parser("stat", help="plot system statistics")
+    stat_parser.add_argument(
+        "-t", "--op-time", help="length of one hardware operation", default=0, type=int,
+    )
+    stat_parser.add_argument(
+        "-c", "--num-cores", help="number of execution cores", default=1, type=int,
+    )
+    stat_parser.set_defaults(func=_make_stats_plot)
+
+    # General options.
     parser.add_argument(
         "template", help="transaction template file", type=FileType("rt")
     )
@@ -56,20 +89,12 @@ def _main() -> None:
     parser.add_argument(
         "-v", "--verbose", help="print debugging information", action="store_true",
     )
-    parser.add_argument(
-        "--log-max-stime",
-        help="Log-2 of the maximum scheduling time",
-        default=10,
-        type=int,
-    )
-    parser.add_argument(
-        "--log-max-cores",
-        help="Log-2 of the maximum number of cores",
-        default=10,
-        type=int,
-    )
-    args = parser.parse_args()
 
+    args = parser.parse_args()
+    args.func(args)
+
+
+def _make_throughput_table(args) -> None:
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
@@ -142,6 +167,77 @@ def _main() -> None:
     run_sim(
         MaximalScheduler, {}, RandomExecutor, {},
     )
+
+
+def _make_stats_plot(args) -> None:
+    filename = (
+        f"{PurePath(args.template.name).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
+        f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
+        f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
+    )
+
+    fig, axes = plt.subplots(args.repeats, 4)
+
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    tr_factory = RandomFactory(
+        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
+    )
+
+    j = 0
+
+    def run_sim(title, sched_cls, sched_args):
+        nonlocal j
+        print(title)
+        lines = []
+        for i in range(args.repeats):
+            transactions = iter(tr_factory)
+            scheduler = sched_cls(
+                args.op_time, args.poolsize, args.queuesize, **sched_args
+            )
+            executor = RandomExecutor()
+            sim = Simulator(transactions, scheduler, executor, args.num_cores)
+            path = sim.run()
+            merged_path = {
+                state.clock: [
+                    len(state.pending),
+                    len(state.scheduled),
+                    len(state.cores),
+                ]
+                for state in path
+            }
+            times = np.array(list(merged_path.keys()))
+            stats = np.array(list(merged_path.values()))
+            axis = axes[i][j]
+            lines.append(axis.plot(times, stats))
+            if i == 0:
+                axis.set_title(title)
+        j += 1
+        return lines
+
+    run_sim("Tournament scheduler", TournamentScheduler, {})
+
+    midlines = run_sim(
+        "Tournament scheduler (fully pipelined)",
+        TournamentScheduler,
+        {"is_pipelined": True},
+    )
+
+    run_sim("Greedy scheduler", GreedyScheduler, {})
+
+    if args.poolsize <= 20:
+        run_sim("Maximal scheduler", MaximalScheduler, {})
+
+    axes[-1][1].legend(
+        handles=midlines[-1],
+        labels=["pending", "scheduled", "executing"],
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.2),
+        fancybox=False,
+        shadow=False,
+        ncol=3,
+    )
+    plt.show()
+    fig.savefig(filename)
 
 
 if __name__ == "__main__":
