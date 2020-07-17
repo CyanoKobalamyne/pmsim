@@ -52,30 +52,30 @@ class Simulator:
 
             # Run scheduler if there are no finished cores.
             if not state.cores or state.clock <= state.cores[0].clock:
-                temp_states = self.scheduler.run(state)
+                trans_states = self.scheduler.run(state)
             else:
-                temp_states = [state.copy()]
+                trans_states = [state.copy()]
 
-            for state in temp_states:
+            for trans_state in trans_states:
                 # Compute next states for the execution units.
-                if len(state.cores) < state.core_count and state.scheduled:
-                    # Execute a scheduled transaction.
-                    for next_state in self.executor.run(state):
+                if len(trans_state.cores) < state.core_count and trans_state.scheduled:
+                    # Execute some scheduled transactions.
+                    for next_state in self.executor.run(trans_state):
+                        # Push child states onto queue.
                         next_time = min(next_state.clock, next_state.cores[0].clock)
-                        heapq.heappush(queue, (next_time, step, path + [next_state]))
+                        next_path = path + [trans_state, next_state]
+                        heapq.heappush(queue, (next_time, step, next_path))
                         step += 1
                 else:
-                    next_state = state.copy()
+                    next_state = trans_state.copy()
                     # Remove first finished transaction.
                     finished_core = heapq.heappop(next_state.cores)
                     # If the scheduler was idle, move its clock forward.
-                    next_state.clock = max(next_state.clock, finished_core.clock)
-                    next_time = (
-                        min(next_state.clock, next_state.cores[0].clock)
-                        if next_state.cores
-                        else next_state.clock
-                    )
-                    heapq.heappush(queue, (next_time, step, path + [next_state]))
+                    next_state.clock = max(trans_state.clock, finished_core.clock)
+                    # Push child states onto queue.
+                    next_time = min(next_state.clock, trans_state.cores[0].clock)
+                    next_path = path + [trans_state, next_state]
+                    heapq.heappush(queue, (next_time, step, next_path))
                     step += 1
 
             if verbose:
