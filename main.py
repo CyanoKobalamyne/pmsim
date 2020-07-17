@@ -158,11 +158,16 @@ def _make_throughput_table(args, tr_factory) -> None:
 
     run_sims(GreedyScheduler)
 
-    run_sims(MaximalScheduler)
+    if args.poolsize <= 20:
+        run_sims(MaximalScheduler)
 
-    run_sims(GreedyScheduler, {}, OptimalExecutor)
+    if args.queuesize is None and args.n < 10 or args.queuesize < 10:
+        run_sims(GreedyScheduler, {}, OptimalExecutor)
 
-    run_sims(MaximalScheduler, {}, OptimalExecutor)
+    if args.poolsize <= 20 and (
+        args.queuesize is None and args.n < 10 or args.queuesize < 10
+    ):
+        run_sims(MaximalScheduler, {}, OptimalExecutor)
 
 
 def _make_stats_plot(args, tr_factory) -> None:
