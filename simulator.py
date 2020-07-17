@@ -54,7 +54,7 @@ class Simulator:
             if not state.cores or state.clock <= state.cores[0].clock:
                 temp_states = self.scheduler.run(state)
             else:
-                temp_states = [state]
+                temp_states = [state.copy()]
 
             for state in temp_states:
                 # Compute next states for the execution units.

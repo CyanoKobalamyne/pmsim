@@ -47,6 +47,7 @@ class TransactionScheduler(ABC):
         # Don't do anything if queue is full.
         if self.queue_size == len(state.scheduled):
             return [state]
+        state = state.copy()
         # Fill up pending pool.
         while self.pool_size is None or len(state.pending) < self.pool_size:
             try:
