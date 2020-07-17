@@ -11,7 +11,7 @@ from typing import Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 
-from executors import RandomExecutor
+from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from simulator import Simulator
@@ -159,6 +159,10 @@ def _make_throughput_table(args, tr_factory) -> None:
     run_sims(GreedyScheduler)
 
     run_sims(MaximalScheduler)
+
+    run_sims(GreedyScheduler, {}, OptimalExecutor)
+
+    run_sims(MaximalScheduler, {}, OptimalExecutor)
 
 
 def _make_stats_plot(args, tr_factory) -> None:
