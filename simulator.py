@@ -65,16 +65,17 @@ class Simulator:
                         heapq.heappush(queue, (next_time, step, path + [next_state]))
                         step += 1
                 else:
+                    next_state = state.copy()
                     # Remove first finished transaction.
-                    finished_core = heapq.heappop(state.cores)
+                    finished_core = heapq.heappop(next_state.cores)
                     # If the scheduler was idle, move its clock forward.
-                    state.clock = max(state.clock, finished_core.clock)
-                    time = (
-                        min(state.clock, state.cores[0].clock)
-                        if state.cores
-                        else state.clock
+                    next_state.clock = max(next_state.clock, finished_core.clock)
+                    next_time = (
+                        min(next_state.clock, next_state.cores[0].clock)
+                        if next_state.cores
+                        else next_state.clock
                     )
-                    heapq.heappush(queue, (time, step, path + [state]))
+                    heapq.heappush(queue, (next_time, step, path + [next_state]))
                     step += 1
 
             if verbose:
