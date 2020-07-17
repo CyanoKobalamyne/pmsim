@@ -129,7 +129,7 @@ def _make_throughput_table(args, tr_factory) -> None:
     )
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
-        print(sched_cls(**sched_args).name)
+        print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}")
         print(" " * col1_width + "Average total throughput")
         print(header_template.format(col1_header, *core_counts))
         for sched_time in sched_times:

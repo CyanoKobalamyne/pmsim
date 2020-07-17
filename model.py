@@ -96,3 +96,8 @@ class TransactionExecutor(ABC):
         The input state should not be used by the caller after this method returns,
         because it might be the same object as one of the returned states.
         """
+
+    @property
+    @abstractmethod
+    def name(self):
+        """Return a human-readable name for this executor."""

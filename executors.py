@@ -24,6 +24,11 @@ class RandomExecutor(TransactionExecutor):
             heapq.heappush(state.cores, core)
         return [state]
 
+    @property
+    def name(self):
+        """See TransactionExecutor.name."""
+        return "Randomized execution policy"
+
 
 class OptimalExecutor(TransactionExecutor):
     """Explores every possible execution path."""
@@ -46,3 +51,8 @@ class OptimalExecutor(TransactionExecutor):
                 heapq.heappush(new_state.cores, new_core)
             out_states.append(new_state)
         return out_states
+
+    @property
+    def name(self):
+        """See TransactionExecutor.name."""
+        return "Optimal execution policy"
