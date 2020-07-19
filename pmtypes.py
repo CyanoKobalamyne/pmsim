@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sized
 import copy
 import dataclasses
+from collections.abc import Sized
 from typing import Iterable, Iterator, List, Mapping, MutableSet, Sequence, Set
 
 

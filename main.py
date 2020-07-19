@@ -1,15 +1,15 @@
 #!/bin/env python3
 """Main executable for running puppetmaster."""
-from argparse import ArgumentParser, FileType
 import json
 import os
-from pathlib import PurePath
 import random
 import statistics
+from argparse import ArgumentParser, FileType
+from pathlib import PurePath
 from typing import Dict, List
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
