@@ -122,19 +122,13 @@ def _make_throughput_table(args, tr_factory) -> None:
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    col1_header = "t_sched"
-    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
-    col1_template = f"{{0:<{col1_width}}}"
-    precision = 5
-    col_width = max(len(f"{100:.{precision}f}"), len(str(core_counts[-1])))
-    cols_header_template = "".join(
-        f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
+    title, thead, tbody = _get_table_templates(
+        sched_times,
+        core_counts,
+        max_value=100,
+        precision=5,
+        label="Average total throughput",
     )
-    cols_body_template = "".join(
-        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
-    )
-    header_template = col1_template + cols_header_template
-    body_template = col1_template + cols_body_template
 
     print(
         f"Template: {os.path.basename(args.template.name)}\n"
@@ -148,8 +142,8 @@ def _make_throughput_table(args, tr_factory) -> None:
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
         print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}")
-        print(" " * col1_width + "Average total throughput")
-        print(header_template.format(col1_header, *core_counts))
+        print(title)
+        print(thead.format(*core_counts))
         for sched_time in sched_times:
             args.op_time = sched_time
             throughputs: List[float] = []
@@ -162,7 +156,7 @@ def _make_throughput_table(args, tr_factory) -> None:
                     )
                 ]
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
-            print(body_template.format(f"{sched_time}", *throughputs))
+            print(tbody.format(sched_time, *throughputs))
         print()
 
     run_sims(TournamentScheduler)
@@ -282,23 +276,16 @@ def _make_ps_table(args, tr_factory) -> None:
     sched_times = [2 ** logstime for logstime in range(args.log_max_stime + 1)]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    col1_header = "t_sched"
-    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
-    col1_template = f"{{0:<{col1_width}}}"
-    max_value = args.n
-    precision = 0
-    col_width = max(len(f"{max_value:.{precision}f}"), len(str(core_counts[-1])))
-    cols_header_template = "".join(
-        f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
+    title, thead, tbody = _get_table_templates(
+        sched_times,
+        core_counts,
+        max_value=args.n,
+        precision=0,
+        label="Minimum pool size",
     )
-    cols_body_template = "".join(
-        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
-    )
-    header_template = col1_template + cols_header_template
-    body_template = col1_template + cols_body_template
 
-    print(" " * col1_width + "Minimum pool size")
-    print(header_template.format(col1_header, *core_counts))
+    print(title)
+    print(thead.format(*core_counts))
     for sched_time in sched_times:
         args.op_time = sched_time
         min_poolsizes = []
@@ -306,7 +293,7 @@ def _make_ps_table(args, tr_factory) -> None:
             args.num_cores = core_count
             min_poolsize = bisect.bisect(ScheduledCountSequence(), 0, lo=1)
             min_poolsizes.append(min_poolsize)
-        print(body_template.format(sched_time, *min_poolsizes))
+        print(tbody.format(sched_time, *min_poolsizes))
     print()
 
 
@@ -324,6 +311,23 @@ def _run_sim(
         executor = exec_cls(**exec_args)
         sim = Simulator(transactions, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
+
+
+def _get_table_templates(sched_times, core_counts, max_value, precision, label):
+    col1_header = "t_sched"
+    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
+    col1_template = f"{{0:<{col1_width}}}"
+    col_width = max(len(f"{max_value:.{precision}f}"), len(str(core_counts[-1])))
+    cols_header_template = "".join(
+        f"{{{i}:{col_width}d}}  " for i in range(len(core_counts))
+    )
+    cols_body_template = "".join(
+        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
+    )
+    title = " " * col1_width + label
+    header_template = col1_template.format(col1_header) + cols_header_template
+    body_template = col1_template + cols_body_template
+    return title, header_template, body_template
 
 
 if __name__ == "__main__":
