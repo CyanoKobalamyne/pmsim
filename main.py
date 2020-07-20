@@ -1,12 +1,13 @@
 #!/bin/env python3
 """Main executable for running puppetmaster."""
+import bisect
 import json
 import os
 import random
 import statistics
 from argparse import ArgumentParser, FileType
 from pathlib import PurePath
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -50,6 +51,16 @@ def _main() -> None:
         "-c", "--num-cores", help="number of execution cores", default=1, type=int,
     )
     stat_parser.set_defaults(func=_make_stats_plot)
+
+    # Options for pool size finder.
+    psfind_parser = subparsers.add_parser("psfind", help="find optimal pool size")
+    psfind_parser.add_argument(
+        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
+    )
+    psfind_parser.add_argument(
+        "-c", "--num-cores", help="number of execution cores", default=1, type=int,
+    )
+    psfind_parser.set_defaults(func=_find_poolsize)
 
     # General options.
     parser.add_argument(
@@ -224,13 +235,63 @@ def _make_stats_plot(args, tr_factory) -> None:
     fig.savefig(filename)
 
 
+def _find_poolsize(args, tr_factory) -> None:
+
+    print(
+        f"Template: {os.path.basename(args.template.name)}\n"
+        f"No. of transactions: {args.n}\n"
+        f"Hardware operation length (-t): {args.op_time}\n"
+        f"Number of cores (-c): {args.num_cores}\n"
+        f"Memory size (-m): {args.memsize}\n"
+        f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
+        f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
+        f"Runs per configuration (-r): {args.repeats}\n"
+    )
+
+    class ScheduledCountSequence(Sequence[int]):
+        def __getitem__(self, key):
+            args.poolsize = key
+            if args.verbose:
+                print("Trying", args.poolsize, end="...")
+            min_sched_count = None
+            for _, path in _run_sim(
+                args, args.op_time, args.num_cores, tr_factory, TournamentScheduler
+            ):
+                scheduled_counts = {}
+                for state in path:
+                    if state.clock == 0:
+                        # Skip over starting state.
+                        continue
+                    if not state.incoming:
+                        # Skip over tail.
+                        break
+                    if state.clock not in scheduled_counts:
+                        scheduled_counts[state.clock] = len(state.scheduled)
+                # print("\n".join(str(s) for s in path))
+                min_sched_count = min(scheduled_counts.values())
+                if args.verbose:
+                    print(min_sched_count, end=", ")
+                if min_sched_count == 0:
+                    break
+            if args.verbose:
+                print()
+            return min_sched_count
+
+        def __len__(self):
+            return args.n
+
+    min_poolsize = bisect.bisect(ScheduledCountSequence(), 0, lo=1)
+
+    print("Minimum pool size:", min_poolsize)
+
+
 def _run_sim(
     args,
     op_time,
     num_cores,
     tr_factory,
     sched_cls,
-    sched_args,
+    sched_args={},
     exec_cls=RandomExecutor,
     exec_args={},
 ):
