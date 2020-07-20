@@ -46,7 +46,7 @@ class Simulator:
             state = path[-1]
 
             if not state:
-                if verbose:
+                if verbose >= 2:
                     print(f"States: {step} total, {len(queue)} unexplored")
                 return path
 
@@ -78,7 +78,7 @@ class Simulator:
                     heapq.heappush(queue, (next_time, step, next_path))
                     step += 1
 
-            if verbose:
+            if verbose >= 3:
                 print(time, step, len(queue), end="\r")
 
         raise RuntimeError  # We should never get here.

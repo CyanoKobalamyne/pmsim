@@ -98,7 +98,7 @@ def _main() -> None:
         type=int,
     )
     parser.add_argument(
-        "-v", "--verbose", help="print debugging information", action="store_true",
+        "-v", "--verbose", help="print debugging information", action="count", default=0
     )
 
     args = parser.parse_args()
@@ -251,9 +251,11 @@ def _find_poolsize(args, tr_factory) -> None:
     class ScheduledCountSequence(Sequence[int]):
         def __getitem__(self, key):
             args.poolsize = key
-            if args.verbose:
-                print("Trying", args.poolsize, end="...")
-            min_sched_count = None
+            if args.verbose == 1:
+                print("Trying pool size of", args.poolsize, end="...")
+            if args.verbose >= 2:
+                print("Trying pool size of", args.poolsize)
+            min_sched_counts = []
             for _, path in _run_sim(
                 args, args.op_time, args.num_cores, tr_factory, TournamentScheduler
             ):
@@ -267,14 +269,16 @@ def _find_poolsize(args, tr_factory) -> None:
                         break
                     if state.clock not in scheduled_counts:
                         scheduled_counts[state.clock] = len(state.scheduled)
-                # print("\n".join(str(s) for s in path))
                 min_sched_count = min(scheduled_counts.values())
-                if args.verbose:
+                min_sched_counts.append(min_sched_count)
+                if args.verbose == 1:
                     print(min_sched_count, end=", ")
                 if min_sched_count == 0:
                     break
-            if args.verbose:
+            if args.verbose == 1:
                 print()
+            if args.verbose >= 2:
+                print("Results:", ", ".join(map(str, min_sched_counts)))
             return min_sched_count
 
         def __len__(self):
