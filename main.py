@@ -46,10 +46,10 @@ def _main() -> None:
     # Options for statistics plotting script.
     stat_parser = subparsers.add_parser("stat", help="plot system statistics")
     stat_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=0, type=int,
+        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
     )
     stat_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=1, type=int,
+        "-c", "--num-cores", help="number of execution cores", default=4, type=int,
     )
     stat_parser.set_defaults(func=_make_stats_plot)
 
@@ -82,7 +82,7 @@ def _main() -> None:
         "--poolsize",
         help="size of scheduling pool (lookahead)",
         type=int,
-        default=1,
+        default=16,
     )
     parser.add_argument(
         "-q",
