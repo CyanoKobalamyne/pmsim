@@ -128,8 +128,10 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     title, thead, tbody = get_table_templates(
-        sched_times,
-        core_counts,
+        xname="n_cores",
+        yname="t_sched",
+        xvals=sched_times,
+        yvals=core_counts,
         max_value=100,
         precision=5,
         label="Average total throughput",
@@ -271,8 +273,10 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     title, thead, tbody = get_table_templates(
-        sched_times,
-        core_counts,
+        xname="n_cores",
+        yname="t_sched",
+        xvals=sched_times,
+        yvals=core_counts,
         max_value=args.n,
         precision=0,
         label="Minimum pool size",
@@ -310,22 +314,22 @@ def run_sim(
 
 
 def get_table_templates(
-    sched_times: Sequence[int],
-    core_counts: Sequence[int],
+    label: str,
+    xname: str,
+    yname: str,
+    xvals: Sequence[int],
+    yvals: Sequence[int],
     max_value: int,
     precision: int,
-    label: str,
 ):
     """Return table title and templates for table header and table body rows."""
-    col1_header = "t_sched"
-    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
+    col1_header = f"{yname} \\ {xname}"
+    col1_width = max(len(col1_header), len(str(yvals[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
-    col_width = max(len(f"{max_value:.{precision}f}"), len(str(core_counts[-1])))
-    cols_header_template = "".join(
-        f"{{{i}:{col_width}d}}  " for i in range(len(core_counts))
-    )
+    col_width = max(len(f"{max_value:.{precision}f}"), len(str(xvals[-1])))
+    cols_header_template = "".join(f"{{{i}:{col_width}d}}  " for i in range(len(xvals)))
     cols_body_template = "".join(
-        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
+        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(xvals))
     )
     title = " " * col1_width + label
     header_template = col1_template.format(col1_header) + cols_header_template
