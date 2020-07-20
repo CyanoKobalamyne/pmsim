@@ -19,9 +19,8 @@ from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from simulator import Simulator
 
 
-def _main() -> None:
-    random.seed(0)
-
+def get_args() -> Namespace:
+    """Parse and print command-line arguments."""
     parser = ArgumentParser(
         description="Puppetmaster, a hardware accelerator for transactional memory"
     )
@@ -41,7 +40,7 @@ def _main() -> None:
         default=10,
         type=int,
     )
-    tput_parser.set_defaults(func=_make_throughput_table)
+    tput_parser.set_defaults(func=make_throughput_table)
 
     # Options for statistics plotting script.
     stat_parser = subparsers.add_parser("stat", help="plot system statistics")
@@ -51,7 +50,7 @@ def _main() -> None:
     stat_parser.add_argument(
         "-c", "--num-cores", help="number of execution cores", default=4, type=int,
     )
-    stat_parser.set_defaults(func=_make_stats_plot)
+    stat_parser.set_defaults(func=make_stats_plot)
 
     # Options for pool size finder.
     psfind_parser = subparsers.add_parser("psfind", help="tabulate optimal pool sizes")
@@ -67,7 +66,7 @@ def _main() -> None:
         default=10,
         type=int,
     )
-    psfind_parser.set_defaults(func=_make_ps_table)
+    psfind_parser.set_defaults(func=make_ps_table)
 
     # General options.
     parser.add_argument(
@@ -120,19 +119,15 @@ def _main() -> None:
         f"Runs per configuration (-r): {args.repeats}\n"
     )
 
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    tr_factory = RandomFactory(
-        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
-    )
-
-    args.func(args, tr_factory)
+    return args
 
 
-def _make_throughput_table(args, tr_factory) -> None:
+def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> None:
+    """Print normalized throughput as a function of scheduling time and core count."""
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title, thead, tbody = _get_table_templates(
+    title, thead, tbody = get_table_templates(
         sched_times,
         core_counts,
         max_value=100,
@@ -151,7 +146,7 @@ def _make_throughput_table(args, tr_factory) -> None:
                 args.num_cores = core_count
                 results = [
                     path[-1].clock
-                    for _, path in _run_sim(
+                    for _, path in run_sim(
                         args, tr_factory, sched_cls, sched_args, exec_cls, exec_args
                     )
                 ]
@@ -180,7 +175,8 @@ def _make_throughput_table(args, tr_factory) -> None:
         run_sims(MaximalScheduler, {}, OptimalExecutor)
 
 
-def _make_stats_plot(args, tr_factory) -> None:
+def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
+    """Plot number of scheduled transactions as a function of time."""
     filename = (
         f"{PurePath(args.template.name).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
         f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
@@ -196,7 +192,7 @@ def _make_stats_plot(args, tr_factory) -> None:
         title = sched_cls(**sched_args).name
         print(title)
         lines = []
-        for i, path in _run_sim(args, tr_factory, sched_cls, sched_args):
+        for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
             scheduled_counts = {}
             for state in path:
                 if state.clock not in scheduled_counts:
@@ -232,7 +228,9 @@ def _make_stats_plot(args, tr_factory) -> None:
     fig.savefig(filename)
 
 
-def _make_ps_table(args, tr_factory) -> None:
+def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
+    """Print minimum pool size as a function of scheduling time and core count."""
+
     class ScheduledCountSequence(Sequence[int]):
         def __getitem__(self, key):
             args.poolsize = key
@@ -241,7 +239,7 @@ def _make_ps_table(args, tr_factory) -> None:
             if args.verbose >= 2:
                 print("Trying pool size of", args.poolsize)
             min_sched_counts = []
-            for _, path in _run_sim(args, tr_factory, TournamentScheduler):
+            for _, path in run_sim(args, tr_factory, TournamentScheduler):
                 scheduled_counts = {}
                 for state in path:
                     if state.clock == 0:
@@ -272,7 +270,7 @@ def _make_ps_table(args, tr_factory) -> None:
     sched_times = [2 ** logstime for logstime in range(args.log_max_stime + 1)]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title, thead, tbody = _get_table_templates(
+    title, thead, tbody = get_table_templates(
         sched_times,
         core_counts,
         max_value=args.n,
@@ -280,6 +278,7 @@ def _make_ps_table(args, tr_factory) -> None:
         label="Minimum pool size",
     )
 
+    print(f"{TournamentScheduler().name} with {RandomExecutor().name}")
     print(title)
     print(thead.format(*core_counts))
     for sched_time in sched_times:
@@ -293,7 +292,7 @@ def _make_ps_table(args, tr_factory) -> None:
     print()
 
 
-def _run_sim(
+def run_sim(
     args: Namespace,
     tr_factory: TransactionFactory,
     sched_cls: Type[TransactionScheduler],
@@ -301,6 +300,7 @@ def _run_sim(
     exec_cls: Type[TransactionExecutor] = RandomExecutor,
     exec_args: Mapping = {},
 ):
+    """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
         transactions = tr_factory.__iter__()
         scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
@@ -309,7 +309,14 @@ def _run_sim(
         yield i, sim.run(args.verbose)
 
 
-def _get_table_templates(sched_times, core_counts, max_value, precision, label):
+def get_table_templates(
+    sched_times: Sequence[int],
+    core_counts: Sequence[int],
+    max_value: int,
+    precision: int,
+    label: str,
+):
+    """Return table title and templates for table header and table body rows."""
     col1_header = "t_sched"
     col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
@@ -327,4 +334,13 @@ def _get_table_templates(sched_times, core_counts, max_value, precision, label):
 
 
 if __name__ == "__main__":
-    _main()
+    random.seed(0)
+
+    args = get_args()
+
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    tr_factory = RandomFactory(
+        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
+    )
+
+    args.func(args, tr_factory)
