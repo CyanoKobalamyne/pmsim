@@ -317,7 +317,7 @@ def get_table_templates(
     yname: str,
     xvals: Sequence[int],
     yvals: Sequence[int],
-    max_value: int,
+    max_value: float,
     precision: int,
 ):
     """Return table header and table body row template."""
