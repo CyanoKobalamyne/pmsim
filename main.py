@@ -127,7 +127,7 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title, thead, tbody = get_table_templates(
+    thead, tbody = get_table_templates(
         xname="n_cores",
         yname="t_sched",
         xvals=sched_times,
@@ -139,7 +139,6 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
         print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}")
-        print(title)
         print(thead.format(*core_counts))
         for sched_time in sched_times:
             args.op_time = sched_time
@@ -272,7 +271,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
     sched_times = [2 ** logstime for logstime in range(args.log_max_stime + 1)]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    title, thead, tbody = get_table_templates(
+    thead, tbody = get_table_templates(
         xname="n_cores",
         yname="t_sched",
         xvals=sched_times,
@@ -283,7 +282,6 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
     )
 
     print(f"{TournamentScheduler().name} with {RandomExecutor().name}")
-    print(title)
     print(thead.format(*core_counts))
     for sched_time in sched_times:
         args.op_time = sched_time
@@ -322,7 +320,7 @@ def get_table_templates(
     max_value: int,
     precision: int,
 ):
-    """Return table title and templates for table header and table body rows."""
+    """Return templates for table header and table body rows."""
     col1_header = f"{yname} \\ {xname}"
     col1_width = max(len(col1_header), len(str(yvals[-1]))) + 2
     col1_template = f"{{0:<{col1_width}}}"
@@ -331,10 +329,10 @@ def get_table_templates(
     cols_body_template = "".join(
         f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(xvals))
     )
-    title = " " * col1_width + label
+    title = " " * col1_width + label + "\n"
     header_template = col1_template.format(col1_header) + cols_header_template
     body_template = col1_template + cols_body_template
-    return title, header_template, body_template
+    return title + header_template, body_template
 
 
 if __name__ == "__main__":
