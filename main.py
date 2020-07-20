@@ -144,19 +144,14 @@ def _make_throughput_table(args, tr_factory) -> None:
         print(" " * col1_width + "Average total throughput")
         print(header_template.format(col1_header, *core_counts))
         for sched_time in sched_times:
+            args.op_time = sched_time
             throughputs: List[float] = []
             for core_count in core_counts:
+                args.num_cores = core_count
                 results = [
                     path[-1].clock
                     for _, path in _run_sim(
-                        args,
-                        sched_time,
-                        core_count,
-                        tr_factory,
-                        sched_cls,
-                        sched_args,
-                        exec_cls,
-                        exec_args,
+                        args, tr_factory, sched_cls, sched_args, exec_cls, exec_args
                     )
                 ]
                 throughputs.append(tr_factory.total_time / statistics.mean(results))
@@ -197,9 +192,7 @@ def _make_stats_plot(args, tr_factory) -> None:
         title = sched_cls(**sched_args).name
         print(title)
         lines = []
-        for i, path in _run_sim(
-            args, args.op_time, args.num_cores, tr_factory, sched_cls, sched_args
-        ):
+        for i, path in _run_sim(args, tr_factory, sched_cls, sched_args):
             scheduled_counts = {}
             for state in path:
                 if state.clock not in scheduled_counts:
@@ -256,9 +249,7 @@ def _find_poolsize(args, tr_factory) -> None:
             if args.verbose >= 2:
                 print("Trying pool size of", args.poolsize)
             min_sched_counts = []
-            for _, path in _run_sim(
-                args, args.op_time, args.num_cores, tr_factory, TournamentScheduler
-            ):
+            for _, path in _run_sim(args, tr_factory, TournamentScheduler):
                 scheduled_counts = {}
                 for state in path:
                     if state.clock == 0:
@@ -290,20 +281,13 @@ def _find_poolsize(args, tr_factory) -> None:
 
 
 def _run_sim(
-    args,
-    op_time,
-    num_cores,
-    tr_factory,
-    sched_cls,
-    sched_args={},
-    exec_cls=RandomExecutor,
-    exec_args={},
+    args, tr_factory, sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={},
 ):
     for i in range(args.repeats):
         transactions = iter(tr_factory)
-        scheduler = sched_cls(op_time, args.poolsize, args.queuesize, **sched_args)
+        scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
         executor = exec_cls(**exec_args)
-        sim = Simulator(transactions, scheduler, executor, num_cores)
+        sim = Simulator(transactions, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
 
