@@ -110,6 +110,16 @@ def _main() -> None:
 
     args = parser.parse_args()
 
+    print(
+        f"Template: {os.path.basename(args.template.name)}\n"
+        f"No. of transactions: {args.n}\n"
+        f"Memory size (-m): {args.memsize}\n"
+        f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
+        f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
+        f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
+        f"Runs per configuration (-r): {args.repeats}\n"
+    )
+
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     tr_factory = RandomFactory(
         args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
@@ -128,16 +138,6 @@ def _make_throughput_table(args, tr_factory) -> None:
         max_value=100,
         precision=5,
         label="Average total throughput",
-    )
-
-    print(
-        f"Template: {os.path.basename(args.template.name)}\n"
-        f"No. of transactions: {args.n}\n"
-        f"Memory size (-m): {args.memsize}\n"
-        f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
-        f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
-        f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
-        f"Runs per configuration (-r): {args.repeats}\n"
     )
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
@@ -230,15 +230,6 @@ def _make_stats_plot(args, tr_factory) -> None:
 
 
 def _make_ps_table(args, tr_factory) -> None:
-    print(
-        f"Template: {os.path.basename(args.template.name)}\n"
-        f"No. of transactions: {args.n}\n"
-        f"Memory size (-m): {args.memsize}\n"
-        f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
-        f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
-        f"Runs per configuration (-r): {args.repeats}\n"
-    )
-
     class ScheduledCountSequence(Sequence[int]):
         def __getitem__(self, key):
             args.poolsize = key
