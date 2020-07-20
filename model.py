@@ -5,11 +5,14 @@ from abc import ABC, abstractmethod
 from collections.abc import Sized
 from typing import Iterable, MutableSet, Tuple
 
-from pmtypes import MachineState, Transaction, TransactionSet
+from pmtypes import MachineState, Transaction, TransactionGenerator, TransactionSet
 
 
 class TransactionFactory(Iterable[Transaction], Sized, ABC):
     """Factory for generators of transactions."""
+
+    def __iter__(self) -> TransactionGenerator:
+        """Return a special iterator over transactions."""
 
     @property
     @abstractmethod
@@ -20,7 +23,9 @@ class TransactionFactory(Iterable[Transaction], Sized, ABC):
 class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
-    def __init__(self, op_time: int = 0, pool_size: int = None, queue_size: int = None):
+    def __init__(
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None, **kwargs
+    ):
         """Create a new scheduler.
 
         Arguments:
@@ -88,6 +93,9 @@ class TransactionScheduler(ABC):
 
 class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
+
+    def __init__(self, **kwargs):
+        """Create new executor."""
 
     @abstractmethod
     def run(self, state: MachineState) -> Iterable[MachineState]:

@@ -5,15 +5,16 @@ import json
 import os
 import random
 import statistics
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser, FileType, Namespace
 from pathlib import PurePath
-from typing import Dict, List, Sequence
+from typing import Dict, List, Mapping, Sequence, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
+from model import TransactionExecutor, TransactionFactory, TransactionScheduler
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from simulator import Simulator
 
@@ -281,10 +282,15 @@ def _find_poolsize(args, tr_factory) -> None:
 
 
 def _run_sim(
-    args, tr_factory, sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={},
+    args: Namespace,
+    tr_factory: TransactionFactory,
+    sched_cls: Type[TransactionScheduler],
+    sched_args: Mapping = {},
+    exec_cls: Type[TransactionExecutor] = RandomExecutor,
+    exec_args: Mapping = {},
 ):
     for i in range(args.repeats):
-        transactions = iter(tr_factory)
+        transactions = tr_factory.__iter__()
         scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
         executor = exec_cls(**exec_args)
         sim = Simulator(transactions, scheduler, executor, args.num_cores)
