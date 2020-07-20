@@ -139,7 +139,7 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
         print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}")
-        print(thead.format(*core_counts))
+        print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
             throughputs: List[float] = []
@@ -282,7 +282,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
     )
 
     print(f"{TournamentScheduler().name} with {RandomExecutor().name}\n")
-    print(thead.format(*core_counts))
+    print(thead)
     for sched_time in sched_times:
         args.op_time = sched_time
         min_poolsizes = []
@@ -320,21 +320,21 @@ def get_table_templates(
     max_value: int,
     precision: int,
 ):
-    """Return templates for table header and table body rows."""
+    """Return table header and table body row template."""
     col1_width = max(len(xname), len(yname), len(str(max(yvals))))
-    col1_template = f"{{0:<{col1_width}}} | "
-    col_width = max(len(f"{max_value:.{precision}f}"), len(str(max(xvals))))
-    cols_header_template = "".join(f"{{{i}:{col_width}d}}  " for i in range(len(xvals)))
-    cols_body_template = "".join(
-        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(xvals))
+    col1_template = f"{{:<{col1_width}}} | "
+    max_val_width = len(f"{max_value:.{precision}f}")
+    cols_header = "  ".join(f"{x:{max(max_val_width, len(str(x)))}d}" for x in xvals)
+    cols_body_template = "  ".join(
+        f"{{:{max(max_val_width, len(str(x)))}.{precision}f}}" for x in xvals
     )
     header_line_1 = col1_template.format(yname) + varname
-    header_line_2 = col1_template.format(xname) + cols_header_template
+    header_line_2 = col1_template.format(xname) + cols_header
     hline_width = max(len(header_line_1), len(header_line_2))
     divider = "-" * hline_width
-    header_template = f"{header_line_1}\n{divider}\n{header_line_2}\n{divider}"
+    header = f"{header_line_1}\n{divider}\n{header_line_2}\n{divider}"
     body_template = col1_template + cols_body_template
-    return header_template, body_template
+    return header, body_template
 
 
 if __name__ == "__main__":
