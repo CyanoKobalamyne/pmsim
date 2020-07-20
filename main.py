@@ -128,13 +128,13 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
-        xname="n_cores",
-        yname="t_sched",
+        varname="Average normalized throughput",
+        xname="Number of cores",
+        yname="HW operation time",
         xvals=sched_times,
         yvals=core_counts,
         max_value=100,
         precision=5,
-        label="Average total throughput",
     )
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
@@ -190,7 +190,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
 
     def run_sims(sched_cls, sched_args={}):
         nonlocal j
-        title = sched_cls(**sched_args).name
+        title = f"{sched_cls(**sched_args).name}\n"
         print(title)
         lines = []
         for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
@@ -272,16 +272,16 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
-        xname="n_cores",
-        yname="t_sched",
+        varname="Minimum pool size for keeping the cores busy",
+        xname="Number of cores",
+        yname="HW operation time",
         xvals=sched_times,
         yvals=core_counts,
         max_value=args.n,
         precision=0,
-        label="Minimum pool size",
     )
 
-    print(f"{TournamentScheduler().name} with {RandomExecutor().name}")
+    print(f"{TournamentScheduler().name} with {RandomExecutor().name}\n")
     print(thead.format(*core_counts))
     for sched_time in sched_times:
         args.op_time = sched_time
@@ -312,7 +312,7 @@ def run_sim(
 
 
 def get_table_templates(
-    label: str,
+    varname: str,
     xname: str,
     yname: str,
     xvals: Sequence[int],
@@ -321,18 +321,20 @@ def get_table_templates(
     precision: int,
 ):
     """Return templates for table header and table body rows."""
-    col1_header = f"{yname} \\ {xname}"
-    col1_width = max(len(col1_header), len(str(yvals[-1]))) + 2
-    col1_template = f"{{0:<{col1_width}}}"
-    col_width = max(len(f"{max_value:.{precision}f}"), len(str(xvals[-1])))
+    col1_width = max(len(xname), len(yname), len(str(max(yvals))))
+    col1_template = f"{{0:<{col1_width}}} | "
+    col_width = max(len(f"{max_value:.{precision}f}"), len(str(max(xvals))))
     cols_header_template = "".join(f"{{{i}:{col_width}d}}  " for i in range(len(xvals)))
     cols_body_template = "".join(
         f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(xvals))
     )
-    title = " " * col1_width + label + "\n"
-    header_template = col1_template.format(col1_header) + cols_header_template
+    header_line_1 = col1_template.format(yname) + varname
+    header_line_2 = col1_template.format(xname) + cols_header_template
+    hline_width = max(len(header_line_1), len(header_line_2))
+    divider = "-" * hline_width
+    header_template = f"{header_line_1}\n{divider}\n{header_line_2}\n{divider}"
     body_template = col1_template + cols_body_template
-    return title + header_template, body_template
+    return header_template, body_template
 
 
 if __name__ == "__main__":
