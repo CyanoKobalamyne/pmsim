@@ -189,16 +189,12 @@ def _make_stats_plot(args, tr_factory) -> None:
         for i, path in _run_sim(
             args, args.op_time, args.num_cores, tr_factory, sched_cls, sched_args
         ):
-            merged_path = {
-                state.clock: [
-                    len(state.pending),
-                    len(state.scheduled),
-                    len(state.cores),
-                ]
-                for state in path
-            }
-            times = np.array(list(merged_path.keys()))
-            stats = np.array(list(merged_path.values()))
+            scheduled_counts = {}
+            for state in path:
+                if state.clock not in scheduled_counts:
+                    scheduled_counts[state.clock] = len(state.scheduled)
+            times = np.array(list(scheduled_counts.keys()))
+            stats = np.array(list(scheduled_counts.values()))
             axis = axes[i][j]
             lines.append(axis.plot(times, stats))
             if i == 0:
@@ -217,7 +213,7 @@ def _make_stats_plot(args, tr_factory) -> None:
 
     axes[-1][1].legend(
         handles=midlines[-1],
-        labels=["pending", "scheduled", "executing"],
+        labels=["scheduled"],
         loc="upper center",
         bbox_to_anchor=(0.5, -0.2),
         fancybox=False,
