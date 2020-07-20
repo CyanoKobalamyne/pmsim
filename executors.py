@@ -15,6 +15,7 @@ class RandomExecutor(TransactionExecutor):
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionExecutor.push."""
         # Execute one transaction.
+        state = state.copy()
         while len(state.cores) < state.core_count:
             try:
                 tr = state.scheduled.pop()
