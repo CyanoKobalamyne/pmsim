@@ -54,14 +54,20 @@ def _main() -> None:
     stat_parser.set_defaults(func=_make_stats_plot)
 
     # Options for pool size finder.
-    psfind_parser = subparsers.add_parser("psfind", help="find optimal pool size")
+    psfind_parser = subparsers.add_parser("psfind", help="tabulate optimal pool sizes")
     psfind_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
+        "--log-max-stime",
+        help="Log-2 of the maximum scheduling time",
+        default=10,
+        type=int,
     )
     psfind_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=1, type=int,
+        "--log-max-cores",
+        help="Log-2 of the maximum number of cores",
+        default=10,
+        type=int,
     )
-    psfind_parser.set_defaults(func=_find_poolsize)
+    psfind_parser.set_defaults(func=_make_ps_table)
 
     # General options.
     parser.add_argument(
@@ -229,13 +235,10 @@ def _make_stats_plot(args, tr_factory) -> None:
     fig.savefig(filename)
 
 
-def _find_poolsize(args, tr_factory) -> None:
-
+def _make_ps_table(args, tr_factory) -> None:
     print(
         f"Template: {os.path.basename(args.template.name)}\n"
         f"No. of transactions: {args.n}\n"
-        f"Hardware operation length (-t): {args.op_time}\n"
-        f"Number of cores (-c): {args.num_cores}\n"
         f"Memory size (-m): {args.memsize}\n"
         f"Execution queue size (-q): {args.queuesize or 'infinite'}\n"
         f"Object address distribution's Zipf parameter (-z): {args.zipf_param:.2f}\n"
@@ -276,9 +279,35 @@ def _find_poolsize(args, tr_factory) -> None:
         def __len__(self):
             return args.n
 
-    min_poolsize = bisect.bisect(ScheduledCountSequence(), 0, lo=1)
+    sched_times = [2 ** logstime for logstime in range(args.log_max_stime + 1)]
+    core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
-    print("Minimum pool size:", min_poolsize)
+    col1_header = "t_sched"
+    col1_width = max(len(col1_header), len(str(sched_times[-1]))) + 2
+    col1_template = f"{{0:<{col1_width}}}"
+    max_value = args.n
+    precision = 0
+    col_width = max(len(f"{max_value:.{precision}f}"), len(str(core_counts[-1])))
+    cols_header_template = "".join(
+        f"{{{i + 1}:{col_width}d}}  " for i in range(len(core_counts))
+    )
+    cols_body_template = "".join(
+        f"{{{i + 1}:{col_width}.{precision}f}}  " for i in range(len(core_counts))
+    )
+    header_template = col1_template + cols_header_template
+    body_template = col1_template + cols_body_template
+
+    print(" " * col1_width + "Minimum pool size")
+    print(header_template.format(col1_header, *core_counts))
+    for sched_time in sched_times:
+        args.op_time = sched_time
+        min_poolsizes = []
+        for core_count in core_counts:
+            args.num_cores = core_count
+            min_poolsize = bisect.bisect(ScheduledCountSequence(), 0, lo=1)
+            min_poolsizes.append(min_poolsize)
+        print(body_template.format(sched_time, *min_poolsizes))
+    print()
 
 
 def _run_sim(
