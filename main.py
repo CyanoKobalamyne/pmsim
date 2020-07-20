@@ -248,7 +248,9 @@ def _make_ps_table(args, tr_factory) -> None:
                         # Skip over tail.
                         break
                     if state.clock not in scheduled_counts:
-                        scheduled_counts[state.clock] = len(state.scheduled)
+                        scheduled_counts[state.clock] = (
+                            len(state.scheduled) - state.core_count + len(state.cores)
+                        )
                 min_sched_count = min(scheduled_counts.values())
                 min_sched_counts.append(min_sched_count)
                 if args.verbose == 1:
