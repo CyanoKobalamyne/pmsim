@@ -138,7 +138,7 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
     )
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
-        print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}")
+        print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}\n")
         print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
@@ -190,8 +190,8 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
 
     def run_sims(sched_cls, sched_args={}):
         nonlocal j
-        title = f"{sched_cls(**sched_args).name}\n"
-        print(title)
+        title = f"{sched_cls(**sched_args).name}"
+        print(f"{title}\n")
         lines = []
         for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
             scheduled_counts = {}
