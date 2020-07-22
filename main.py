@@ -131,8 +131,8 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
         varname="Average normalized throughput",
         xname="Number of cores",
         yname="HW operation time",
-        xvals=sched_times,
-        yvals=core_counts,
+        xvals=core_counts,
+        yvals=sched_times,
         max_value=100,
         precision=5,
     )
@@ -275,8 +275,8 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
         varname="Minimum pool size for keeping the cores busy",
         xname="Number of cores",
         yname="HW operation time",
-        xvals=sched_times,
-        yvals=core_counts,
+        xvals=core_counts,
+        yvals=sched_times,
         max_value=args.n,
         precision=0,
     )
