@@ -288,7 +288,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
         min_poolsizes = []
         for core_count in core_counts:
             args.num_cores = core_count
-            min_poolsize = bisect.bisect(ScheduledCountSequence(), 0, lo=1)
+            min_poolsize = bisect.bisect_left(ScheduledCountSequence(), 0, lo=1)
             min_poolsizes.append(min_poolsize)
         print(tbody.format(sched_time, *min_poolsizes))
     print()
