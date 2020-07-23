@@ -49,10 +49,13 @@ class TransactionScheduler(ABC):
             transactions ready to be executed concurrently with the currently running
             ones without conflicts
         """
+        state = state.copy()
         # Don't do anything if queue is full.
         if self.queue_size == len(state.scheduled):
+            if state.clock < state.cores[0].clock:
+                # Scheduler needs to wait until at least one transaction is started.
+                state.clock = state.cores[0].clock
             return [state]
-        state = state.copy()
         # Fill up pending pool.
         while self.pool_size is None or len(state.pending) < self.pool_size:
             try:
@@ -76,6 +79,9 @@ class TransactionScheduler(ABC):
                 scheduled = set(itertools.islice(scheduled, count))
                 new_state.scheduled |= scheduled
                 new_state.pending -= scheduled
+            elif new_state.clock < new_state.cores[0].clock:
+                # Scheduler needs to wait until at least one transaction finishes.
+                new_state.clock = new_state.cores[0].clock
             out_states.append(new_state)
         return out_states
 

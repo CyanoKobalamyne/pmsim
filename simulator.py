@@ -38,47 +38,43 @@ class Simulator:
         Returns:
             amount of time (cycles) it took to execute all transactions
         """
-        queue = [(0, 0, [self.start_state])]  # time, step, state
-        step = 1
+        time = 0
+        count = 1
+        queue = [(time, count, [self.start_state])]
         while queue:
             # Get next state off the queue.
-            time, _, path = heapq.heappop(queue)
+            time, count, path = heapq.heappop(queue)
             state = path[-1]
 
-            if not state:
-                if verbose >= 2:
-                    print(f"States: {step} total, {len(queue)} unexplored")
-                return path
-
-            # Run scheduler if there are no finished cores.
-            if not state.cores or state.clock <= state.cores[0].clock:
-                trans_states = self.scheduler.run(state)
-            else:
-                trans_states = [state.copy()]
-
-            for trans_state in trans_states:
-                # Compute next states for the execution units.
-                if len(trans_state.cores) < state.core_count and trans_state.scheduled:
-                    # Execute some scheduled transactions.
-                    for next_state in self.executor.run(trans_state):
-                        # Push child states onto queue.
-                        next_time = min(next_state.clock, next_state.cores[0].clock)
-                        next_path = path + [trans_state, next_state]
-                        heapq.heappush(queue, (next_time, step, next_path))
-                        step += 1
-                else:
-                    next_state = trans_state.copy()
-                    # Remove first finished transaction.
-                    finished_core = heapq.heappop(next_state.cores)
-                    # If the scheduler was idle, move its clock forward.
-                    next_state.clock = max(trans_state.clock, finished_core.clock)
-                    # Push child states onto queue.
-                    next_time = min(next_state.clock, trans_state.cores[0].clock)
-                    next_path = path + [trans_state, next_state]
-                    heapq.heappush(queue, (next_time, step, next_path))
-                    step += 1
-
             if verbose >= 3:
-                print(time, step, len(queue), end="\r")
+                print(time, count, len(queue), end="\r")
+
+            if not state:
+                # Nothing to do, path ended.
+                if verbose >= 2:
+                    print(f"States: {len(path)} path, {count} total, {len(queue)} left")
+                return path
+            elif len(state.cores) < state.core_count and state.scheduled:
+                # Some cores are idle and there are transactions scheduled.
+                next_states = self.executor.run(state)
+            elif state.cores and state.cores[0].clock <= state.clock:
+                # Some transactions have finished executing.
+                next_state = state.copy()
+                heapq.heappop(next_state.cores)  # remove first finished transaction.
+                next_states = [next_state]
+            else:
+                # No transactions have finished or nothing is scheduled.
+                next_states = self.scheduler.run(state)
+
+            # Push "child" states onto queue.
+            for next_state in next_states:
+                time = (
+                    min(next_state.clock, next_state.cores[0].clock)
+                    if next_state.cores
+                    else next_state.clock
+                )
+                count += 1
+                next_path = path + [next_state]
+                heapq.heappush(queue, (time, count, next_path))
 
         raise RuntimeError  # We should never get here.
