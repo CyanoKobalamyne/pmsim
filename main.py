@@ -27,20 +27,20 @@ def get_args() -> Namespace:
     subparsers = parser.add_subparsers(title="commands")
 
     # Options for tabulation script.
-    tput_parser = subparsers.add_parser("tput", help="tabulate throughputs")
-    tput_parser.add_argument(
+    tpar_parser = subparsers.add_parser("tpar", help="tabulate parallelism")
+    tpar_parser.add_argument(
         "--log-max-stime",
         help="Log-2 of the maximum scheduling time",
         default=10,
         type=int,
     )
-    tput_parser.add_argument(
+    tpar_parser.add_argument(
         "--log-max-cores",
         help="Log-2 of the maximum number of cores",
         default=10,
         type=int,
     )
-    tput_parser.set_defaults(func=make_throughput_table)
+    tpar_parser.set_defaults(func=make_parallelism_table)
 
     # Options for statistics plotting script.
     stat_parser = subparsers.add_parser("stat", help="plot system statistics")
@@ -122,19 +122,19 @@ def get_args() -> Namespace:
     return args
 
 
-def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> None:
-    """Print normalized throughput as a function of scheduling time and core count."""
+def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> None:
+    """Print parallelism as a function of scheduling time and core count."""
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
-        varname="Average normalized throughput",
+        varname="Steady-state parallelism",
         xname="Number of cores",
         yname="HW operation time",
         xvals=core_counts,
         yvals=sched_times,
-        max_value=100,
-        precision=5,
+        max_value=max(core_counts),
+        precision=1,
     )
 
     def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
@@ -142,17 +142,42 @@ def make_throughput_table(args: Namespace, tr_factory: TransactionFactory) -> No
         print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
-            throughputs: List[float] = []
+            prls: List[float] = []
             for core_count in core_counts:
                 args.num_cores = core_count
-                results = [
-                    path[-1].clock
-                    for _, path in run_sim(
-                        args, tr_factory, sched_cls, sched_args, exec_cls, exec_args
-                    )
-                ]
-                throughputs.append(tr_factory.total_time / statistics.mean(results))
-            print(tbody.format(sched_time, *throughputs))
+                results = []
+                for _, path in run_sim(
+                    args, tr_factory, sched_cls, sched_args, exec_cls, exec_args
+                ):
+                    start = end = t_prev = t_cur = None
+                    total = 0
+                    for state in path:
+                        # Skip over warm-up phase (until first transaction completes).
+                        if (
+                            len(state.incoming)
+                            + len(state.pending)
+                            + len(state.scheduled)
+                            + len(state.cores)
+                            == args.n
+                        ):
+                            continue
+                        if start is None:
+                            start = state.clock
+                            t_prev = start
+                        else:
+                            t_cur = state.clock
+                            total += len(state.cores) * (t_cur - t_prev)
+                            t_prev = t_cur
+                        # Skip over tail (when pool is empty).
+                        if not state.incoming and len(state.pending) < args.poolsize:
+                            end = state.clock
+                            break
+                    if start == end:
+                        results.append(len(state.cores) + 1)
+                    else:
+                        results.append(total / (end - start))
+                prls.append(statistics.mean(results))
+            print(tbody.format(sched_time, *prls))
         print()
 
     run_sims(TournamentScheduler)
