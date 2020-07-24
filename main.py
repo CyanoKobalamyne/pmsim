@@ -72,7 +72,6 @@ def get_args() -> Namespace:
     parser.add_argument(
         "template", help="transaction template file", type=FileType("rt")
     )
-    parser.add_argument("n", help="total number of transactions", type=int)
     parser.add_argument(
         "-m", "--memsize", help="memory size (# of objects)", default=1024, type=int
     )
@@ -108,6 +107,8 @@ def get_args() -> Namespace:
     )
 
     args = parser.parse_args()
+
+    args.n = 2 ** (args.log_max_cores + 1)
 
     print(
         f"Template: {os.path.basename(args.template.name)}\n"
