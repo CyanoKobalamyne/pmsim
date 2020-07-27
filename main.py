@@ -119,7 +119,7 @@ def get_args() -> Namespace:
 
     args = parser.parse_args()
 
-    args.n = 2 ** (args.log_max_cores + 1)
+    args.n = 2 ** (getattr(args, "log_max_cores", 10) + 1)
 
     print(
         f"Template: {os.path.basename(args.template.name)}\n"
