@@ -5,7 +5,17 @@ from __future__ import annotations
 import copy
 import dataclasses
 from collections.abc import Sized
-from typing import Iterable, Iterator, List, Mapping, MutableSet, Sequence, Set
+from typing import (
+    AbstractSet,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    MutableSet,
+    Sequence,
+    Set,
+    Type,
+)
 
 
 class Transaction:
@@ -22,7 +32,11 @@ class Transaction:
         return instance
 
     def __init__(
-        self, read_set: Iterable[int], write_set: Iterable[int], time: int
+        self,
+        read_set: Iterable[int],
+        write_set: Iterable[int],
+        time: int,
+        set_type: Type[AbstractSet[int]] = set,
     ) -> None:
         """Create a transaction.
 
@@ -31,10 +45,11 @@ class Transaction:
             write_set: the set of objects that this transaction needs to write
                        and possibly also read
             time: the amount of time units it takes to execute this transaction
+            set_type: the set type used for keeping track of read and written objects
 
         """
-        self.read_set = set(read_set)
-        self.write_set = set(write_set)
+        self.read_set = set_type(read_set)
+        self.write_set = set_type(write_set)
         self.time = time
 
     def __hash__(self) -> int:
@@ -57,11 +72,17 @@ class Transaction:
 class TransactionSet(MutableSet[Transaction]):
     """A set of transactions."""
 
-    def __init__(self, transactions: Iterable[Transaction] = ()):
+    def __init__(
+        self,
+        transactions: Iterable[Transaction] = (),
+        /,
+        *,
+        obj_set_type: Type[AbstractSet[int]] = set,
+    ):
         """Create a new set."""
         self.transactions: Set[Transaction] = set()
-        self.read_set: Set[int] = set()
-        self.write_set: Set[int] = set()
+        self.read_set = obj_set_type()
+        self.write_set = obj_set_type()
         for t in transactions:
             self.add(t)
 
@@ -111,7 +132,10 @@ class TransactionGenerator(Iterator[Transaction], Sized):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_data: Iterable[Mapping[str, int]], addresses: Sequence[int]
+        self,
+        tr_data: Iterable[Mapping[str, int]],
+        addresses: Sequence[int],
+        set_type: Type[AbstractSet[int]] = set,
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -121,11 +145,13 @@ class TransactionGenerator(Iterator[Transaction], Sized):
                 "write": size of the write set
                 "time": transaction time
             addresses: addresses available for transactions (assigned sequentially)
+            set_type: type of set to use in transaction
         """
         self.tr_data = list(tr_data)
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
+        self.set_type = set_type
 
     def __next__(self) -> Transaction:
         """Return next transaction."""
@@ -140,7 +166,7 @@ class TransactionGenerator(Iterator[Transaction], Sized):
         write_end = self.address_index
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
-        return Transaction(read_set, write_set, tr_conf["time"])
+        return Transaction(read_set, write_set, tr_conf["time"], set_type=self.set_type)
 
     def __bool__(self) -> bool:
         """Return true if there are transactions left."""

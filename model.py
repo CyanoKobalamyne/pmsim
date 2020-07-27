@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Sized
-from typing import Iterable
+from typing import AbstractSet, Iterable, Type
 
 from pmtypes import MachineState, Transaction, TransactionGenerator
 
@@ -10,7 +10,7 @@ from pmtypes import MachineState, Transaction, TransactionGenerator
 class TransactionFactory(Iterable[Transaction], Sized, ABC):
     """Factory for generators of transactions."""
 
-    def __iter__(self) -> TransactionGenerator:
+    def __iter__(self, set_type: Type[AbstractSet[int]] = set) -> TransactionGenerator:
         """Return a special iterator over transactions."""
 
     @property

@@ -3,7 +3,7 @@
 import heapq
 import itertools
 from abc import abstractmethod
-from typing import Iterable, MutableSet, Tuple
+from typing import Iterable, MutableSet, Tuple, Type
 
 from model import TransactionScheduler
 from pmtypes import MachineState, Transaction, TransactionSet
@@ -13,7 +13,11 @@ class AbstractScheduler(TransactionScheduler):
     """Represents the scheduling unit within Puppetmaster."""
 
     def __init__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None, **kwargs
+        self,
+        op_time: int = 0,
+        pool_size: int = None,
+        queue_size: int = None,
+        set_type: Type[MutableSet[int]] = set,
     ):
         """Create a new scheduler.
 
@@ -27,6 +31,7 @@ class AbstractScheduler(TransactionScheduler):
         self.op_time = op_time
         self.pool_size = pool_size
         self.queue_size = queue_size
+        self.set_type = set_type
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """Try scheduling a batch of transactions.
@@ -52,7 +57,9 @@ class AbstractScheduler(TransactionScheduler):
             except StopIteration:
                 break
         # Try scheduling a batch of new transactions.
-        ongoing = TransactionSet(core.transaction for core in state.cores)
+        ongoing = TransactionSet(
+            (core.transaction for core in state.cores), obj_set_type=self.set_type
+        )
         for tr in state.scheduled:
             ongoing.add(tr)
         out_states = []
@@ -91,7 +98,7 @@ class GreedyScheduler(AbstractScheduler):
 
         Iterates through pending transactions once and adds all compatible ones.
         """
-        candidates = TransactionSet()
+        candidates = TransactionSet(obj_set_type=self.set_type)
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
@@ -128,11 +135,11 @@ class MaximalScheduler(AbstractScheduler):
             yield from all_candidate_sets(prefix, i + 1)
             tr = pending_list[i]
             if ongoing.compatible(tr) and prefix.compatible(tr):
-                new_prefix = TransactionSet(prefix)
+                new_prefix = TransactionSet(prefix, obj_set_type=self.set_type)
                 new_prefix.add(tr)
                 yield from all_candidate_sets(new_prefix, i + 1)
 
-        sets = all_candidate_sets(TransactionSet(), 0)
+        sets = all_candidate_sets(TransactionSet(obj_set_type=self.set_type), 0)
         out = heapq.nlargest(self.n_schedules, sets, key=len)
         return map(lambda x: (x, self.op_time), out)
 
@@ -163,7 +170,11 @@ class TournamentScheduler(AbstractScheduler):
         checks the available transactions pairwise against each other repeatedly, until
         a single non-conflicting group remains.
         """
-        sets = [TransactionSet([tr]) for tr in pending if ongoing.compatible(tr)]
+        sets = [
+            TransactionSet([tr], obj_set_type=self.set_type)
+            for tr in pending
+            if ongoing.compatible(tr)
+        ]
         rounds = 0
         while len(sets) > 1:
             for t1, t2 in itertools.zip_longest(sets[::2], sets[1::2]):
@@ -173,7 +184,7 @@ class TournamentScheduler(AbstractScheduler):
             rounds += 1
         return [
             (
-                (sets[0] if sets else TransactionSet()),
+                (sets[0] if sets else TransactionSet(obj_set_type=self.set_type)),
                 self.op_time * (1 if self.is_pipelined else max(1, rounds)),
             )
         ]

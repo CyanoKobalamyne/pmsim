@@ -1,7 +1,7 @@
 """Classes that create transaction generators for Puppetmaster."""
 
 import random
-from typing import Iterable, List, Mapping
+from typing import AbstractSet, Iterable, List, Mapping, Type
 
 from more_itertools import SequenceView
 
@@ -69,7 +69,7 @@ class RandomFactory(TransactionFactory):
         weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
 
-    def __iter__(self) -> TransactionGenerator:
+    def __iter__(self, set_type: Type[AbstractSet[int]] = set) -> TransactionGenerator:
         """Create a new iterator of transactions."""
         if self.run_index == self.run_count:
             self.run_index = 0
@@ -80,7 +80,7 @@ class RandomFactory(TransactionFactory):
         addr_end = self.obj_count * self.run_index
         tr_data = SequenceView(self.tr_data)[tr_start:tr_end]
         addresses = SequenceView(self.addresses)[addr_start:addr_end]
-        return TransactionGenerator(tr_data, addresses)
+        return TransactionGenerator(tr_data, addresses, set_type)
 
     def __len__(self):
         """Return the number of transactions per iterator."""
