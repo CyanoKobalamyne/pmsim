@@ -7,7 +7,7 @@ import random
 import statistics
 from argparse import ArgumentParser, FileType, Namespace
 from pathlib import PurePath
-from typing import Dict, List, Mapping, Sequence, Type
+from typing import AbstractSet, Dict, List, Mapping, Sequence, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +16,7 @@ from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
 from model import TransactionExecutor, TransactionFactory, TransactionScheduler
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
+from sets import ApproximateAddressSet
 from simulator import Simulator
 
 
@@ -138,8 +139,13 @@ def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> N
         precision=1,
     )
 
-    def run_sims(sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}):
-        print(f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}\n")
+    def run_sims(
+        sched_cls, sched_args={}, exec_cls=RandomExecutor, exec_args={}, set_type=set
+    ):
+        print(
+            f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name}"
+            f"{', approximate set structure' if set_type is not set else ''}\n"
+        )
         print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
@@ -148,7 +154,13 @@ def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> N
                 args.num_cores = core_count
                 results = []
                 for _, path in run_sim(
-                    args, tr_factory, sched_cls, sched_args, exec_cls, exec_args
+                    args,
+                    tr_factory,
+                    sched_cls,
+                    sched_args,
+                    exec_cls,
+                    exec_args,
+                    set_type,
                 ):
                     start = end = t_prev = t_cur = None
                     total = 0
@@ -182,6 +194,8 @@ def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> N
         print()
 
     run_sims(TournamentScheduler)
+
+    run_sims(TournamentScheduler, set_type=ApproximateAddressSet)
 
     run_sims(TournamentScheduler, {"is_pipelined": True})
 
@@ -333,11 +347,14 @@ def run_sim(
     sched_args: Mapping = {},
     exec_cls: Type[TransactionExecutor] = RandomExecutor,
     exec_args: Mapping = {},
+    set_type: Type[AbstractSet[int]] = set,
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
-        transactions = tr_factory.__iter__()
-        scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
+        transactions = tr_factory.__iter__(set_type)
+        scheduler = sched_cls(
+            args.op_time, args.poolsize, args.queuesize, set_type, **sched_args
+        )
         executor = exec_cls(**exec_args)
         sim = Simulator(transactions, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
