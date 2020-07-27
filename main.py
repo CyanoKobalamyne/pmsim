@@ -53,6 +53,16 @@ def get_args() -> Namespace:
     )
     stat_parser.set_defaults(func=make_stats_plot)
 
+    # Options for latency plotting script.
+    latency_parser = subparsers.add_parser("latency", help="plot transaction latencies")
+    latency_parser.add_argument(
+        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
+    )
+    latency_parser.add_argument(
+        "-c", "--num-cores", help="number of execution cores", default=4, type=int,
+    )
+    latency_parser.set_defaults(func=make_latency_plot)
+
     # Options for pool size finder.
     psfind_parser = subparsers.add_parser("psfind", help="tabulate optimal pool sizes")
     psfind_parser.add_argument(
@@ -242,6 +252,67 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
             stats = np.array(list(scheduled_counts.values()))
             axis = axes[i][j]
             lines.append(axis.plot(times, stats))
+            if i == 0:
+                axis.set_title(title)
+        j += 1
+        return lines
+
+    run_sims(TournamentScheduler)
+
+    midlines = run_sims(TournamentScheduler, {"is_pipelined": True})
+
+    run_sims(GreedyScheduler)
+
+    if args.poolsize <= 20:
+        run_sims(MaximalScheduler)
+
+    axes[-1][1].legend(
+        handles=midlines[-1],
+        labels=["scheduled"],
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.2),
+        fancybox=False,
+        shadow=False,
+        ncol=3,
+    )
+    plt.show()
+    fig.savefig(filename)
+
+
+def make_latency_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
+    """Plot number of scheduled transactions as a function of time."""
+    filename = (
+        f"{PurePath(args.template.name).stem}_latency_{args.n}_m{args.memsize}"
+        f"_p{args.poolsize}_q{args.queuesize if args.queuesize is not None else 'inf'}"
+        f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
+    )
+
+    fig, axes = plt.subplots(args.repeats, 4)
+
+    j = 0
+
+    def run_sims(sched_cls, sched_args={}):
+        nonlocal j
+        title = f"{sched_cls(**sched_args).name}"
+        print(f"{title}\n")
+        lines = []
+        for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
+            start_times = {}
+            end_times = {}
+            prev_pending = set()
+            prev_executing = set()
+            for state in path:
+                for tr in prev_pending - state.pending:
+                    start_times[tr] = state.clock
+                prev_pending = state.pending
+                for tr in prev_executing - {c.transaction for c in state.cores}:
+                    end_times[tr] = state.clock + tr.time
+                prev_executing = {c.transaction for c in state.cores}
+            latencies = {end_times[t] - start_times[t] for t in start_times}
+            hist, bin_edges = np.histogram(list(latencies), bins=32)
+            print(hist)
+            axis = axes[i][j]
+            lines.append(axis.plot(bin_edges[1:], hist))
             if i == 0:
                 axis.set_title(title)
         j += 1
