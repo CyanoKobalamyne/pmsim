@@ -269,16 +269,22 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
             for _, path in run_sim(args, tr_factory, TournamentScheduler):
                 scheduled_counts = {}
                 for state in path:
-                    if state.clock == 0:
-                        # Skip over starting state.
+                    # Skip over warm-up phase (until first transaction completes).
+                    if (
+                        len(state.incoming)
+                        + len(state.pending)
+                        + len(state.scheduled)
+                        + len(state.cores)
+                        == args.n
+                    ):
                         continue
-                    if not state.incoming:
-                        # Skip over tail.
-                        break
                     if state.clock not in scheduled_counts:
                         scheduled_counts[state.clock] = (
                             len(state.scheduled) - state.core_count + len(state.cores)
                         )
+                    # Skip over tail (when pool is empty).
+                    if not state.incoming and len(state.pending) < args.poolsize:
+                        break
                 min_sched_count = min(scheduled_counts.values())
                 min_sched_counts.append(min_sched_count)
                 if args.verbose == 1:
