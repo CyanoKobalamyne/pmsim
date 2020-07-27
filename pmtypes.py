@@ -99,14 +99,12 @@ class TransactionSet(MutableSet[Transaction]):
         self.transactions.discard(transaction)
 
     def compatible(self, transaction: Transaction) -> bool:
-        """Return whether the given transaction is compatible with this set."""
-        for read_obj in transaction.read_set:
-            if read_obj in self.write_set:
-                return False
-        for write_obj in transaction.write_set:
-            if write_obj in self.read_set or write_obj in self.write_set:
-                return False
-        return True
+        """Return True if the transaction is compatible with the ones in this set."""
+        return (
+            not (transaction.read_set & self.write_set)
+            and not (transaction.write_set & self.read_set)
+            and not (transaction.write_set & self.write_set)
+        )
 
 
 class TransactionGenerator(Iterator[Transaction], Sized):
