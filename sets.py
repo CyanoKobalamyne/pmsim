@@ -6,7 +6,7 @@ from typing import AbstractSet, Iterable, Iterator
 class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
-    def __init__(self, objects: Iterable[int] = (), /, *, size=1024):
+    def __init__(self, objects: Iterable[int] = (), /, *, size):
         """Create a new set containing objects."""
         self.bits = 0
         self.size = size
@@ -32,7 +32,7 @@ class ApproximateAddressSet(AbstractSet[int]):
     def __or__(self, other: AbstractSet) -> "ApproximateAddressSet":
         """Return the union of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet()
+            out = ApproximateAddressSet(size=self.size)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -43,7 +43,7 @@ class ApproximateAddressSet(AbstractSet[int]):
     def __and__(self, other: AbstractSet) -> "ApproximateAddressSet":
         """Return the intersection of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet()
+            out = ApproximateAddressSet(size=self.size)
             out.bits = self.bits & other.bits
             return out
         else:
