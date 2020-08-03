@@ -5,11 +5,11 @@ from typing import AbstractSet, Iterable, List, Mapping, Type
 
 from more_itertools import SequenceView
 
-from model import TransactionFactory
+from model import TransactionGeneratorFactory
 from pmtypes import TransactionGenerator
 
 
-class RandomFactory(TransactionFactory):
+class RandomFactory(TransactionGeneratorFactory):
     """Makes new transaction generators based on a parametrized distribution."""
 
     def __init__(

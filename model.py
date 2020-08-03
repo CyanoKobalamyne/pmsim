@@ -7,7 +7,7 @@ from typing import AbstractSet, Iterable, Type
 from pmtypes import MachineState, Transaction, TransactionGenerator
 
 
-class TransactionFactory(Iterable[Transaction], Sized, ABC):
+class TransactionGeneratorFactory(Iterable[Transaction], Sized, ABC):
     """Factory for generators of transactions."""
 
     def __iter__(self, set_type: Type[AbstractSet[int]] = set) -> TransactionGenerator:

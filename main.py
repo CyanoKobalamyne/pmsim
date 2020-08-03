@@ -14,7 +14,7 @@ import numpy as np
 
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
-from model import TransactionExecutor, TransactionFactory, TransactionScheduler
+from model import TransactionExecutor, TransactionGeneratorFactory, TransactionScheduler
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from sets import ApproximateAddressSetFactory
 from simulator import Simulator
@@ -134,7 +134,9 @@ def get_args() -> Namespace:
     return args
 
 
-def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> None:
+def make_parallelism_table(
+    args: Namespace, tr_factory: TransactionGeneratorFactory
+) -> None:
     """Print parallelism as a function of scheduling time and core count."""
     sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
     core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
@@ -265,7 +267,7 @@ def make_parallelism_table(args: Namespace, tr_factory: TransactionFactory) -> N
         run_sims(MaximalScheduler, {}, OptimalExecutor)
 
 
-def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
+def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
         f"{PurePath(args.template.name).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
@@ -318,7 +320,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
     fig.savefig(filename)
 
 
-def make_latency_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
+def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
         f"{PurePath(args.template.name).stem}_latency_{args.n}_m{args.memsize}"
@@ -379,7 +381,7 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionFactory) -> None:
     fig.savefig(filename)
 
 
-def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
+def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Print minimum pool size as a function of scheduling time and core count."""
 
     class ScheduledCountSequence(Sequence[int]):
@@ -452,7 +454,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionFactory) -> None:
 
 def run_sim(
     args: Namespace,
-    tr_factory: TransactionFactory,
+    tr_factory: TransactionGeneratorFactory,
     sched_cls: Type[TransactionScheduler],
     sched_args: Mapping = {},
     exec_cls: Type[TransactionExecutor] = RandomExecutor,
