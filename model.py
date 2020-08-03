@@ -23,6 +23,26 @@ class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
     @abstractmethod
+    def __init__(
+        self,
+        op_time: int = 0,
+        pool_size: int = None,
+        queue_size: int = None,
+        set_type: Type[AbstractSet[int]] = set,
+        **kwargs
+    ):
+        """Create a new scheduler.
+
+        Arguments:
+            op_time: number of cycles the scheduler takes to execute a single operation
+            pool_size: number of tranactions seen by the scheduler simultaneously
+                       (all of them if None)
+            queue_size: maximum number of transactions that can be waiting for execution
+                        (unlimited if None)
+            set_type: class to use as representation of object sets in transactions
+        """
+
+    @abstractmethod
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """Try scheduling a batch of transactions.
 

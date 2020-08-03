@@ -48,8 +48,8 @@ class Transaction:
             set_type: the set type used for keeping track of read and written objects
 
         """
-        self.read_set = set_type(read_set)
-        self.write_set = set_type(write_set)
+        self.read_set = set_type(read_set)  # type: ignore
+        self.write_set = set_type(write_set)  # type: ignore
         self.time = time
 
     def __hash__(self) -> int:

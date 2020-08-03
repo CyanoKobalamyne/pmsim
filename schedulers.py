@@ -19,30 +19,14 @@ class AbstractScheduler(TransactionScheduler):
         queue_size: int = None,
         set_type: Type[AbstractSet[int]] = set,
     ):
-        """Create a new scheduler.
-
-        Arguments:
-            op_time: number of cycles the scheduler takes to execute a single operation
-            pool_size: number of tranactions seen by the scheduler simultaneously
-                       (all of them if None)
-            queue_size: maximum number of transactions that can be waiting for execution
-                        (unlimited if None)
-        """
+        """See TransactionScheduler.__init__."""
         self.op_time = op_time
         self.pool_size = pool_size
         self.queue_size = queue_size
         self.set_type = set_type
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
-        """Try scheduling a batch of transactions.
-
-        Arguments:
-            state: current state of the machine
-
-        Returns:
-            transactions ready to be executed concurrently with the currently running
-            ones without conflicts
-        """
+        """See TransactionScheduler.run."""
         state = state.copy()
         # Don't do anything if queue is full.
         if self.queue_size == len(state.scheduled):
@@ -94,7 +78,7 @@ class GreedyScheduler(AbstractScheduler):
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
-        """See TransacionScheduler.schedule.
+        """See AbstractScheduler.schedule.
 
         Iterates through pending transactions once and adds all compatible ones.
         """
@@ -125,7 +109,7 @@ class MaximalScheduler(AbstractScheduler):
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
-        """See TransacionScheduler.schedule."""
+        """See AbstractScheduler.schedule."""
         pending_list = list(pending)
 
         def all_candidate_sets(prefix, i):
@@ -164,7 +148,7 @@ class TournamentScheduler(AbstractScheduler):
     def schedule(
         self, ongoing: TransactionSet, pending: Iterable[Transaction]
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
-        """See TransacionScheduler.schedule.
+        """See AbstractScheduler.schedule.
 
         Filters out all transactions that conflict with currently running ones, then
         checks the available transactions pairwise against each other repeatedly, until
