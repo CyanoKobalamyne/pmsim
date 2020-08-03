@@ -62,6 +62,6 @@ class ApproximateAddressSetFactory:
         self.size = size
         self.n_funcs = n_funcs
 
-    def __call__(self, objects) -> ApproximateAddressSet:
+    def __call__(self, objects: Iterable[int] = ()) -> ApproximateAddressSet:
         """Return new ApproximateAddressSet."""
-        return ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
+        return ApproximateAddressSet(objects, size=self.size, n_funcs=self.n_funcs)
