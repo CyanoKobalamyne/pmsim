@@ -50,3 +50,15 @@ class ApproximateAddressSet(AbstractSet[int]):
             raise TypeError(
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
+
+
+class ApproximateAddressSetFactory:
+    """Makes ApproximateAddressSet instances with preset arguments."""
+
+    def __init__(self, size: int):
+        """Create new factory with set size."""
+        self.size = size
+
+    def __call__(self, objects) -> ApproximateAddressSet:
+        """Return new ApproximateAddressSet."""
+        return ApproximateAddressSet(size=self.size)
