@@ -3,7 +3,7 @@
 import heapq
 import itertools
 from abc import abstractmethod
-from typing import Iterable, MutableSet, Tuple, Type
+from typing import AbstractSet, Iterable, MutableSet, Tuple, Type
 
 from model import TransactionScheduler
 from pmtypes import MachineState, Transaction, TransactionSet
@@ -17,7 +17,7 @@ class AbstractScheduler(TransactionScheduler):
         op_time: int = 0,
         pool_size: int = None,
         queue_size: int = None,
-        set_type: Type[MutableSet[int]] = set,
+        set_type: Type[AbstractSet[int]] = set,
     ):
         """Create a new scheduler.
 
