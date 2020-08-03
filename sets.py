@@ -6,12 +6,14 @@ from typing import AbstractSet, Iterable, Iterator
 class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
-    def __init__(self, objects: Iterable[int] = (), /, *, size):
+    def __init__(self, objects: Iterable[int] = (), /, *, size, n_funcs):
         """Create a new set containing objects."""
         self.bits = 0
         self.size = size
+        self.n_funcs = n_funcs
         for obj in objects:
-            self.bits |= 1 << (obj % size)
+            for i in range(n_funcs):
+                self.bits |= 1 << ((obj + i) % size)
 
     def __contains__(self, obj: object) -> bool:
         """Not implemented."""
@@ -32,7 +34,7 @@ class ApproximateAddressSet(AbstractSet[int]):
     def __or__(self, other: AbstractSet) -> "ApproximateAddressSet":
         """Return the union of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet(size=self.size)
+            out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -43,7 +45,7 @@ class ApproximateAddressSet(AbstractSet[int]):
     def __and__(self, other: AbstractSet) -> "ApproximateAddressSet":
         """Return the intersection of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet(size=self.size)
+            out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
             out.bits = self.bits & other.bits
             return out
         else:
@@ -55,10 +57,11 @@ class ApproximateAddressSet(AbstractSet[int]):
 class ApproximateAddressSetFactory:
     """Makes ApproximateAddressSet instances with preset arguments."""
 
-    def __init__(self, size: int):
+    def __init__(self, size: int, n_funcs=1):
         """Create new factory with set size."""
         self.size = size
+        self.n_funcs = n_funcs
 
     def __call__(self, objects) -> ApproximateAddressSet:
         """Return new ApproximateAddressSet."""
-        return ApproximateAddressSet(size=self.size)
+        return ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
