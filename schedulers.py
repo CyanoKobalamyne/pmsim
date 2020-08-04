@@ -31,7 +31,7 @@ class AbstractScheduler(TransactionScheduler):
         while self.pool_size is None or len(state.pending) < self.pool_size:
             try:
                 state.pending.add(state.incoming.send(state.set_maker))
-            except StopIteration:
+            except (StopIteration, ValueError):
                 break
         # Try scheduling a batch of new transactions.
         ongoing = TransactionSet(

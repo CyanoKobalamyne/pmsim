@@ -166,7 +166,13 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
         write_end = self.address_index
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
-        return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
+        try:
+            return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
+        except ValueError:
+            # Revert operation.
+            self.tr_index -= 1
+            self.address_index -= tr_conf["reads"] + tr_conf["writes"]
+            raise
 
     def throw(self, exception, value=None, traceback=None):
         """Raise an exception in the generator."""
