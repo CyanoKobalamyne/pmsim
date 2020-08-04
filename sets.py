@@ -22,10 +22,9 @@ class IdealAddressSetMakerFactory(AddressSetMakerFactory):
     # See https://github.com/python/mypy/issues/3482
     __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
 
-    @property
-    def name(self) -> str:
-        """See AddressSetMakerFactory.name."""
-        return "Idealized set structure"
+    def __str__(self) -> str:
+        """Return human-readable name for the factory (set)."""
+        return "Idealized set"
 
 
 class ApproximateAddressSet(AbstractSet[int]):
@@ -110,11 +109,10 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         """Return new approximate address set maker."""
         return self.generator
 
-    @property
-    def name(self) -> str:
-        """See AddressSetMakerFactory.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the factory (set)."""
         opt = f",  {self.n_funcs} hash functions" if self.n_funcs > 1 else ""
-        return f"Approximate set structure ({self.size} bits{opt})"
+        return f"Approximate set ({self.size} bits{opt})"
 
 
 class FiniteAddressSet(AbstractSet[int]):
@@ -240,7 +238,6 @@ class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
         """Return new fixed-size set maker."""
         return FiniteAddressSetMaker(self)
 
-    @property
-    def name(self) -> str:
-        """See AddressSetMakerFactory.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the factory (set)."""
         return f"Fixed-size set using global renaming table ({self.size} bits)"

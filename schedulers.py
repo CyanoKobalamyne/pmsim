@@ -87,9 +87,8 @@ class GreedyScheduler(AbstractScheduler):
                 candidates.add(tr)
         return [(candidates, self.op_time)]
 
-    @property
-    def name(self):
-        """See TransacionScheduler.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the scheduler."""
         return "Greedy scheduler"
 
 
@@ -129,9 +128,8 @@ class MaximalScheduler(AbstractScheduler):
         out = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
         return map(lambda x: (x, self.op_time), out)
 
-    @property
-    def name(self):
-        """See TransacionScheduler.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the scheduler."""
         return "Maximal scheduler"
 
 
@@ -178,9 +176,7 @@ class TournamentScheduler(AbstractScheduler):
             )
         ]
 
-    @property
-    def name(self):
-        """See TransacionScheduler.name."""
-        return (
-            f"Tournament scheduler{' (fully pipelined)' if self.is_pipelined else ''}"
-        )
+    def __str__(self) -> str:
+        """Return human-readable name for the scheduler."""
+        opt = " (fully pipelined)" if self.is_pipelined else ""
+        return f"Tournament scheduler{opt}"

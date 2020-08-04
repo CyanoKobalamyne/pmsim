@@ -35,11 +35,6 @@ class AddressSetMakerFactory(ABC):
     def __call__(self) -> AddressSetMaker:
         """Return new address set generator."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Return a human-readable name for this object."""
-
 
 class TransactionGeneratorFactory(ABC):
     """Factory for generators of transactions."""
@@ -83,11 +78,6 @@ class TransactionScheduler(ABC):
             ones without conflicts
         """
 
-    @property
-    @abstractmethod
-    def name(self):
-        """Return a human-readable name for this scheduler."""
-
 
 class TransactionExecutor(ABC):
     """Represents the execution policy for the processing units in Puppetmaster."""
@@ -102,8 +92,3 @@ class TransactionExecutor(ABC):
         The input state should not be used by the caller after this method returns,
         because it might be the same object as one of the returned states.
         """
-
-    @property
-    @abstractmethod
-    def name(self):
-        """Return a human-readable name for this executor."""

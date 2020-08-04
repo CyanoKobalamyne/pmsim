@@ -25,9 +25,8 @@ class RandomExecutor(TransactionExecutor):
             heapq.heappush(state.cores, core)
         return [state]
 
-    @property
-    def name(self):
-        """See TransactionExecutor.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the executor."""
         return "Randomized execution policy"
 
 
@@ -53,7 +52,6 @@ class OptimalExecutor(TransactionExecutor):
             out_states.append(new_state)
         return out_states
 
-    @property
-    def name(self):
-        """See TransactionExecutor.name."""
+    def __str__(self) -> str:
+        """Return human-readable name for the executor."""
         return "Optimal execution policy"

@@ -167,10 +167,8 @@ def make_parallelism_table(
         exec_args: Mapping[str, Any] = {},
         set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
     ):
-        print(
-            f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name.lower()}"
-            f", {set_factory.name.lower()}\n"
-        )
+        print(get_title(sched_cls(**sched_args), exec_cls(**exec_args), set_factory))
+        print()
         print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
@@ -278,8 +276,8 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
 
     def run_sims(sched_cls, sched_args={}):
         nonlocal j
-        title = f"{sched_cls(**sched_args).name}"
-        print(f"{title}\n")
+        print(get_title(sched_cls(**sched_args)))
+        print()
         lines = []
         for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
             scheduled_counts = {}
@@ -291,7 +289,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
             axis = axes[i][j]
             lines.append(axis.plot(times, stats))
             if i == 0:
-                axis.set_title(title)
+                axis.set_title(get_title(sched_cls(**sched_args)))
         j += 1
         return lines
 
@@ -436,7 +434,8 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
         precision=0,
     )
 
-    print(f"{TournamentScheduler().name} with {RandomExecutor().name}\n")
+    print(get_title(TournamentScheduler(), RandomExecutor()))
+    print()
     print(thead)
     for sched_time in sched_times:
         args.op_time = sched_time
@@ -492,6 +491,11 @@ def get_table_templates(
     header = f"{header_line_1}\n{divider}\n{header_line_2}\n{divider}"
     body_template = col1_template + cols_body_template
     return header, body_template
+
+
+def get_title(*args: object):
+    """Return title for printing."""
+    return ", ".join([str(arg).lower() for arg in args]).capitalize()
 
 
 if __name__ == "__main__":
