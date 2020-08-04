@@ -24,7 +24,7 @@ from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from sets import (
     ApproximateAddressSetMakerFactory,
     IdealAddressSetMakerFactory,
-    RenamingAddressSetMakerFactory,
+    FiniteAddressSetMakerFactory,
 )
 from simulator import Simulator
 
@@ -235,15 +235,15 @@ def make_parallelism_table(
 
     run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(4096))
 
-    run_sims(TournamentScheduler, set_factory=RenamingAddressSetMakerFactory(256))
+    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(256))
 
-    run_sims(TournamentScheduler, set_factory=RenamingAddressSetMakerFactory(512))
+    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(512))
 
-    run_sims(TournamentScheduler, set_factory=RenamingAddressSetMakerFactory(1024))
+    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(1024))
 
-    run_sims(TournamentScheduler, set_factory=RenamingAddressSetMakerFactory(2048))
+    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(2048))
 
-    run_sims(TournamentScheduler, set_factory=RenamingAddressSetMakerFactory(4096))
+    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(4096))
 
     run_sims(TournamentScheduler, {"is_pipelined": True})
 

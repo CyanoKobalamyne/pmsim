@@ -32,7 +32,7 @@ class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
     def __init__(self, objects: Iterable[int] = (), /, *, size: int, n_funcs: int):
-        """Create a new set containing objects."""
+        """Initialize set to contain objects."""
         self.bits = 0
         self.size = size
         self.n_funcs = n_funcs
@@ -80,15 +80,15 @@ class ApproximateAddressSet(AbstractSet[int]):
 
 
 class ApproximateAddressSetMaker(AddressSetMaker):
-    """Makes ApproximateAddressSet instances."""
+    """Makes approximate set instances."""
 
     def __init__(self, factory: ApproximateAddressSetMakerFactory):
-        """Create new approximate set maker."""
+        """Initialize approximate set maker."""
         self.size = factory.size
         self.n_funcs = factory.n_funcs
 
     def __call__(self, objects: Iterable[int] = ()) -> ApproximateAddressSet:
-        """Return new ApproximateAddressSet."""
+        """Return new approximate set."""
         return ApproximateAddressSet(objects, size=self.size, n_funcs=self.n_funcs)
 
 
@@ -96,7 +96,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
     """Factory for approximate set maker instances with preset arguments."""
 
     def __init__(self, size: int, n_funcs: int = 1):
-        """Create new factory for approximate address set makers.
+        """Initialize factory for approximate address set makers.
 
         Arguments:
             size: width of bit vector used to represent the set
@@ -107,7 +107,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         self.generator = ApproximateAddressSetMaker(self)
 
     def __call__(self) -> ApproximateAddressSetMaker:
-        """Return new ApproximateAddressSet."""
+        """Return new approximate address set maker."""
         return self.generator
 
     @property
@@ -117,7 +117,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         return f"Approximate set structure ({self.size} bits{opt})"
 
 
-class RenamingAddressSet(AbstractSet[int]):
+class FiniteAddressSet(AbstractSet[int]):
     """Fixed-size set with a global renaming table."""
 
     def __init__(
@@ -129,7 +129,7 @@ class RenamingAddressSet(AbstractSet[int]):
         hash_fn: Callable[[int, int], int],
         renaming_table: List[Tuple[int, int]],
     ):
-        """Create a new set containing objects."""
+        """Initialize set to contain objects."""
         self.bits = 0
         self.size = size
         self.hash_fn = hash_fn
@@ -155,7 +155,7 @@ class RenamingAddressSet(AbstractSet[int]):
         raise NotImplementedError
 
     def __iter__(self) -> Iterator[int]:
-        """Not implemented."""
+        """Yield each object in the set."""
         for obj, count in self.table:
             assert obj == -1 and count == 0 or obj != -1 and count > 0
             for _ in range(count):
@@ -169,10 +169,10 @@ class RenamingAddressSet(AbstractSet[int]):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: AbstractSet) -> RenamingAddressSet:
+    def __or__(self, other: AbstractSet) -> FiniteAddressSet:
         """Return the union of this set and the other set."""
-        if isinstance(other, RenamingAddressSet):
-            out = RenamingAddressSet(
+        if isinstance(other, FiniteAddressSet):
+            out = FiniteAddressSet(
                 size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
             )
             out.bits = self.bits | other.bits
@@ -182,10 +182,10 @@ class RenamingAddressSet(AbstractSet[int]):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: AbstractSet) -> RenamingAddressSet:
+    def __and__(self, other: AbstractSet) -> FiniteAddressSet:
         """Return the intersection of this set and the other set."""
-        if isinstance(other, RenamingAddressSet):
-            out = RenamingAddressSet(
+        if isinstance(other, FiniteAddressSet):
+            out = FiniteAddressSet(
                 size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
             )
             out.bits = self.bits & other.bits
@@ -196,18 +196,18 @@ class RenamingAddressSet(AbstractSet[int]):
             )
 
 
-class RenamingAddressSetMaker(AddressSetMaker):
-    """Makes new address sets that use a global renaming table."""
+class FiniteAddressSetMaker(AddressSetMaker):
+    """Makes fixed-size address sets that use a global renaming table."""
 
-    def __init__(self, factory: RenamingAddressSetMakerFactory):
-        """Create new factory with set size and hash functions."""
+    def __init__(self, factory: FiniteAddressSetMakerFactory):
+        """Initialize finite set maker."""
         self.size = factory.size
         self.hash_fn = factory.hash_fn
         self.table = [(-1, 0)] * factory.size
 
-    def __call__(self, objects: Iterable[int] = ()) -> RenamingAddressSet:
-        """Return new RenamingAddressSet."""
-        return RenamingAddressSet(
+    def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSet:
+        """Return new fixed-size set."""
+        return FiniteAddressSet(
             objects, size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
         )
 
@@ -225,22 +225,22 @@ class RenamingAddressSetMaker(AddressSetMaker):
                     continue
                 break
             else:
-                raise RuntimeError("object to free not found")
+                raise KeyError("object not found")
 
 
-class RenamingAddressSetMakerFactory(AddressSetMakerFactory):
-    """Factory for renaming address set makers with preset arguments."""
+class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
+    """Factory for fixed-size address set makers with preset arguments."""
 
     def __init__(self, size: int, hash_fn: Optional[Callable[[int, int], int]] = None):
-        """Create new factory with set size and hash functions."""
+        """Initialize factory with set size and hash functions."""
         self.size = size
         self.hash_fn = lambda i, x: (x + i) % size if hash_fn is None else hash_fn
 
-    def __call__(self, objects: Iterable[int] = ()) -> RenamingAddressSetMaker:
-        """Return new RenamingAddressSet."""
-        return RenamingAddressSetMaker(self)
+    def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSetMaker:
+        """Return new fixed-size set maker."""
+        return FiniteAddressSetMaker(self)
 
     @property
     def name(self) -> str:
         """See AddressSetMakerFactory.name."""
-        return f"Set structure with renaming table ({self.size} bits)"
+        return f"Fixed-size set using global renaming table ({self.size} bits)"
