@@ -1,35 +1,44 @@
 """Unit tests for puppetmaster."""
 import unittest
+from collections.abc import Sized
+from typing import Generator, Iterable
 from unittest import TestCase
 
 from executors import RandomExecutor
-from model import Transaction
-from pmtypes import TransactionGenerator
+from model import AddressSetMaker
+from pmtypes import Transaction
 from schedulers import GreedyScheduler
+from sets import IdealAddressSetMaker
 from simulator import Simulator
 
 
-class TrIter(TransactionGenerator):
+class TestTransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized):
     """TransactionGenerator implementation for tests."""
 
-    def __init__(self, transactions):
+    def __init__(self, transactions: Iterable[Transaction]):
         """Create a new iterator."""
-        self.it = iter(transactions)
-        self.length = len(transactions)
+        self.transactions = list(transactions)
         self.index = 0
 
-    def __next__(self):
+    def send(self, value: AddressSetMaker) -> Transaction:
         """Return next transaction."""
+        if self.index == len(self.transactions):
+            raise StopIteration
         self.index += 1
-        return next(self.it)
+        return self.transactions[self.index - 1]
+
+    def throw(self, exc, val, tb):
+        """Raise an exception in the generator."""
+        self.index = len(self.transactions)
+        raise exc
 
     def __bool__(self):
         """Return true if there are still transactions left."""
-        return self.index < self.length
+        return self.index < len(self.transactions)
 
     def __len__(self):
         """Return number of transactions left."""
-        return self.length - self.length
+        return len(self.transactions) - self.index
 
 
 class TestSimple(TestCase):
@@ -38,7 +47,13 @@ class TestSimple(TestCase):
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
         sched = GreedyScheduler()
         exe = RandomExecutor()
-        s = Simulator(TrIter(transactions), sched, exe, n_cores)
+        s = Simulator(
+            TestTransactionGenerator(transactions),
+            IdealAddressSetMaker(),
+            sched,
+            exe,
+            n_cores,
+        )
         result_time = s.run()[-1].clock
         self.assertEqual(expected_time, result_time)
 
