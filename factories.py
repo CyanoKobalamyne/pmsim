@@ -2,6 +2,7 @@
 
 import random
 from typing import Iterable, List, Mapping
+
 from more_itertools import SequenceView
 
 from model import TransactionGeneratorFactory

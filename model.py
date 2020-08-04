@@ -1,7 +1,7 @@
 """Abstractions used in the simulator."""
 
 from abc import ABC, abstractmethod
-from typing import AbstractSet, Iterable, Protocol, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, AbstractSet, Iterable, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction, TransactionGenerator
