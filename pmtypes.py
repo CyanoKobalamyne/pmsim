@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import itertools
 from collections.abc import Sized
 from typing import (
+    Dict,
     Generator,
     Iterable,
     Iterator,
@@ -19,18 +21,21 @@ from typing import (
 from model import AbstractSetType, AddressSetMaker
 
 
+class UniqIdMaker:
+    """Creates unique ids for class instances for the lifetime of the program."""
+
+    counters: Dict[type, Iterator[int]] = {}
+
+    @classmethod
+    def next_id(cls, type_: type):
+        """Return the next id corresponding to an instance of the given type."""
+        if type_ not in cls.counters:
+            cls.counters[type_] = itertools.count()
+        return next(cls.counters[type_])
+
+
 class Transaction:
     """An atomic operation in the model."""
-
-    id: int
-    _next_id = 0
-
-    def __new__(cls, *args, **kwargs):
-        """Return a new instance of Transaction."""
-        instance = super().__new__(cls)
-        instance.id = Transaction._next_id
-        Transaction._next_id += 1
-        return instance
 
     def __init__(
         self,
@@ -47,15 +52,21 @@ class Transaction:
                        and possibly also read
             time: the amount of time units it takes to execute this transaction
             set_type: the set type used for keeping track of read and written objects
-
         """
         self.read_set = set_type(read_set)
         self.write_set = set_type(write_set)
         self.time = time
+        self.id = UniqIdMaker.next_id(Transaction)
 
     def __hash__(self) -> int:
         """Return a hash value for this transaction."""
-        return self.id  # pylint: disable=no-member
+        return self.id
+
+    def __eq__(self, other: object) -> bool:
+        """Return True if the two transactions are the same."""
+        if isinstance(other, Transaction):
+            return self.id == other.id
+        return False
 
     def __repr__(self) -> str:
         """Return a string representation of this object."""
