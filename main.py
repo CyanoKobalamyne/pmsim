@@ -162,11 +162,10 @@ def make_parallelism_table(
         exec_cls: Type[TransactionExecutor] = RandomExecutor,
         exec_args: Mapping[str, Any] = {},
         set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
-        set_name="idealized set structure",
     ):
         print(
             f"{sched_cls(**sched_args).name} with {exec_cls(**exec_args).name.lower()}"
-            f", {set_name}\n"
+            f", {set_factory.name.lower()}\n"
         )
         print(thead)
         for sched_time in sched_times:
@@ -218,41 +217,19 @@ def make_parallelism_table(
 
     run_sims(TournamentScheduler)
 
-    run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(256),
-        set_name="approximate set structure (256 bits)",
-    )
+    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(256))
+
+    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(512))
+
+    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(1024))
 
     run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(512),
-        set_name="approximate set structure (512 bits)",
+        TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(1024, 2)
     )
 
-    run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(1024),
-        set_name="approximate set structure (1024 bits)",
-    )
+    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(2048))
 
-    run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(1024, 2),
-        set_name="approximate set structure (1024 bits, 2 hash functions)",
-    )
-
-    run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(2048),
-        set_name="approximate set structure (2048 bits)",
-    )
-
-    run_sims(
-        TournamentScheduler,
-        set_factory=ApproximateAddressSetMakerFactory(4096),
-        set_name="approximate set structure (4096 bits)",
-    )
+    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(4096))
 
     run_sims(TournamentScheduler, {"is_pipelined": True})
 

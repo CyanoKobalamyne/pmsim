@@ -18,6 +18,10 @@ class IdealAddressSetMakerFactory(AddressSetMakerFactory):
     # See https://github.com/python/mypy/issues/3482
     __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
 
+    def name(self) -> str:
+        """See AddressSetMakerFactory.name."""
+        return "Idealized set structure"
+
 
 class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
@@ -73,10 +77,10 @@ class ApproximateAddressSet(AbstractSet[int]):
 class ApproximateAddressSetMaker(AddressSetMaker):
     """Makes ApproximateAddressSet instances."""
 
-    def __init__(self, size: int, n_funcs=1):
-        """Create new factory with set size."""
-        self.size = size
-        self.n_funcs = n_funcs
+    def __init__(self, factory: "ApproximateAddressSetMakerFactory"):
+        """Create new approximate set maker."""
+        self.size = factory.size
+        self.n_funcs = factory.n_funcs
 
     def __call__(self, objects: Iterable[int] = ()) -> ApproximateAddressSet:
         """Return new ApproximateAddressSet."""
@@ -86,10 +90,22 @@ class ApproximateAddressSetMaker(AddressSetMaker):
 class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
     """Factory for approximate set maker instances with preset arguments."""
 
-    def __init__(self, size: int, n_funcs=1):
-        """Create new factory with set size."""
-        self.generator = ApproximateAddressSetMaker(size, n_funcs)
+    def __init__(self, size: int, n_funcs: int = 1):
+        """Create new factory for approximate address set makers.
+
+        Arguments:
+            size: width of bit vector used to represent the set
+            n_funcs: number of hash functions used
+        """
+        self.size = size
+        self.n_funcs = n_funcs
+        self.generator = ApproximateAddressSetMaker(self)
 
     def __call__(self) -> ApproximateAddressSetMaker:
         """Return new ApproximateAddressSet."""
         return self.generator
+
+    def name(self) -> str:
+        """See AddressSetMakerFactory.name."""
+        opt = f",  {self.n_funcs} hash functions" if self.n_funcs > 1 else ""
+        return f"Approximate set structure ({self.size} bits{opt})"

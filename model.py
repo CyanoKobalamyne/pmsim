@@ -33,6 +33,11 @@ class AddressSetMakerFactory(ABC):
     def __call__(self) -> AddressSetMaker:
         """Return new address set generator."""
 
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Return a human-readable name for this object."""
+
 
 class TransactionGeneratorFactory(ABC):
     """Factory for generators of transactions."""
