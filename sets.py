@@ -18,6 +18,7 @@ class IdealAddressSetMakerFactory(AddressSetMakerFactory):
     # See https://github.com/python/mypy/issues/3482
     __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
 
+    @property
     def name(self) -> str:
         """See AddressSetMakerFactory.name."""
         return "Idealized set structure"
@@ -26,7 +27,7 @@ class IdealAddressSetMakerFactory(AddressSetMakerFactory):
 class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
-    def __init__(self, objects: Iterable[int] = (), /, *, size, n_funcs):
+    def __init__(self, objects: Iterable[int] = (), /, *, size: int, n_funcs: int):
         """Create a new set containing objects."""
         self.bits = 0
         self.size = size
@@ -105,6 +106,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         """Return new ApproximateAddressSet."""
         return self.generator
 
+    @property
     def name(self) -> str:
         """See AddressSetMakerFactory.name."""
         opt = f",  {self.n_funcs} hash functions" if self.n_funcs > 1 else ""
