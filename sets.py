@@ -23,7 +23,7 @@ class IdealAddressSetMakerFactory(AddressSetMakerFactory):
     __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
 
     def __str__(self) -> str:
-        """Return human-readable name for the factory (set)."""
+        """Return human-readable name for the sets."""
         return "Idealized set"
 
 
@@ -110,7 +110,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         return self.generator
 
     def __str__(self) -> str:
-        """Return human-readable name for the factory (set)."""
+        """Return human-readable name for the sets."""
         opt = f",  {self.n_funcs} hash functions" if self.n_funcs > 1 else ""
         return f"Approximate set ({self.size} bits{opt})"
 
@@ -239,5 +239,5 @@ class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
         return FiniteAddressSetMaker(self)
 
     def __str__(self) -> str:
-        """Return human-readable name for the factory (set)."""
+        """Return human-readable name for the sets."""
         return f"Fixed-size set using global renaming table ({self.size} bits)"

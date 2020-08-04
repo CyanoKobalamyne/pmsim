@@ -3,17 +3,19 @@
 import heapq
 import itertools
 from abc import abstractmethod
-from typing import Iterable, MutableSet, Tuple
+from typing import Iterable, MutableSet, Optional, Tuple
 
-from api import AbstractSetType, TransactionScheduler
+from api import AbstractSetType, TransactionScheduler, TransactionSchedulerFactory
 from pmtypes import MachineState, Transaction, TransactionSet
 
 
 class AbstractScheduler(TransactionScheduler):
     """Represents the scheduling unit within Puppetmaster."""
 
-    def __init__(self, op_time: int = 0, pool_size: int = None, queue_size: int = None):
-        """See TransactionScheduler.__init__."""
+    def __init__(
+        self, op_time: int, pool_size: Optional[int], queue_size: Optional[int]
+    ):
+        """See TransactionSchedulerFactory.__call__."""
         self.op_time = op_time
         self.pool_size = pool_size
         self.queue_size = queue_size
@@ -87,22 +89,25 @@ class GreedyScheduler(AbstractScheduler):
                 candidates.add(tr)
         return [(candidates, self.op_time)]
 
+
+class GreedySchedulerFactory(TransactionSchedulerFactory):
+    """Factory for greedy schedulers."""
+
+    def __call__(
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+    ) -> GreedyScheduler:
+        """See TransactionSchedulerFactory.__call__."""
+        return GreedyScheduler(op_time, pool_size, queue_size)
+
     def __str__(self) -> str:
-        """Return human-readable name for the scheduler."""
+        """Return human-readable name for the schedulers."""
         return "Greedy scheduler"
 
 
 class MaximalScheduler(AbstractScheduler):
     """Scheduler that tries to maximize the number of transactions scheduled."""
 
-    def __init__(self, *args, n_schedules=1):
-        """Initialize a new scheduler.
-
-        Arguments:
-            n_schedules: the number of possible sets to return
-        """
-        super().__init__(*args)
-        self.n_schedules = n_schedules
+    n_schedules: int
 
     def schedule(
         self,
@@ -128,22 +133,35 @@ class MaximalScheduler(AbstractScheduler):
         out = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
         return map(lambda x: (x, self.op_time), out)
 
+
+class MaximalSchedulerFactory(TransactionSchedulerFactory):
+    """Factory for greedy schedulers."""
+
+    def __init__(self, n_schedules=1):
+        """Initialize the factory.
+
+        Arguments:
+            n_schedules: the number of possible sets the scheduler returns
+        """
+        self.n_schedules = n_schedules
+
+    def __call__(
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+    ) -> MaximalScheduler:
+        """See TransactionSchedulerFactory.__call__."""
+        sched = MaximalScheduler(op_time, pool_size, queue_size)
+        sched.n_schedules = self.n_schedules
+        return sched
+
     def __str__(self) -> str:
-        """Return human-readable name for the scheduler."""
-        return "Maximal scheduler"
+        """Return human-readable name for the schedulers."""
+        return f"Maximal scheduler ({self.n_schedules} schedule/s)"
 
 
 class TournamentScheduler(AbstractScheduler):
     """Implementation of a "tournament" scheduler."""
 
-    def __init__(self, *args, is_pipelined=False):
-        """Initialize a new scheduler.
-
-        Arguments:
-            is_pipelined: whether scheduling time depends on the number of merge steps
-        """
-        super().__init__(*args)
-        self.is_pipelined = is_pipelined
+    is_pipelined: bool
 
     def schedule(
         self,
@@ -176,7 +194,27 @@ class TournamentScheduler(AbstractScheduler):
             )
         ]
 
+
+class TournamentSchedulerFactory(TransactionSchedulerFactory):
+    """Factory for greedy schedulers."""
+
+    def __init__(self, is_pipelined: bool = False):
+        """Initialize the factory.
+
+        Arguments:
+            is_pipelined: whether scheduling time depends on the number of merge steps
+        """
+        self.is_pipelined = is_pipelined
+
+    def __call__(
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+    ) -> TournamentScheduler:
+        """See TransactionSchedulerFactory.__call__."""
+        sched = TournamentScheduler(op_time, pool_size, queue_size)
+        sched.is_pipelined = self.is_pipelined
+        return sched
+
     def __str__(self) -> str:
-        """Return human-readable name for the scheduler."""
+        """Return human-readable name for the schedulers."""
         opt = " (fully pipelined)" if self.is_pipelined else ""
         return f"Tournament scheduler{opt}"

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AbstractSet, Iterable, Protocol, TypeVar
+from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction, TransactionGenerator
@@ -52,19 +52,9 @@ class TransactionGeneratorFactory(ABC):
 class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
-    @abstractmethod
-    def __init__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None, **kwargs
-    ):
-        """Create a new scheduler.
-
-        Arguments:
-            op_time: number of cycles the scheduler takes to execute a single operation
-            pool_size: number of tranactions seen by the scheduler simultaneously
-                       (all of them if None)
-            queue_size: maximum number of transactions that can be waiting for execution
-                        (unlimited if None)
-        """
+    op_time: int
+    pool_size: Optional[int]
+    queue_size: Optional[int]
 
     @abstractmethod
     def run(self, state: MachineState) -> Iterable[MachineState]:
@@ -76,6 +66,24 @@ class TransactionScheduler(ABC):
         Returns:
             transactions ready to be executed concurrently with the currently running
             ones without conflicts
+        """
+
+
+class TransactionSchedulerFactory(ABC):
+    """Parametrized factory for schedulers."""
+
+    @abstractmethod
+    def __call__(
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+    ) -> TransactionScheduler:
+        """Create a new scheduler.
+
+        Arguments:
+            op_time: number of cycles the scheduler takes to execute a single operation
+            pool_size: number of tranactions seen by the scheduler simultaneously
+                       (all of them if None)
+            queue_size: maximum number of transactions that can be waiting for execution
+                        (unlimited if None)
         """
 
 

@@ -7,7 +7,7 @@ import random
 import statistics
 from argparse import ArgumentParser, FileType, Namespace
 from pathlib import PurePath
-from typing import Any, Dict, List, Mapping, Sequence, Type
+from typing import Dict, List, Sequence, Set
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,11 +16,16 @@ from api import (
     AddressSetMakerFactory,
     TransactionExecutor,
     TransactionGeneratorFactory,
-    TransactionScheduler,
+    TransactionSchedulerFactory,
 )
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
-from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
+from pmtypes import Transaction
+from schedulers import (
+    GreedySchedulerFactory,
+    MaximalSchedulerFactory,
+    TournamentSchedulerFactory,
+)
 from sets import (
     ApproximateAddressSetMakerFactory,
     IdealAddressSetMakerFactory,
@@ -161,13 +166,11 @@ def make_parallelism_table(
     )
 
     def run_sims(
-        sched_cls: Type[TransactionScheduler],
-        sched_args: Mapping[str, Any] = {},
-        exec_cls: Type[TransactionExecutor] = RandomExecutor,
-        exec_args: Mapping[str, Any] = {},
+        sched_factory: TransactionSchedulerFactory = TournamentSchedulerFactory(),
+        executor: TransactionExecutor = RandomExecutor(),
         set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
     ):
-        print(get_title(sched_cls(**sched_args), exec_cls(**exec_args), set_factory))
+        print(get_title(sched_factory, executor, set_factory))
         print()
         print(thead)
         for sched_time in sched_times:
@@ -177,13 +180,7 @@ def make_parallelism_table(
                 args.num_cores = core_count
                 results = []
                 for _, path in run_sim(
-                    args,
-                    tr_factory,
-                    sched_cls,
-                    sched_args,
-                    exec_cls,
-                    exec_args,
-                    set_factory,
+                    args, tr_factory, sched_factory, executor, set_factory
                 ):
                     start = end = t_prev = t_cur = None
                     total = 0
@@ -217,49 +214,47 @@ def make_parallelism_table(
             print(tbody.format(sched_time, *prls))
         print()
 
-    run_sims(TournamentScheduler)
+    run_sims()
 
-    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(256))
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(256))
 
-    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(512))
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(512))
 
-    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(1024))
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(1024))
 
-    run_sims(
-        TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(1024, 2)
-    )
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(1024, 2))
 
-    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(2048))
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(2048))
 
-    run_sims(TournamentScheduler, set_factory=ApproximateAddressSetMakerFactory(4096))
+    run_sims(set_factory=ApproximateAddressSetMakerFactory(4096))
 
-    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(256))
+    run_sims(set_factory=FiniteAddressSetMakerFactory(256))
 
-    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(512))
+    run_sims(set_factory=FiniteAddressSetMakerFactory(512))
 
-    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(1024))
+    run_sims(set_factory=FiniteAddressSetMakerFactory(1024))
 
-    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(2048))
+    run_sims(set_factory=FiniteAddressSetMakerFactory(2048))
 
-    run_sims(TournamentScheduler, set_factory=FiniteAddressSetMakerFactory(4096))
+    run_sims(set_factory=FiniteAddressSetMakerFactory(4096))
 
-    run_sims(TournamentScheduler, {"is_pipelined": True})
+    run_sims(TournamentSchedulerFactory(is_pipelined=True))
 
-    run_sims(GreedyScheduler)
+    run_sims(GreedySchedulerFactory())
 
     if args.poolsize <= 20:
-        run_sims(MaximalScheduler)
+        run_sims(MaximalSchedulerFactory())
 
     if (args.queuesize is None and args.n < 10) or (
         args.queuesize is not None and args.queuesize < 10
     ):
-        run_sims(GreedyScheduler, {}, OptimalExecutor)
+        run_sims(GreedySchedulerFactory(), OptimalExecutor())
 
     if args.poolsize <= 20 and (
         (args.queuesize is None and args.n < 10)
         or (args.queuesize is not None and args.queuesize < 10)
     ):
-        run_sims(MaximalScheduler, {}, OptimalExecutor)
+        run_sims(MaximalSchedulerFactory(), OptimalExecutor())
 
 
 def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
@@ -274,12 +269,12 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
 
     j = 0
 
-    def run_sims(sched_cls, sched_args={}):
+    def run_sims(sched_factory: TransactionSchedulerFactory):
         nonlocal j
-        print(get_title(sched_cls(**sched_args)))
+        print(get_title(sched_factory))
         print()
         lines = []
-        for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
+        for i, path in run_sim(args, tr_factory, sched_factory):
             scheduled_counts = {}
             for state in path:
                 if state.clock not in scheduled_counts:
@@ -289,18 +284,18 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
             axis = axes[i][j]
             lines.append(axis.plot(times, stats))
             if i == 0:
-                axis.set_title(get_title(sched_cls(**sched_args)))
+                axis.set_title(get_title(get_title(sched_factory)))
         j += 1
         return lines
 
-    run_sims(TournamentScheduler)
+    run_sims(TournamentSchedulerFactory())
 
-    midlines = run_sims(TournamentScheduler, {"is_pipelined": True})
+    midlines = run_sims(TournamentSchedulerFactory(is_pipelined=True))
 
-    run_sims(GreedyScheduler)
+    run_sims(GreedySchedulerFactory())
 
     if args.poolsize <= 20:
-        run_sims(MaximalScheduler)
+        run_sims(MaximalSchedulerFactory())
 
     axes[-1][1].legend(
         handles=midlines[-1],
@@ -327,16 +322,16 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
 
     j = 0
 
-    def run_sims(sched_cls, sched_args={}):
+    def run_sims(sched_factory: TransactionSchedulerFactory):
         nonlocal j
-        title = f"{sched_cls(**sched_args).name}"
-        print(f"{title}\n")
+        print(get_title(sched_factory))
+        print()
         lines = []
-        for i, path in run_sim(args, tr_factory, sched_cls, sched_args):
+        for i, path in run_sim(args, tr_factory, sched_factory):
             start_times = {}
             end_times = {}
-            prev_pending = set()
-            prev_executing = set()
+            prev_pending: Set[Transaction] = set()
+            prev_executing: Set[Transaction] = set()
             for state in path:
                 for tr in prev_pending - state.pending:
                     start_times[tr] = state.clock
@@ -350,18 +345,18 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
             axis = axes[i][j]
             lines.append(axis.plot(bin_edges[1:], hist))
             if i == 0:
-                axis.set_title(title)
+                axis.set_title(get_title(sched_factory))
         j += 1
         return lines
 
-    run_sims(TournamentScheduler)
+    run_sims(TournamentSchedulerFactory())
 
-    midlines = run_sims(TournamentScheduler, {"is_pipelined": True})
+    midlines = run_sims(TournamentSchedulerFactory(is_pipelined=True))
 
-    run_sims(GreedyScheduler)
+    run_sims(GreedySchedulerFactory())
 
     if args.poolsize <= 20:
-        run_sims(MaximalScheduler)
+        run_sims(MaximalSchedulerFactory())
 
     axes[-1][1].legend(
         handles=midlines[-1],
@@ -378,6 +373,8 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
 
 def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Print minimum pool size as a function of scheduling time and core count."""
+    sched_factory = TournamentSchedulerFactory()
+    executor = RandomExecutor()
 
     class ScheduledCountSequence(Sequence[int]):
         def __getitem__(self, key):
@@ -387,7 +384,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
             if args.verbose >= 2:
                 print("Trying pool size of", args.poolsize)
             min_sched_counts = []
-            for _, path in run_sim(args, tr_factory, TournamentScheduler):
+            for _, path in run_sim(args, tr_factory, sched_factory, executor):
                 scheduled_counts = {}
                 for state in path:
                     # Skip over warm-up phase (until first transaction completes).
@@ -434,7 +431,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
         precision=0,
     )
 
-    print(get_title(TournamentScheduler(), RandomExecutor()))
+    print(get_title(sched_factory, executor))
     print()
     print(thead)
     for sched_time in sched_times:
@@ -451,18 +448,15 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
 def run_sim(
     args: Namespace,
     tr_factory: TransactionGeneratorFactory,
-    sched_cls: Type[TransactionScheduler],
-    sched_args: Mapping = {},
-    exec_cls: Type[TransactionExecutor] = RandomExecutor,
-    exec_args: Mapping = {},
+    sched_factory: TransactionSchedulerFactory,
+    executor: TransactionExecutor = RandomExecutor(),
     set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
         tr_gen = tr_factory()
         set_maker = set_factory()
-        scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
-        executor = exec_cls(**exec_args)
+        scheduler = sched_factory(args.op_time, args.poolsize, args.queuesize)
         sim = Simulator(tr_gen, set_maker, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
