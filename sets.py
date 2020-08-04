@@ -2,6 +2,20 @@
 
 from typing import AbstractSet, Iterable, Iterator
 
+from model import AddressSetMaker, AddressSetMakerFactory
+
+
+class IdealAddressSetMaker(AddressSetMaker):
+    """Wrapper around the built-in set class."""
+
+    __call__ = staticmethod(set)
+
+
+class IdealAddressSetMakerFactory(AddressSetMakerFactory):
+    """Factory for (wrapped) built-in sets."""
+
+    __call__ = staticmethod(IdealAddressSetMaker)
+
 
 class ApproximateAddressSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
@@ -54,8 +68,8 @@ class ApproximateAddressSet(AbstractSet[int]):
             )
 
 
-class ApproximateAddressSetFactory:
-    """Makes ApproximateAddressSet instances with preset arguments."""
+class ApproximateAddressSetMaker(AddressSetMaker):
+    """Makes ApproximateAddressSet instances."""
 
     def __init__(self, size: int, n_funcs=1):
         """Create new factory with set size."""
@@ -65,3 +79,15 @@ class ApproximateAddressSetFactory:
     def __call__(self, objects: Iterable[int] = ()) -> ApproximateAddressSet:
         """Return new ApproximateAddressSet."""
         return ApproximateAddressSet(objects, size=self.size, n_funcs=self.n_funcs)
+
+
+class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
+    """Factory for approximate set maker instances with preset arguments."""
+
+    def __init__(self, size: int, n_funcs=1):
+        """Create new factory with set size."""
+        self.generator = ApproximateAddressSetMaker(size, n_funcs)
+
+    def __call__(self) -> ApproximateAddressSetMaker:
+        """Return new ApproximateAddressSet."""
+        return self.generator

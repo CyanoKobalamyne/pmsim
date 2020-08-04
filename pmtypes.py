@@ -6,7 +6,7 @@ import copy
 import dataclasses
 from collections.abc import Sized
 from typing import (
-    AbstractSet,
+    Generator,
     Iterable,
     Iterator,
     List,
@@ -14,8 +14,9 @@ from typing import (
     MutableSet,
     Sequence,
     Set,
-    Type,
 )
+
+from model import AbstractSetType, AddressSetMaker
 
 
 class Transaction:
@@ -36,7 +37,7 @@ class Transaction:
         read_set: Iterable[int],
         write_set: Iterable[int],
         time: int,
-        set_type: Type[AbstractSet[int]] = set,
+        set_type: AbstractSetType[int] = set,
     ) -> None:
         """Create a transaction.
 
@@ -48,8 +49,8 @@ class Transaction:
             set_type: the set type used for keeping track of read and written objects
 
         """
-        self.read_set = set_type(read_set)  # type: ignore
-        self.write_set = set_type(write_set)  # type: ignore
+        self.read_set = set_type(read_set)
+        self.write_set = set_type(write_set)
         self.time = time
 
     def __hash__(self) -> int:
@@ -77,7 +78,7 @@ class TransactionSet(MutableSet[Transaction]):
         transactions: Iterable[Transaction] = (),
         /,
         *,
-        obj_set_type: Type[AbstractSet[int]] = set,
+        obj_set_type: AbstractSetType[int] = set,
     ):
         """Create a new set."""
         self.transactions: Set[Transaction] = set()
@@ -128,14 +129,11 @@ class TransactionSet(MutableSet[Transaction]):
         )
 
 
-class TransactionGenerator(Iterator[Transaction], Sized):
+class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self,
-        tr_data: Iterable[Mapping[str, int]],
-        addresses: Sequence[int],
-        set_type: Type[AbstractSet[int]] = set,
+        self, tr_data: Iterable[Mapping[str, int]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -145,16 +143,18 @@ class TransactionGenerator(Iterator[Transaction], Sized):
                 "write": size of the write set
                 "time": transaction time
             addresses: addresses available for transactions (assigned sequentially)
-            set_type: type of set to use in transaction
         """
         self.tr_data = list(tr_data)
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
-        self.set_type = set_type
 
-    def __next__(self) -> Transaction:
-        """Return next transaction."""
+    def send(self, set_type: AbstractSetType[int]) -> Transaction:
+        """Return next transaction.
+
+        Arguments:
+            set_type: type of set to use in transaction
+        """
         if not self:
             raise StopIteration
         tr_conf = self.tr_data[self.tr_index]
@@ -166,7 +166,12 @@ class TransactionGenerator(Iterator[Transaction], Sized):
         write_end = self.address_index
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
-        return Transaction(read_set, write_set, tr_conf["time"], set_type=self.set_type)
+        return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
+
+    def throw(self, exception, value=None, traceback=None):
+        """Raise an exception in the generator."""
+        self.tr_index = len(self.tr_data)
+        return Generator.throw(exception, value, traceback)
 
     def __bool__(self) -> bool:
         """Return true if there are transactions left."""
@@ -212,6 +217,7 @@ class MachineState:
     """Represents the full state of the machine. Useful for state space search."""
 
     incoming: TransactionGenerator
+    set_maker: AddressSetMaker
     pending: Set[Transaction] = dataclasses.field(default_factory=set)
     scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
@@ -228,6 +234,7 @@ class MachineState:
         Collection fields are recreated, but the contained object will be the same.
         """
         new = copy.copy(self)
+        new.set_maker = copy.copy(self.set_maker)
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)

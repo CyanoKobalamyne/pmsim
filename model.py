@@ -1,17 +1,45 @@
 """Abstractions used in the simulator."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Sized
-from typing import AbstractSet, Iterable, Type
+from typing import AbstractSet, Iterable, Protocol, TypeVar, TYPE_CHECKING
 
-from pmtypes import MachineState, Transaction, TransactionGenerator
+if TYPE_CHECKING:
+    from pmtypes import MachineState, Transaction, TransactionGenerator
 
 
-class TransactionGeneratorFactory(Iterable[Transaction], Sized, ABC):
+T = TypeVar("T")
+
+
+class AbstractSetType(Protocol[T]):
+    """Protocol for callables that return sets."""
+
+    def __call__(self, objects: Iterable[T] = ()) -> AbstractSet[T]:
+        """Return a set containing objects."""
+        raise NotImplementedError
+
+
+class AddressSetMaker(AbstractSetType[int]):
+    """Makes address set instances for a given simulation."""
+
+    def free(self, transaction: "Transaction"):
+        """Free resources associated with the transaction."""
+        pass  # Does nothing by default.
+
+
+class AddressSetMakerFactory(ABC):
+    """Makes generators of address set with a fixed set of parameters."""
+
+    @abstractmethod
+    def __call__(self) -> AddressSetMaker:
+        """Return new address set generator."""
+
+
+class TransactionGeneratorFactory(ABC):
     """Factory for generators of transactions."""
 
-    def __iter__(self, set_type: Type[AbstractSet[int]] = set) -> TransactionGenerator:
-        """Return a special iterator over transactions."""
+    @abstractmethod
+    def __call__(self) -> "TransactionGenerator":
+        """Return a generator of transactions."""
 
     @property
     @abstractmethod
@@ -24,12 +52,7 @@ class TransactionScheduler(ABC):
 
     @abstractmethod
     def __init__(
-        self,
-        op_time: int = 0,
-        pool_size: int = None,
-        queue_size: int = None,
-        set_type: Type[AbstractSet[int]] = set,
-        **kwargs
+        self, op_time: int = 0, pool_size: int = None, queue_size: int = None, **kwargs
     ):
         """Create a new scheduler.
 
@@ -39,11 +62,10 @@ class TransactionScheduler(ABC):
                        (all of them if None)
             queue_size: maximum number of transactions that can be waiting for execution
                         (unlimited if None)
-            set_type: class to use as representation of object sets in transactions
         """
 
     @abstractmethod
-    def run(self, state: MachineState) -> Iterable[MachineState]:
+    def run(self, state: "MachineState") -> Iterable["MachineState"]:
         """Try scheduling a batch of transactions.
 
         Arguments:
@@ -67,7 +89,7 @@ class TransactionExecutor(ABC):
         """Create new executor."""
 
     @abstractmethod
-    def run(self, state: MachineState) -> Iterable[MachineState]:
+    def run(self, state: "MachineState") -> Iterable["MachineState"]:
         """Choose transaction(s) to execute from scheduled set.
 
         The input state should not be used by the caller after this method returns,

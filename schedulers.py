@@ -3,27 +3,20 @@
 import heapq
 import itertools
 from abc import abstractmethod
-from typing import AbstractSet, Iterable, MutableSet, Tuple, Type
+from typing import Iterable, MutableSet, Tuple
 
-from model import TransactionScheduler
+from model import AbstractSetType, TransactionScheduler
 from pmtypes import MachineState, Transaction, TransactionSet
 
 
 class AbstractScheduler(TransactionScheduler):
     """Represents the scheduling unit within Puppetmaster."""
 
-    def __init__(
-        self,
-        op_time: int = 0,
-        pool_size: int = None,
-        queue_size: int = None,
-        set_type: Type[AbstractSet[int]] = set,
-    ):
+    def __init__(self, op_time: int = 0, pool_size: int = None, queue_size: int = None):
         """See TransactionScheduler.__init__."""
         self.op_time = op_time
         self.pool_size = pool_size
         self.queue_size = queue_size
-        self.set_type = set_type
 
     def run(self, state: MachineState) -> Iterable[MachineState]:
         """See TransactionScheduler.run."""
@@ -37,17 +30,17 @@ class AbstractScheduler(TransactionScheduler):
         # Fill up pending pool.
         while self.pool_size is None or len(state.pending) < self.pool_size:
             try:
-                state.pending.add(next(state.incoming))
+                state.pending.add(state.incoming.send(state.set_maker))
             except StopIteration:
                 break
         # Try scheduling a batch of new transactions.
         ongoing = TransactionSet(
-            (core.transaction for core in state.cores), obj_set_type=self.set_type
+            (core.transaction for core in state.cores), obj_set_type=state.set_maker
         )
         for tr in state.scheduled:
             ongoing.add(tr)
         out_states = []
-        for scheduled, time in self.schedule(ongoing, state.pending):
+        for scheduled, time in self.schedule(ongoing, state.pending, state.set_maker):
             new_state = state.copy()
             new_state.clock += time
             if scheduled:
@@ -67,7 +60,10 @@ class AbstractScheduler(TransactionScheduler):
 
     @abstractmethod
     def schedule(
-        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+        self,
+        ongoing: TransactionSet,
+        pending: Iterable[Transaction],
+        set_type: AbstractSetType[int],
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """Schedule one or more transactions."""
 
@@ -76,13 +72,16 @@ class GreedyScheduler(AbstractScheduler):
     """Implementation of a simple scheduler."""
 
     def schedule(
-        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+        self,
+        ongoing: TransactionSet,
+        pending: Iterable[Transaction],
+        set_type: AbstractSetType[int],
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See AbstractScheduler.schedule.
 
         Iterates through pending transactions once and adds all compatible ones.
         """
-        candidates = TransactionSet(obj_set_type=self.set_type)
+        candidates = TransactionSet(obj_set_type=set_type)
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
@@ -107,7 +106,10 @@ class MaximalScheduler(AbstractScheduler):
         self.n_schedules = n_schedules
 
     def schedule(
-        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+        self,
+        ongoing: TransactionSet,
+        pending: Iterable[Transaction],
+        set_type: AbstractSetType[int],
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See AbstractScheduler.schedule."""
         pending_list = list(pending)
@@ -119,12 +121,12 @@ class MaximalScheduler(AbstractScheduler):
             yield from all_candidate_sets(prefix, i + 1)
             tr = pending_list[i]
             if ongoing.compatible(tr) and prefix.compatible(tr):
-                new_prefix = TransactionSet(prefix, obj_set_type=self.set_type)
+                new_prefix = TransactionSet(prefix, obj_set_type=set_type)
                 new_prefix.add(tr)
                 yield from all_candidate_sets(new_prefix, i + 1)
 
-        sets = all_candidate_sets(TransactionSet(obj_set_type=self.set_type), 0)
-        out = heapq.nlargest(self.n_schedules, sets, key=len)
+        candidate_sets = all_candidate_sets(TransactionSet(obj_set_type=set_type), 0)
+        out = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
         return map(lambda x: (x, self.op_time), out)
 
     @property
@@ -146,7 +148,10 @@ class TournamentScheduler(AbstractScheduler):
         self.is_pipelined = is_pipelined
 
     def schedule(
-        self, ongoing: TransactionSet, pending: Iterable[Transaction]
+        self,
+        ongoing: TransactionSet,
+        pending: Iterable[Transaction],
+        set_type: AbstractSetType[int],
     ) -> Iterable[Tuple[MutableSet[Transaction], int]]:
         """See AbstractScheduler.schedule.
 
@@ -155,7 +160,7 @@ class TournamentScheduler(AbstractScheduler):
         a single non-conflicting group remains.
         """
         sets = [
-            TransactionSet([tr], obj_set_type=self.set_type)
+            TransactionSet([tr], obj_set_type=set_type)
             for tr in pending
             if ongoing.compatible(tr)
         ]
@@ -168,7 +173,7 @@ class TournamentScheduler(AbstractScheduler):
             rounds += 1
         return [
             (
-                (sets[0] if sets else TransactionSet(obj_set_type=self.set_type)),
+                (sets[0] if sets else TransactionSet(obj_set_type=set_type)),
                 self.op_time * (1 if self.is_pipelined else max(1, rounds)),
             )
         ]

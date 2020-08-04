@@ -7,16 +7,21 @@ import random
 import statistics
 from argparse import ArgumentParser, FileType, Namespace
 from pathlib import PurePath
-from typing import AbstractSet, Dict, List, Mapping, Sequence, Type
+from typing import Any, Dict, List, Mapping, Sequence, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from executors import OptimalExecutor, RandomExecutor
 from factories import RandomFactory
-from model import TransactionExecutor, TransactionGeneratorFactory, TransactionScheduler
+from model import (
+    AddressSetMakerFactory,
+    TransactionExecutor,
+    TransactionGeneratorFactory,
+    TransactionScheduler,
+)
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
-from sets import ApproximateAddressSetFactory
+from sets import ApproximateAddressSetMakerFactory, IdealAddressSetMakerFactory
 from simulator import Simulator
 
 
@@ -152,11 +157,11 @@ def make_parallelism_table(
     )
 
     def run_sims(
-        sched_cls,
-        sched_args={},
-        exec_cls=RandomExecutor,
-        exec_args={},
-        set_type=set,
+        sched_cls: Type[TransactionScheduler],
+        sched_args: Mapping[str, Any] = {},
+        exec_cls: Type[TransactionExecutor] = RandomExecutor,
+        exec_args: Mapping[str, Any] = {},
+        set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
         set_name="idealized set structure",
     ):
         print(
@@ -177,7 +182,7 @@ def make_parallelism_table(
                     sched_args,
                     exec_cls,
                     exec_args,
-                    set_type,
+                    set_factory,
                 ):
                     start = end = t_prev = t_cur = None
                     total = 0
@@ -214,37 +219,37 @@ def make_parallelism_table(
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(256),
+        set_factory=ApproximateAddressSetMakerFactory(256),
         set_name="approximate set structure (256 bits)",
     )
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(512),
+        set_factory=ApproximateAddressSetMakerFactory(512),
         set_name="approximate set structure (512 bits)",
     )
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(1024),
+        set_factory=ApproximateAddressSetMakerFactory(1024),
         set_name="approximate set structure (1024 bits)",
     )
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(1024, 2),
+        set_factory=ApproximateAddressSetMakerFactory(1024, 2),
         set_name="approximate set structure (1024 bits, 2 hash functions)",
     )
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(2048),
+        set_factory=ApproximateAddressSetMakerFactory(2048),
         set_name="approximate set structure (2048 bits)",
     )
 
     run_sims(
         TournamentScheduler,
-        set_type=ApproximateAddressSetFactory(4096),
+        set_factory=ApproximateAddressSetMakerFactory(4096),
         set_name="approximate set structure (4096 bits)",
     )
 
@@ -459,16 +464,15 @@ def run_sim(
     sched_args: Mapping = {},
     exec_cls: Type[TransactionExecutor] = RandomExecutor,
     exec_args: Mapping = {},
-    set_type: Type[AbstractSet[int]] = set,
+    set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
-        transactions = tr_factory.__iter__(set_type)
-        scheduler = sched_cls(
-            args.op_time, args.poolsize, args.queuesize, set_type, **sched_args
-        )
+        tr_gen = tr_factory()
+        set_maker = set_factory()
+        scheduler = sched_cls(args.op_time, args.poolsize, args.queuesize, **sched_args)
         executor = exec_cls(**exec_args)
-        sim = Simulator(transactions, scheduler, executor, args.num_cores)
+        sim = Simulator(tr_gen, set_maker, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
 
