@@ -8,13 +8,15 @@ from model import AddressSetMaker, AddressSetMakerFactory
 class IdealAddressSetMaker(AddressSetMaker):
     """Wrapper around the built-in set class."""
 
-    __call__ = staticmethod(set)
+    # See https://github.com/python/mypy/issues/3482
+    __call__ = staticmethod(set)  # type: ignore
 
 
 class IdealAddressSetMakerFactory(AddressSetMakerFactory):
     """Factory for (wrapped) built-in sets."""
 
-    __call__ = staticmethod(IdealAddressSetMaker)
+    # See https://github.com/python/mypy/issues/3482
+    __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
 
 
 class ApproximateAddressSet(AbstractSet[int]):

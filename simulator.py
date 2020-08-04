@@ -43,7 +43,9 @@ class Simulator:
         """
         time = 0
         count = 1
-        queue = [(time, count, [self.start_state])]
+        queue: List[Tuple[int, int, List[MachineState]]] = [
+            (time, count, [self.start_state])
+        ]
         while queue:
             # Get next state off the queue.
             time, count, path = heapq.heappop(queue)

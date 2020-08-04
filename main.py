@@ -207,6 +207,7 @@ def make_parallelism_table(
                         if not state.incoming and len(state.pending) < args.poolsize:
                             end = state.clock
                             break
+                    assert start is not None and end is not None
                     if start == end:
                         results.append(len(state.cores) + 1)
                     else:
