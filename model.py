@@ -1,5 +1,7 @@
 """Abstractions used in the simulator."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, AbstractSet, Iterable, Protocol, TypeVar
 
@@ -21,7 +23,7 @@ class AbstractSetType(Protocol[T]):
 class AddressSetMaker(AbstractSetType[int]):
     """Makes address set instances for a given simulation."""
 
-    def free(self, transaction: "Transaction"):
+    def free(self, transaction: Transaction):
         """Free resources associated with the transaction."""
         pass  # Does nothing by default.
 
@@ -43,7 +45,7 @@ class TransactionGeneratorFactory(ABC):
     """Factory for generators of transactions."""
 
     @abstractmethod
-    def __call__(self) -> "TransactionGenerator":
+    def __call__(self) -> TransactionGenerator:
         """Return a generator of transactions."""
 
     @property
@@ -70,7 +72,7 @@ class TransactionScheduler(ABC):
         """
 
     @abstractmethod
-    def run(self, state: "MachineState") -> Iterable["MachineState"]:
+    def run(self, state: MachineState) -> Iterable[MachineState]:
         """Try scheduling a batch of transactions.
 
         Arguments:
@@ -94,7 +96,7 @@ class TransactionExecutor(ABC):
         """Create new executor."""
 
     @abstractmethod
-    def run(self, state: "MachineState") -> Iterable["MachineState"]:
+    def run(self, state: MachineState) -> Iterable[MachineState]:
         """Choose transaction(s) to execute from scheduled set.
 
         The input state should not be used by the caller after this method returns,

@@ -1,5 +1,7 @@
 """Set implementations for Puppetmaster."""
 
+from __future__ import annotations
+
 import itertools
 from typing import AbstractSet, Callable, Iterable, Iterator, List, Optional, Tuple
 
@@ -54,7 +56,7 @@ class ApproximateAddressSet(AbstractSet[int]):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: AbstractSet) -> "ApproximateAddressSet":
+    def __or__(self, other: AbstractSet) -> ApproximateAddressSet:
         """Return the union of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
             out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
@@ -65,7 +67,7 @@ class ApproximateAddressSet(AbstractSet[int]):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: AbstractSet) -> "ApproximateAddressSet":
+    def __and__(self, other: AbstractSet) -> ApproximateAddressSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, ApproximateAddressSet):
             out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
@@ -80,7 +82,7 @@ class ApproximateAddressSet(AbstractSet[int]):
 class ApproximateAddressSetMaker(AddressSetMaker):
     """Makes ApproximateAddressSet instances."""
 
-    def __init__(self, factory: "ApproximateAddressSetMakerFactory"):
+    def __init__(self, factory: ApproximateAddressSetMakerFactory):
         """Create new approximate set maker."""
         self.size = factory.size
         self.n_funcs = factory.n_funcs
@@ -167,7 +169,7 @@ class RenamingAddressSet(AbstractSet[int]):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: AbstractSet) -> "RenamingAddressSet":
+    def __or__(self, other: AbstractSet) -> RenamingAddressSet:
         """Return the union of this set and the other set."""
         if isinstance(other, RenamingAddressSet):
             out = RenamingAddressSet(
@@ -180,7 +182,7 @@ class RenamingAddressSet(AbstractSet[int]):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: AbstractSet) -> "RenamingAddressSet":
+    def __and__(self, other: AbstractSet) -> RenamingAddressSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, RenamingAddressSet):
             out = RenamingAddressSet(
@@ -197,7 +199,7 @@ class RenamingAddressSet(AbstractSet[int]):
 class RenamingAddressSetMaker(AddressSetMaker):
     """Makes new address sets that use a global renaming table."""
 
-    def __init__(self, factory: "RenamingAddressSetMakerFactory"):
+    def __init__(self, factory: RenamingAddressSetMakerFactory):
         """Create new factory with set size and hash functions."""
         self.size = factory.size
         self.hash_fn = factory.hash_fn
