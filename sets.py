@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools
 from typing import AbstractSet, Callable, Iterable, Iterator, List, Optional, Tuple
 
-from model import AddressSetMaker, AddressSetMakerFactory
+from api import AddressSetMaker, AddressSetMakerFactory
 from pmtypes import Transaction
 
 

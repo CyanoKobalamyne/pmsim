@@ -18,7 +18,7 @@ from typing import (
     Set,
 )
 
-from model import AbstractSetType, AddressSetMaker
+from api import AbstractSetType, AddressSetMaker
 
 
 class UniqIdMaker:
@@ -35,7 +35,7 @@ class UniqIdMaker:
 
 
 class Transaction:
-    """An atomic operation in the model."""
+    """An atomic operation in the api."""
 
     def __init__(
         self,

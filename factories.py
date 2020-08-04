@@ -5,7 +5,7 @@ from typing import Iterable, List, Mapping
 
 from more_itertools import SequenceView
 
-from model import TransactionGeneratorFactory
+from api import TransactionGeneratorFactory
 from pmtypes import TransactionGenerator
 
 

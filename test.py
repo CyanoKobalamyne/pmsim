@@ -4,8 +4,8 @@ from collections.abc import Sized
 from typing import Generator, Iterable
 from unittest import TestCase
 
+from api import AddressSetMaker
 from executors import RandomExecutor
-from model import AddressSetMaker
 from pmtypes import Transaction
 from schedulers import GreedyScheduler
 from sets import IdealAddressSetMaker

@@ -5,7 +5,7 @@ import itertools
 import typing
 from typing import Iterable
 
-from model import TransactionExecutor
+from api import TransactionExecutor
 from pmtypes import Core, MachineState, Transaction
 
 

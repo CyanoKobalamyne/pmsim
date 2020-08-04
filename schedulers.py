@@ -5,7 +5,7 @@ import itertools
 from abc import abstractmethod
 from typing import Iterable, MutableSet, Tuple
 
-from model import AbstractSetType, TransactionScheduler
+from api import AbstractSetType, TransactionScheduler
 from pmtypes import MachineState, Transaction, TransactionSet
 
 

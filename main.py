@@ -12,14 +12,14 @@ from typing import Any, Dict, List, Mapping, Sequence, Type
 import matplotlib.pyplot as plt
 import numpy as np
 
-from executors import OptimalExecutor, RandomExecutor
-from factories import RandomFactory
-from model import (
+from api import (
     AddressSetMakerFactory,
     TransactionExecutor,
     TransactionGeneratorFactory,
     TransactionScheduler,
 )
+from executors import OptimalExecutor, RandomExecutor
+from factories import RandomFactory
 from schedulers import GreedyScheduler, MaximalScheduler, TournamentScheduler
 from sets import (
     ApproximateAddressSetMakerFactory,
