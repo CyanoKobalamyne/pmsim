@@ -232,7 +232,7 @@ class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
     def __init__(self, size: int, hash_fn: Optional[Callable[[int, int], int]] = None):
         """Initialize factory with set size and hash functions."""
         self.size = size
-        self.hash_fn = lambda i, x: (x + i) % size if hash_fn is None else hash_fn
+        self.hash_fn = (lambda i, x: (x + i) % size) if hash_fn is None else hash_fn
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSetMaker:
         """Return new fixed-size set maker."""
