@@ -129,13 +129,17 @@ class FiniteAddressSet(AbstractSet[int]):
     ):
         """Initialize set to contain objects."""
         self.bits = 0
+        self.objs = [-1] * size
         self.size = size
         self.hash_fn = hash_fn
         self.table = renaming_table
         for obj in objects:
-            self.bits |= 1 << self.__get_name(obj)
+            index = self.__get_name(obj)
+            self.bits |= 1 << index
+            self.objs[index] = obj
 
     def __get_name(self, obj: int) -> int:
+        assert obj != -1
         for i in range(self.size):
             h = self.hash_fn(i, obj)
             prev_obj, count = self.table[h]
@@ -154,9 +158,8 @@ class FiniteAddressSet(AbstractSet[int]):
 
     def __iter__(self) -> Iterator[int]:
         """Yield each object in the set."""
-        for obj, count in self.table:
-            assert obj == -1 and count == 0 or obj != -1 and count > 0
-            for _ in range(count):
+        for obj in self.objs:
+            if obj != -1:
                 yield obj
 
     def __len__(self) -> int:
@@ -212,9 +215,11 @@ class FiniteAddressSetMaker(AddressSetMaker):
     def free(self, transaction: Transaction) -> None:
         """See AddressSetMaker.free."""
         for obj in itertools.chain(transaction.read_set, transaction.write_set):
+            assert obj != -1
             for i in range(self.size):
                 h = self.hash_fn(i, obj)
                 prev_obj, count = self.table[h]
+                assert prev_obj != -1 and count > 0 or prev_obj == -1 and count == 0
                 if prev_obj == obj and count == 1:
                     self.table[h] = (-1, 0)
                 elif prev_obj == obj and count > 1:
