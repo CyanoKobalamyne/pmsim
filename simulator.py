@@ -67,6 +67,7 @@ class Simulator:
                 next_state = state.copy()
                 core = heapq.heappop(next_state.cores)  # remove finished transaction.
                 next_state.set_maker.free(core.transaction)
+                next_state.incoming.reset_errors()
                 next_states = [next_state]
             else:
                 # No transactions have finished or nothing is scheduled.

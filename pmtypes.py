@@ -16,6 +16,7 @@ from typing import (
     MutableSet,
     Sequence,
     Set,
+    Tuple,
 )
 
 from api import AbstractSetType, AddressSetMaker
@@ -159,6 +160,8 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
+        self.errored: List[Tuple[int, int]] = []
+        self.deferred: List[Tuple[int, int]] = []
 
     def send(self, set_type: AbstractSetType[int]) -> Transaction:
         """Return next transaction.
@@ -168,21 +171,27 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
         """
         if not self:
             raise StopIteration
-        tr_conf = self.tr_data[self.tr_index]
-        self.tr_index += 1
-        read_start = self.address_index
-        self.address_index += tr_conf["reads"]
-        read_end = write_start = self.address_index
-        self.address_index += tr_conf["writes"]
-        write_end = self.address_index
+        if self.deferred:
+            tr_base, address_base = self.deferred.pop(0)
+            tr_conf = self.tr_data[tr_base]
+            read_start = address_base
+            read_end = write_start = read_start + tr_conf["reads"]
+            write_end = write_start + tr_conf["writes"]
+        else:
+            tr_conf = self.tr_data[self.tr_index]
+            self.tr_index += 1
+            read_start = self.address_index
+            self.address_index += tr_conf["reads"]
+            read_end = write_start = self.address_index
+            self.address_index += tr_conf["writes"]
+            write_end = self.address_index
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
         try:
             return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
         except ValueError:
-            # Revert operation.
-            self.tr_index -= 1
-            self.address_index -= tr_conf["reads"] + tr_conf["writes"]
+            # Mark transaction as conflicting.
+            self.errored.append((self.tr_index - 1, read_start))
             raise
 
     def throw(self, exception, value=None, traceback=None):
@@ -190,13 +199,24 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
         self.tr_index = len(self.tr_data)
         return Generator.throw(exception, value, traceback)
 
+    def reset_errors(self) -> None:
+        """Adjust internal state to try errored transactions again."""
+        self.deferred.extend(self.errored)
+        self.errored = []
+
     def __bool__(self) -> bool:
         """Return true if there are transactions left."""
-        return self.tr_index != len(self.tr_data)
+        return (
+            self.tr_index != len(self.tr_data)
+            or bool(self.errored)
+            or bool(self.deferred)
+        )
 
     def __len__(self) -> int:
         """Return number of remaining transactions."""
-        return len(self.tr_data) - self.tr_index
+        return (
+            len(self.tr_data) + len(self.errored) + len(self.deferred) - self.tr_index
+        )
 
     def __repr__(self) -> str:
         """Return a string representation of this object."""

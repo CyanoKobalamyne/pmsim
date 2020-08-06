@@ -30,11 +30,16 @@ class AbstractScheduler(TransactionScheduler):
                 state.clock = state.cores[0].clock
             return [state]
         # Fill up pending pool.
-        while self.pool_size is None or len(state.pending) < self.pool_size:
+        cap = self.pool_size
+        while cap is None or len(state.pending) < cap:
             try:
                 state.pending.add(state.incoming.send(state.set_maker))
-            except (StopIteration, ValueError):
+            except StopIteration:
                 break
+            except ValueError:
+                if cap is not None:
+                    cap -= 1
+                continue
         # Try scheduling a batch of new transactions.
         ongoing = TransactionSet(
             (core.transaction for core in state.cores), obj_set_type=state.set_maker
