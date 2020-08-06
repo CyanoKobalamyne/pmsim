@@ -23,9 +23,13 @@ class AbstractSetType(Protocol[T]):
 class AddressSetMaker(AbstractSetType[int]):
     """Makes address set instances for a given simulation."""
 
-    def free(self, transaction: Transaction):
+    def free(self, transaction: Transaction) -> None:
         """Free resources associated with the transaction."""
         pass  # Does nothing by default.
+
+    def fits(self, size: int) -> bool:
+        """Return True if a transaction with the given size can be intialized."""
+        return True  # True by default.
 
 
 class AddressSetMakerFactory(ABC):

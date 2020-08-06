@@ -30,16 +30,22 @@ class AbstractScheduler(TransactionScheduler):
                 state.clock = state.cores[0].clock
             return [state]
         # Fill up pending pool.
-        cap = self.pool_size
-        while cap is None or len(state.pending) < cap:
+        missing = 0
+        while self.pool_size is None or len(state.pending) + missing < self.pool_size:
             try:
-                state.pending.add(state.incoming.send(state.set_maker))
+                if (tr := state.incoming.send(state.set_maker)) is None:
+                    missing += 1
+                    continue
+                else:
+                    state.pending.add(tr)
             except StopIteration:
                 break
-            except ValueError:
-                if cap is not None:
-                    cap -= 1
-                continue
+        if not state.pending:
+            # We can't accept more transactions into the system.
+            if state.clock < state.cores[0].clock:
+                # Scheduler needs to wait until at least one transaction finishes.
+                state.clock = state.cores[0].clock
+            return [state]
         # Try scheduling a batch of new transactions.
         ongoing = TransactionSet(
             (core.transaction for core in state.cores), obj_set_type=state.set_maker

@@ -230,6 +230,10 @@ class FiniteAddressSetMaker(AddressSetMaker):
             else:
                 raise KeyError("object not found")
 
+    def fits(self, size: int) -> bool:
+        """See AddressSetMaker.fits."""
+        return sum(o == -1 for o, c in self.table) >= size
+
 
 class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
     """Factory for fixed-size address set makers with preset arguments."""

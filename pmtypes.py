@@ -14,6 +14,7 @@ from typing import (
     List,
     Mapping,
     MutableSet,
+    Optional,
     Sequence,
     Set,
     Tuple,
@@ -141,7 +142,9 @@ class TransactionSet(MutableSet[Transaction]):
         )
 
 
-class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized):
+class TransactionGenerator(
+    Generator[Optional[Transaction], AddressSetMaker, None], Sized
+):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
@@ -163,21 +166,19 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
         self.errored: List[Tuple[int, int]] = []
         self.deferred: List[Tuple[int, int]] = []
 
-    def send(self, set_type: AbstractSetType[int]) -> Transaction:
+    def send(self, set_type: AddressSetMaker) -> Optional[Transaction]:
         """Return next transaction.
 
         Arguments:
             set_type: type of set to use in transaction
         """
-        if not self:
-            raise StopIteration
         if self.deferred:
             tr_base, address_base = self.deferred.pop(0)
             tr_conf = self.tr_data[tr_base]
             read_start = address_base
             read_end = write_start = read_start + tr_conf["reads"]
             write_end = write_start + tr_conf["writes"]
-        else:
+        elif self.tr_index != len(self.tr_data):
             tr_conf = self.tr_data[self.tr_index]
             self.tr_index += 1
             read_start = self.address_index
@@ -185,14 +186,15 @@ class TransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized)
             read_end = write_start = self.address_index
             self.address_index += tr_conf["writes"]
             write_end = self.address_index
+        else:
+            raise StopIteration
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
-        try:
+        if set_type.fits(tr_conf["reads"] + tr_conf["writes"]):
             return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
-        except ValueError:
-            # Mark transaction as conflicting.
+        else:
             self.errored.append((self.tr_index - 1, read_start))
-            raise
+            return None
 
     def throw(self, exception, value=None, traceback=None):
         """Raise an exception in the generator."""
