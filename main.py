@@ -455,9 +455,9 @@ def run_sim(
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
         tr_gen = tr_factory()
-        set_maker = set_factory()
+        intset_maker = set_factory()
         scheduler = sched_factory(args.op_time, args.poolsize, args.queuesize)
-        sim = Simulator(tr_gen, set_maker, scheduler, executor, args.num_cores)
+        sim = Simulator(tr_gen, intset_maker, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import dataclasses
 import itertools
-from collections.abc import Sized
 from typing import (
     Dict,
     Generator,
@@ -20,7 +19,7 @@ from typing import (
     Tuple,
 )
 
-from api import AbstractSetType, AddressSetMaker
+from api import AbstractSetMaker, AddressSetMaker
 
 
 class UniqIdMaker:
@@ -44,7 +43,7 @@ class Transaction:
         read_set: Iterable[int],
         write_set: Iterable[int],
         time: int,
-        set_type: AbstractSetType[int] = set,
+        intset_maker: AbstractSetMaker[int] = set,
     ) -> None:
         """Create a transaction.
 
@@ -53,10 +52,10 @@ class Transaction:
             write_set: the set of objects that this transaction needs to write
                        and possibly also read
             time: the amount of time units it takes to execute this transaction
-            set_type: the set type used for keeping track of read and written objects
+            intset_maker: makes sets used for keeping track of read and written objects
         """
-        self.read_set = set_type(read_set)
-        self.write_set = set_type(write_set)
+        self.read_set = intset_maker(read_set)
+        self.write_set = intset_maker(write_set)
         self.time = time
         self.id = UniqIdMaker.next_id(Transaction)
 
@@ -91,12 +90,12 @@ class TransactionSet(MutableSet[Transaction]):
         transactions: Iterable[Transaction] = (),
         /,
         *,
-        obj_set_type: AbstractSetType[int] = set,
+        intset_maker: AbstractSetMaker[int] = set,
     ):
         """Create a new set."""
         self.transactions: Set[Transaction] = set()
-        self.read_set = obj_set_type()
-        self.write_set = obj_set_type()
+        self.read_set = intset_maker()
+        self.write_set = intset_maker()
         for t in transactions:
             self.add(t)
 
@@ -142,9 +141,7 @@ class TransactionSet(MutableSet[Transaction]):
         )
 
 
-class TransactionGenerator(
-    Generator[Optional[Transaction], AddressSetMaker, None], Sized
-):
+class TransactionGenerator(Generator[Optional[Transaction], AddressSetMaker, None]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
@@ -163,14 +160,14 @@ class TransactionGenerator(
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
-        self.errored: List[Tuple[int, int]] = []
+        self.overflowed: List[Tuple[int, int]] = []
         self.deferred: List[Tuple[int, int]] = []
 
-    def send(self, set_type: AddressSetMaker) -> Optional[Transaction]:
+    def send(self, intset_maker: AddressSetMaker) -> Optional[Transaction]:
         """Return next transaction.
 
         Arguments:
-            set_type: type of set to use in transaction
+            intset_maker: makes sets to be used to store objects in transactions
         """
         if self.deferred:
             tr_base, address_base = self.deferred.pop(0)
@@ -190,10 +187,10 @@ class TransactionGenerator(
             raise StopIteration
         read_set = self.addresses[read_start:read_end]
         write_set = self.addresses[write_start:write_end]
-        if set_type.fits(tr_conf["reads"] + tr_conf["writes"]):
-            return Transaction(read_set, write_set, tr_conf["time"], set_type=set_type)
+        if intset_maker.fits(tr_conf["reads"] + tr_conf["writes"]):
+            return Transaction(read_set, write_set, tr_conf["time"], intset_maker)
         else:
-            self.errored.append((self.tr_index - 1, read_start))
+            self.overflowed.append((self.tr_index - 1, read_start))
             return None
 
     def throw(self, exception, value=None, traceback=None):
@@ -201,23 +198,24 @@ class TransactionGenerator(
         self.tr_index = len(self.tr_data)
         return Generator.throw(exception, value, traceback)
 
-    def reset_errors(self) -> None:
-        """Adjust internal state to try errored transactions again."""
-        self.deferred.extend(self.errored)
-        self.errored = []
+    def reset_overflows(self) -> None:
+        """Adjust internal state to try overflowing transactions again."""
+        self.deferred.extend(self.overflowed)
+        self.overflowed = []
 
     def __bool__(self) -> bool:
         """Return true if there are transactions left."""
-        return (
-            self.tr_index != len(self.tr_data)
-            or bool(self.errored)
-            or bool(self.deferred)
+        return bool(
+            self.tr_index != len(self.tr_data) or self.overflowed or self.deferred
         )
 
     def __len__(self) -> int:
         """Return number of remaining transactions."""
         return (
-            len(self.tr_data) + len(self.errored) + len(self.deferred) - self.tr_index
+            len(self.tr_data)
+            - self.tr_index
+            + len(self.overflowed)
+            + len(self.deferred)
         )
 
     def __repr__(self) -> str:
@@ -256,7 +254,7 @@ class MachineState:
     """Represents the full state of the machine. Useful for state space search."""
 
     incoming: TransactionGenerator
-    set_maker: AddressSetMaker
+    intset_maker: AddressSetMaker
     pending: Set[Transaction] = dataclasses.field(default_factory=set)
     scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
@@ -273,7 +271,7 @@ class MachineState:
         Collection fields are recreated, but the contained object will be the same.
         """
         new = copy.copy(self)
-        new.set_maker = copy.copy(self.set_maker)
+        new.intset_maker = copy.copy(self.intset_maker)
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)

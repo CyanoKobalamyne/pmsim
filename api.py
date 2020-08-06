@@ -12,15 +12,16 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class AbstractSetType(Protocol[T]):
+class AbstractSetMaker(Protocol[T]):
     """Protocol for callables that return sets."""
 
+    @abstractmethod
     def __call__(self, objects: Iterable[T] = ()) -> AbstractSet[T]:
         """Return a set containing objects."""
-        raise NotImplementedError
+        ...
 
 
-class AddressSetMaker(AbstractSetType[int]):
+class AddressSetMaker(AbstractSetMaker[int]):
     """Makes address set instances for a given simulation."""
 
     def free(self, transaction: Transaction) -> None:
