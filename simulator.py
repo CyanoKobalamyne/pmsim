@@ -1,10 +1,19 @@
 """Main Puppetmaster simulator class."""
 
+import dataclasses
 import heapq
-from typing import List, Tuple
+from typing import List
 
 from api import AddressSetMaker, TransactionExecutor, TransactionScheduler
 from pmtypes import MachineState, TransactionGenerator
+
+
+@dataclasses.dataclass(order=True)
+class SimulatorState:
+    """Internal state of the simulator."""
+
+    time: int
+    path: List[MachineState] = dataclasses.field(compare=False)
 
 
 class Simulator:
@@ -43,24 +52,23 @@ class Simulator:
         Returns:
             amount of time (cycles) it took to execute all transactions
         """
-        time = 0
-        count = 1
-        queue: List[Tuple[int, int, List[MachineState]]] = [
-            (time, count, [self.start_state])
-        ]
+        steps = 0
+        queue = [SimulatorState(0, [self.start_state])]
         while queue:
+            steps += 1
+
             # Get next state off the queue.
-            time, count, path = heapq.heappop(queue)
-            state = path[-1]
+            cur = heapq.heappop(queue)
+            state = cur.path[-1]
 
             if verbose >= 3:
-                print(time, count, len(queue), end="\r")
+                print(cur.time, steps, len(queue), end="\r")
 
             if not state:
                 # Nothing to do, path ended.
                 if verbose >= 2:
-                    print(f"States: {len(path)} path, {count} total, {len(queue)} left")
-                return path
+                    print(f"{len(cur.path)} states, {steps} steps, {len(queue)} queued")
+                return cur.path
             elif len(state.cores) < state.core_count and state.scheduled:
                 # Some cores are idle and there are transactions scheduled.
                 next_states = self.executor.run(state)
@@ -82,8 +90,7 @@ class Simulator:
                     if next_state.cores
                     else next_state.clock
                 )
-                count += 1
-                next_path = path + [next_state]
-                heapq.heappush(queue, (time, count, next_path))
+                next_path = cur.path + [next_state]
+                heapq.heappush(queue, SimulatorState(time, next_path))
 
         raise RuntimeError  # We should never get here.
