@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import AbstractSet, Callable, Iterable, Iterator, List, Optional, Tuple
+from typing import AbstractSet, Callable, Iterable, Iterator, MutableMapping, Optional
 
 from api import AddressSetMaker, AddressSetMakerFactory
 from pmtypes import Transaction
@@ -124,33 +124,27 @@ class FiniteAddressSet(AbstractSet[int]):
         /,
         *,
         size: int,
-        hash_fn: Callable[[int, int], int],
-        renaming_table: List[Tuple[int, int]],
+        renaming_table: MutableMapping[int, int],
     ):
         """Initialize set to contain objects."""
         self.bits = 0
         self.objs = [-1] * size
         self.size = size
-        self.hash_fn = hash_fn
         self.table = renaming_table
+        inserted = set()
         for obj in objects:
-            index = self.__get_name(obj)
+            if obj in inserted:
+                # Ignore duplicates.
+                continue
+            try:
+                index = renaming_table[obj]
+                inserted.add(obj)
+            except KeyError:
+                for iobj in inserted:
+                    del renaming_table[iobj]
+                raise ValueError("renaming table can't accept this object")
             self.bits |= 1 << index
             self.objs[index] = obj
-
-    def __get_name(self, obj: int) -> int:
-        assert obj != -1
-        for i in range(self.size):
-            h = self.hash_fn(i, obj)
-            prev_obj, count = self.table[h]
-            if prev_obj == -1:
-                self.table[h] = (obj, 1)
-            elif prev_obj == obj:
-                self.table[h] = (obj, count + 1)
-            else:
-                continue
-            return h
-        raise ValueError("renaming table is full")
 
     def __contains__(self, obj: object) -> bool:
         """Not implemented."""
@@ -173,9 +167,7 @@ class FiniteAddressSet(AbstractSet[int]):
     def __or__(self, other: AbstractSet) -> FiniteAddressSet:
         """Return the union of this set and the other set."""
         if isinstance(other, FiniteAddressSet):
-            out = FiniteAddressSet(
-                size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
-            )
+            out = FiniteAddressSet(size=self.size, renaming_table=self.table)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -186,9 +178,7 @@ class FiniteAddressSet(AbstractSet[int]):
     def __and__(self, other: AbstractSet) -> FiniteAddressSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, FiniteAddressSet):
-            out = FiniteAddressSet(
-                size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
-            )
+            out = FiniteAddressSet(size=self.size, renaming_table=self.table)
             out.bits = self.bits & other.bits
             return out
         else:
@@ -197,51 +187,83 @@ class FiniteAddressSet(AbstractSet[int]):
             )
 
 
-class FiniteAddressSetMaker(AddressSetMaker):
+class FiniteAddressSetMaker(AddressSetMaker, MutableMapping[int, int]):
     """Makes fixed-size address sets that use a global renaming table."""
 
     def __init__(self, factory: FiniteAddressSetMakerFactory):
         """Initialize finite set maker."""
         self.size = factory.size
         self.hash_fn = factory.hash_fn
+        self.n_hash_funcs = factory.n_hash_funcs
         self.table = [(-1, 0)] * factory.size
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSet:
         """Return new fixed-size set."""
-        return FiniteAddressSet(
-            objects, size=self.size, hash_fn=self.hash_fn, renaming_table=self.table
-        )
+        return FiniteAddressSet(objects, size=self.size, renaming_table=self)
 
     def free(self, transaction: Transaction) -> None:
         """See AddressSetMaker.free."""
         for obj in itertools.chain(transaction.read_set, transaction.write_set):
-            assert obj != -1
-            for i in range(self.size):
-                h = self.hash_fn(i, obj)
-                prev_obj, count = self.table[h]
-                assert prev_obj != -1 and count > 0 or prev_obj == -1 and count == 0
-                if prev_obj == obj and count == 1:
-                    self.table[h] = (-1, 0)
-                elif prev_obj == obj and count > 1:
-                    self.table[h] = (obj, count - 1)
-                else:
-                    continue
-                break
-            else:
-                raise KeyError("object not found")
+            del self[obj]
 
-    def fits(self, size: int) -> bool:
-        """See AddressSetMaker.fits."""
-        return sum(o == -1 for o, c in self.table) >= size
+    def __getitem__(self, obj: int) -> int:
+        """Return name for object smaller than the table size."""
+        assert obj != -1
+        for i in range(self.n_hash_funcs):
+            h = self.hash_fn(i, obj)
+            prev_obj, count = self.table[h]
+            if prev_obj == -1:
+                self.table[h] = (obj, 1)
+            elif prev_obj == obj:
+                self.table[h] = (obj, count + 1)
+            else:
+                continue
+            return h
+        raise KeyError("renaming table is full")
+
+    def __delitem__(self, obj: int) -> None:
+        """Remove an object from the renaming table."""
+        assert obj != -1
+        for i in range(self.n_hash_funcs):
+            h = self.hash_fn(i, obj)
+            prev_obj, count = self.table[h]
+            assert prev_obj != -1 and count > 0 or prev_obj == -1 and count == 0
+            if prev_obj == obj and count == 1:
+                self.table[h] = (-1, 0)
+            elif prev_obj == obj and count > 1:
+                self.table[h] = (obj, count - 1)
+            else:
+                continue
+            break
+        else:
+            raise KeyError("object not found")
+
+    def __setitem__(self, obj: int, name: int) -> None:
+        """Not implemented."""
+        raise NotImplementedError
+
+    def __iter__(self):
+        """Not implemented."""
+        raise NotImplementedError
+
+    def __len__(self):
+        """Not implemented."""
+        raise NotImplementedError
 
 
 class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
     """Factory for fixed-size address set makers with preset arguments."""
 
-    def __init__(self, size: int, hash_fn: Optional[Callable[[int, int], int]] = None):
+    def __init__(
+        self,
+        size: int,
+        hash_fn: Optional[Callable[[int, int], int]] = None,
+        n_hash_funcs: Optional[int] = None,
+    ):
         """Initialize factory with set size and hash functions."""
         self.size = size
         self.hash_fn = (lambda i, x: (x + i) % size) if hash_fn is None else hash_fn
+        self.n_hash_funcs = size if n_hash_funcs is None else n_hash_funcs
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSetMaker:
         """Return new fixed-size set maker."""
@@ -249,4 +271,4 @@ class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
 
     def __str__(self) -> str:
         """Return human-readable name for the sets."""
-        return f"Fixed-size set using global renaming table ({self.size} bits)"
+        return f"Fixed-size set ({self.size} bits, {self.n_hash_funcs} hash functions)"

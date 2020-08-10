@@ -42,6 +42,11 @@ class AbstractScheduler(TransactionScheduler):
                 break
         if not state.pending:
             # We can't accept more transactions into the system.
+            if not state.cores:
+                raise RuntimeError(
+                    "no transactions could be accepted into the empty renaming table, "
+                    "the number of hash functions must be increased"
+                )
             if state.clock < state.cores[0].clock:
                 # Scheduler needs to wait until at least one transaction finishes.
                 state.clock = state.cores[0].clock

@@ -6,6 +6,7 @@ import copy
 import dataclasses
 import itertools
 from typing import (
+    AbstractSet,
     Dict,
     Generator,
     Iterable,
@@ -39,11 +40,7 @@ class Transaction:
     """An atomic operation in the api."""
 
     def __init__(
-        self,
-        read_set: Iterable[int],
-        write_set: Iterable[int],
-        time: int,
-        intset_maker: AbstractSetMaker[int] = set,
+        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int,
     ) -> None:
         """Create a transaction.
 
@@ -54,8 +51,8 @@ class Transaction:
             time: the amount of time units it takes to execute this transaction
             intset_maker: makes sets used for keeping track of read and written objects
         """
-        self.read_set = intset_maker(read_set)
-        self.write_set = intset_maker(write_set)
+        self.read_set = read_set
+        self.write_set = write_set
         self.time = time
         self.id = UniqIdMaker.next_id(Transaction)
 
@@ -185,11 +182,16 @@ class TransactionGenerator(Generator[Optional[Transaction], AddressSetMaker, Non
             write_end = self.address_index
         else:
             raise StopIteration
-        read_set = self.addresses[read_start:read_end]
-        write_set = self.addresses[write_start:write_end]
-        if intset_maker.fits(tr_conf["reads"] + tr_conf["writes"]):
-            return Transaction(read_set, write_set, tr_conf["time"], intset_maker)
-        else:
+        try:
+            read_set = intset_maker(self.addresses[read_start:read_end])
+            try:
+                write_set = intset_maker(self.addresses[write_start:write_end])
+                return Transaction(read_set, write_set, tr_conf["time"])
+            except ValueError:
+                # Remove the already inserted objects from the read set.
+                intset_maker.free(Transaction(read_set, set(), 0))
+                raise
+        except ValueError:
             self.overflowed.append((self.tr_index - 1, read_start))
             return None
 

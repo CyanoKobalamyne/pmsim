@@ -28,10 +28,6 @@ class AddressSetMaker(AbstractSetMaker[int]):
         """Free resources associated with the transaction."""
         pass  # Does nothing by default.
 
-    def fits(self, size: int) -> bool:
-        """Return True if a transaction with the given size can be intialized."""
-        return True  # True by default.
-
 
 class AddressSetMakerFactory(ABC):
     """Makes generators of address set with a fixed set of parameters."""
