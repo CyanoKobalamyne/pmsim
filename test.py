@@ -1,18 +1,17 @@
 """Unit tests for puppetmaster."""
 import unittest
-from collections.abc import Sized
 from typing import Generator, Iterable
 from unittest import TestCase
 
 from api import ObjSetMaker
 from executors import RandomExecutor
 from pmtypes import Transaction
-from schedulers import GreedyScheduler
+from schedulers import GreedySchedulerFactory
 from sets import IdealObjSetMaker
 from simulator import Simulator
 
 
-class TestTransactionGenerator(Generator[Transaction, ObjSetMaker, None], Sized):
+class TestTransactionGenerator(Generator[Transaction, ObjSetMaker, None]):
     """TransactionGenerator implementation for tests."""
 
     def __init__(self, transactions: Iterable[Transaction]):
@@ -40,12 +39,16 @@ class TestTransactionGenerator(Generator[Transaction, ObjSetMaker, None], Sized)
         """Return number of transactions left."""
         return len(self.transactions) - self.index
 
+    def reset_overflows(self) -> None:
+        """Adjust internal state to try overflowing transactions again."""
+        pass  # Do nothing.
+
 
 class TestSimple(TestCase):
     """Simple tests for scheduling 1-2 transactions."""
 
     def _validate_transactions(self, expected_time, transactions, n_cores=1):
-        sched = GreedyScheduler()
+        sched = GreedySchedulerFactory()()
         exe = RandomExecutor()
         s = Simulator(
             TestTransactionGenerator(transactions),
