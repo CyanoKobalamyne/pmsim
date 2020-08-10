@@ -18,7 +18,7 @@ from api import (
     TransactionGeneratorFactory,
     TransactionSchedulerFactory,
 )
-from executors import OptimalExecutor, RandomExecutor
+from executors import RandomExecutor
 from factories import RandomFactory
 from pmtypes import Transaction
 from schedulers import (
@@ -26,11 +26,7 @@ from schedulers import (
     MaximalSchedulerFactory,
     TournamentSchedulerFactory,
 )
-from sets import (
-    ApproximateAddressSetMakerFactory,
-    IdealAddressSetMakerFactory,
-    FiniteAddressSetMakerFactory,
-)
+from sets import IdealAddressSetMakerFactory, FiniteAddressSetMakerFactory
 from simulator import Simulator
 
 
@@ -214,47 +210,8 @@ def make_parallelism_table(
             print(tbody.format(sched_time, *prls))
         print()
 
-    run_sims()
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(256))
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(512))
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(1024))
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(1024, 2))
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(2048))
-
-    run_sims(set_factory=ApproximateAddressSetMakerFactory(4096))
-
-    run_sims(set_factory=FiniteAddressSetMakerFactory(256))
-
-    run_sims(set_factory=FiniteAddressSetMakerFactory(512))
-
-    run_sims(set_factory=FiniteAddressSetMakerFactory(1024))
-
-    run_sims(set_factory=FiniteAddressSetMakerFactory(2048))
-
-    run_sims(set_factory=FiniteAddressSetMakerFactory(4096))
-
-    run_sims(TournamentSchedulerFactory(is_pipelined=True))
-
-    run_sims(GreedySchedulerFactory())
-
-    if args.poolsize <= 20:
-        run_sims(MaximalSchedulerFactory())
-
-    if (args.queuesize is None and args.n < 10) or (
-        args.queuesize is not None and args.queuesize < 10
-    ):
-        run_sims(GreedySchedulerFactory(), OptimalExecutor())
-
-    if args.poolsize <= 20 and (
-        (args.queuesize is None and args.n < 10)
-        or (args.queuesize is not None and args.queuesize < 10)
-    ):
-        run_sims(MaximalSchedulerFactory(), OptimalExecutor())
+    for n in (2, 3, 4, 5, None):
+        run_sims(set_factory=FiniteAddressSetMakerFactory(1024, n_hash_funcs=n))
 
 
 def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
