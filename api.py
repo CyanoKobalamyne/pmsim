@@ -3,26 +3,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional, Protocol, TypeVar
+from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional
 
 if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction, TransactionGenerator
 
 
-T = TypeVar("T")
-
-
-class AbstractSetMaker(Protocol[T]):
-    """Protocol for callables that return sets."""
+class AddressSetMaker(ABC):
+    """Makes address set instances for a given simulation."""
 
     @abstractmethod
-    def __call__(self, objects: Iterable[T] = ()) -> AbstractSet[T]:
+    def __call__(self, objects: Iterable[int] = ()) -> AbstractSet[int]:
         """Return a set containing objects."""
-        ...
-
-
-class AddressSetMaker(AbstractSetMaker[int]):
-    """Makes address set instances for a given simulation."""
 
     def free(self, transaction: Transaction) -> None:
         """Free resources associated with the transaction."""

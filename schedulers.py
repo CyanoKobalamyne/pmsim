@@ -5,7 +5,7 @@ import itertools
 from abc import abstractmethod
 from typing import Iterable, Optional, Tuple
 
-from api import AddressSetMaker, TransactionScheduler, TransactionSchedulerFactory
+from api import TransactionScheduler, TransactionSchedulerFactory
 from pmtypes import MachineState, Transaction, TransactionSet
 
 
@@ -52,18 +52,14 @@ class AbstractScheduler(TransactionScheduler):
                 state.clock = state.cores[0].clock
             return [state]
         # Try scheduling a batch of new transactions.
-        ongoing = TransactionSet(
-            (core.transaction for core in state.cores), intset_maker=state.intset_maker
-        )
+        ongoing = TransactionSet((core.transaction for core in state.cores))
         for tr in state.scheduled:
             ongoing.add(tr)
         max_count = (
             None if self.queue_size is None else self.queue_size - len(state.scheduled)
         )
         out_states = []
-        for scheduled, time in self.schedule(
-            ongoing, state.pending, max_count, state.intset_maker
-        ):
+        for scheduled, time in self.schedule(ongoing, state.pending, max_count):
             new_state = state.copy()
             new_state.clock += time
             if scheduled:
@@ -81,7 +77,6 @@ class AbstractScheduler(TransactionScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-        intset_maker: AddressSetMaker,
     ) -> Iterable[Tuple[TransactionSet, int]]:
         """Schedule one or more transactions."""
 
@@ -94,13 +89,12 @@ class GreedyScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-        intset_maker: AddressSetMaker,
     ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule.
 
         Iterates through pending transactions once and adds all compatible ones.
         """
-        candidates = TransactionSet(intset_maker=intset_maker)
+        candidates = TransactionSet()
         for tr in pending:
             if ongoing.compatible(tr) and candidates.compatible(tr):
                 candidates.add(tr)
@@ -133,7 +127,6 @@ class MaximalScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-        intset_maker: AddressSetMaker,
     ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule."""
         pending_list = list(pending)
@@ -145,7 +138,7 @@ class MaximalScheduler(AbstractScheduler):
             yield from all_candidate_sets(prefix, i + 1)
             tr = pending_list[i]
             if ongoing.compatible(tr) and prefix.compatible(tr):
-                new_prefix = TransactionSet(prefix, intset_maker=intset_maker)
+                new_prefix = TransactionSet(prefix)
                 new_prefix.add(tr)
                 yield from all_candidate_sets(new_prefix, i + 1)
 
@@ -153,15 +146,11 @@ class MaximalScheduler(AbstractScheduler):
             return (
                 candidates
                 if max_count is None
-                else TransactionSet(
-                    itertools.islice(candidates, max_count), intset_maker=intset_maker
-                ),
+                else TransactionSet(itertools.islice(candidates, max_count)),
                 self.op_time,
             )
 
-        candidate_sets = all_candidate_sets(
-            TransactionSet(intset_maker=intset_maker), 0
-        )
+        candidate_sets = all_candidate_sets(TransactionSet(), 0)
         out = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
         return map(get_result, out)
 
@@ -200,7 +189,6 @@ class TournamentScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-        intset_maker: AddressSetMaker,
     ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule.
 
@@ -208,11 +196,7 @@ class TournamentScheduler(AbstractScheduler):
         checks the available transactions pairwise against each other repeatedly, until
         a single non-conflicting group remains.
         """
-        sets = [
-            TransactionSet([tr], intset_maker=intset_maker)
-            for tr in pending
-            if ongoing.compatible(tr)
-        ]
+        sets = [TransactionSet([tr]) for tr in pending if ongoing.compatible(tr)]
         rounds = 0
         while len(sets) > 1:
             for t1, t2 in itertools.zip_longest(sets[::2], sets[1::2]):
@@ -221,13 +205,11 @@ class TournamentScheduler(AbstractScheduler):
             sets = sets[::2]
             rounds += 1
         if not sets:
-            candidates = TransactionSet(intset_maker=intset_maker)
+            candidates = TransactionSet()
         elif max_count is None:
             candidates = sets[0]
         else:
-            candidates = TransactionSet(
-                itertools.islice(sets[0], max_count), intset_maker=intset_maker
-            )
+            candidates = TransactionSet(itertools.islice(sets[0], max_count))
         if self.is_pipelined:
             op_time = self.op_time
         else:

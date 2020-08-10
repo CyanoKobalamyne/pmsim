@@ -20,7 +20,7 @@ from typing import (
     Tuple,
 )
 
-from api import AbstractSetMaker, AddressSetMaker
+from api import AddressSetMaker
 
 
 class UniqIdMaker:
@@ -82,17 +82,9 @@ class Transaction:
 class TransactionSet(MutableSet[Transaction]):
     """A set of transactions."""
 
-    def __init__(
-        self,
-        transactions: Iterable[Transaction] = (),
-        /,
-        *,
-        intset_maker: AbstractSetMaker[int] = set,
-    ):
+    def __init__(self, transactions: Iterable[Transaction] = (), /):
         """Create a new set."""
         self.transactions: Set[Transaction] = set()
-        self.read_set = intset_maker()
-        self.write_set = intset_maker()
         for t in transactions:
             self.add(t)
 
@@ -119,8 +111,14 @@ class TransactionSet(MutableSet[Transaction]):
     def add(self, transaction: Transaction) -> None:
         """Add a new transaction to the set."""
         self.transactions.add(transaction)
-        self.read_set |= transaction.read_set
-        self.write_set |= transaction.write_set
+        if not hasattr(self, "read_set"):
+            self.read_set = transaction.read_set
+        else:
+            self.read_set = transaction.read_set | self.read_set
+        if not hasattr(self, "write_set"):
+            self.write_set = transaction.write_set
+        else:
+            self.write_set = transaction.write_set | self.write_set
 
     def discard(self, transaction: Transaction) -> None:
         """Remove a transaction from the set.
@@ -131,6 +129,8 @@ class TransactionSet(MutableSet[Transaction]):
 
     def compatible(self, transaction: Transaction) -> bool:
         """Return True if the transaction is compatible with the ones in this set."""
+        if not self.transactions:
+            return True
         return (
             not (transaction.read_set & self.write_set)
             and not (transaction.write_set & self.read_set)
