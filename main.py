@@ -210,7 +210,12 @@ def make_parallelism_table(
         print()
 
     for n in (2, 3, 4, 5, None):
-        run_sims(set_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n))
+        try:
+            run_sims(set_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n))
+        except RuntimeError:
+            print("--- Failed ---")
+            print()
+            continue
 
 
 def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
