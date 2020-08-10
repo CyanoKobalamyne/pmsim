@@ -15,11 +15,10 @@ import numpy as np
 from api import (
     ObjSetMakerFactory,
     TransactionExecutor,
-    TransactionGeneratorFactory,
     TransactionSchedulerFactory,
 )
 from executors import RandomExecutor
-from factories import RandomFactory
+from generator import TransactionGeneratorFactory
 from pmtypes import Transaction
 from schedulers import (
     GreedySchedulerFactory,
@@ -404,17 +403,17 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
 
 def run_sim(
     args: Namespace,
-    tr_factory: TransactionGeneratorFactory,
+    gen_factory: TransactionGeneratorFactory,
     sched_factory: TransactionSchedulerFactory,
     executor: TransactionExecutor = RandomExecutor(),
-    set_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
+    obj_set_maker_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
-        tr_gen = tr_factory()
-        obj_set_maker = set_factory()
+        gen = tr_factory()
+        obj_set_maker = obj_set_maker_factory()
         scheduler = sched_factory(args.op_time, args.poolsize, args.queuesize)
-        sim = Simulator(tr_gen, obj_set_maker, scheduler, executor, args.num_cores)
+        sim = Simulator(gen, obj_set_maker, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
 
@@ -455,7 +454,7 @@ if __name__ == "__main__":
     args = get_args()
 
     tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
-    tr_factory = RandomFactory(
+    tr_factory = TransactionGeneratorFactory(
         args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
     )
 

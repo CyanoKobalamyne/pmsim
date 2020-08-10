@@ -5,7 +5,8 @@ import heapq
 from typing import List
 
 from api import ObjSetMaker, TransactionExecutor, TransactionScheduler
-from pmtypes import MachineState, TransactionGenerator
+from generator import TransactionGenerator
+from pmtypes import MachineState
 
 
 @dataclasses.dataclass(order=True)

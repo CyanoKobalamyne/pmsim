@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional
 
 if TYPE_CHECKING:
-    from pmtypes import MachineState, Transaction, TransactionGenerator
+    from pmtypes import MachineState, Transaction
 
 
 class ObjSetMaker(ABC):
@@ -27,19 +27,6 @@ class ObjSetMakerFactory(ABC):
     @abstractmethod
     def __call__(self) -> ObjSetMaker:
         """Return new object set generator."""
-
-
-class TransactionGeneratorFactory(ABC):
-    """Creates transaction generators."""
-
-    @abstractmethod
-    def __call__(self) -> TransactionGenerator:
-        """Return a generator of transactions."""
-
-    @property
-    @abstractmethod
-    def total_time(self) -> int:
-        """Return the time it takes to execute all transactions serially."""
 
 
 class TransactionScheduler(ABC):
