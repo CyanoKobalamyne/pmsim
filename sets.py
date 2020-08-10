@@ -30,14 +30,12 @@ class IdealObjSetMakerFactory(ObjSetMakerFactory):
 class ApproximateObjSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
-    def __init__(self, objects: Iterable[int] = (), /, *, size: int, n_funcs: int):
+    def __init__(self, objects: Iterable[int] = (), /, *, size: int):
         """Initialize set to contain objects."""
         self.bits = 0
         self.size = size
-        self.n_funcs = n_funcs
         for obj in objects:
-            for i in range(n_funcs):
-                self.bits |= 1 << ((obj + i) % size)
+            self.bits |= 1 << (obj % size)
 
     def __contains__(self, obj: object) -> bool:
         """Not implemented."""
@@ -58,7 +56,7 @@ class ApproximateObjSet(AbstractSet[int]):
     def __or__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the union of this set and the other set."""
         if isinstance(other, ApproximateObjSet):
-            out = ApproximateObjSet(size=self.size, n_funcs=self.n_funcs)
+            out = ApproximateObjSet(size=self.size)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -69,7 +67,7 @@ class ApproximateObjSet(AbstractSet[int]):
     def __and__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, ApproximateObjSet):
-            out = ApproximateObjSet(size=self.size, n_funcs=self.n_funcs)
+            out = ApproximateObjSet(size=self.size)
             out.bits = self.bits & other.bits
             return out
         else:
@@ -84,25 +82,22 @@ class ApproximateObjSetMaker(ObjSetMaker):
     def __init__(self, factory: ApproximateObjSetMakerFactory):
         """Initialize approximate object set maker."""
         self.size = factory.size
-        self.n_funcs = factory.n_funcs
 
     def __call__(self, objects: Iterable[int] = ()) -> ApproximateObjSet:
         """Return new approximate set."""
-        return ApproximateObjSet(objects, size=self.size, n_funcs=self.n_funcs)
+        return ApproximateObjSet(objects, size=self.size)
 
 
 class ApproximateObjSetMakerFactory(ObjSetMakerFactory):
     """Factory for approximate set maker instances with preset arguments."""
 
-    def __init__(self, size: int, n_funcs: int = 1):
+    def __init__(self, size: int):
         """Initialize factory for approximate object set makers.
 
         Arguments:
             size: width of bit vector used to represent the set
-            n_funcs: number of hash functions used
         """
         self.size = size
-        self.n_funcs = n_funcs
         self.generator = ApproximateObjSetMaker(self)
 
     def __call__(self) -> ApproximateObjSetMaker:
@@ -111,8 +106,7 @@ class ApproximateObjSetMakerFactory(ObjSetMakerFactory):
 
     def __str__(self) -> str:
         """Return human-readable name for the sets."""
-        opt = f",  {self.n_funcs} hash functions" if self.n_funcs > 1 else ""
-        return f"Approximate set ({self.size} bits{opt})"
+        return f"Approximate set ({self.size} bits)"
 
 
 class FiniteObjSet(AbstractSet[int]):
