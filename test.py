@@ -4,15 +4,15 @@ from collections.abc import Sized
 from typing import Generator, Iterable
 from unittest import TestCase
 
-from api import AddressSetMaker
+from api import ObjSetMaker
 from executors import RandomExecutor
 from pmtypes import Transaction
 from schedulers import GreedyScheduler
-from sets import IdealAddressSetMaker
+from sets import IdealObjSetMaker
 from simulator import Simulator
 
 
-class TestTransactionGenerator(Generator[Transaction, AddressSetMaker, None], Sized):
+class TestTransactionGenerator(Generator[Transaction, ObjSetMaker, None], Sized):
     """TransactionGenerator implementation for tests."""
 
     def __init__(self, transactions: Iterable[Transaction]):
@@ -20,7 +20,7 @@ class TestTransactionGenerator(Generator[Transaction, AddressSetMaker, None], Si
         self.transactions = list(transactions)
         self.index = 0
 
-    def send(self, value: AddressSetMaker) -> Transaction:
+    def send(self, value: ObjSetMaker) -> Transaction:
         """Return next transaction."""
         if self.index == len(self.transactions):
             raise StopIteration
@@ -49,7 +49,7 @@ class TestSimple(TestCase):
         exe = RandomExecutor()
         s = Simulator(
             TestTransactionGenerator(transactions),
-            IdealAddressSetMaker(),
+            IdealObjSetMaker(),
             sched,
             exe,
             n_cores,

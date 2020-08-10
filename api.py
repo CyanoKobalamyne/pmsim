@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction, TransactionGenerator
 
 
-class AddressSetMaker(ABC):
-    """Makes address set instances for a given simulation."""
+class ObjSetMaker(ABC):
+    """Makes object sets for a given simulation."""
 
     @abstractmethod
     def __call__(self, objects: Iterable[int] = ()) -> AbstractSet[int]:
@@ -21,16 +21,16 @@ class AddressSetMaker(ABC):
         pass  # Does nothing by default.
 
 
-class AddressSetMakerFactory(ABC):
-    """Makes generators of address set with a fixed set of parameters."""
+class ObjSetMakerFactory(ABC):
+    """Creates object set makers with fixed parameters."""
 
     @abstractmethod
-    def __call__(self) -> AddressSetMaker:
-        """Return new address set generator."""
+    def __call__(self) -> ObjSetMaker:
+        """Return new object set generator."""
 
 
 class TransactionGeneratorFactory(ABC):
-    """Factory for generators of transactions."""
+    """Creates transaction generators."""
 
     @abstractmethod
     def __call__(self) -> TransactionGenerator:

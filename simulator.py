@@ -4,7 +4,7 @@ import dataclasses
 import heapq
 from typing import List
 
-from api import AddressSetMaker, TransactionExecutor, TransactionScheduler
+from api import ObjSetMaker, TransactionExecutor, TransactionScheduler
 from pmtypes import MachineState, TransactionGenerator
 
 
@@ -22,7 +22,7 @@ class Simulator:
     def __init__(
         self,
         transactions: TransactionGenerator,
-        intset_maker: AddressSetMaker,
+        obj_set_maker: ObjSetMaker,
         scheduler: TransactionScheduler,
         executor: TransactionExecutor,
         core_count: int = 1,
@@ -31,7 +31,7 @@ class Simulator:
 
         Arguments:
             transactions: generator of transactions to execute
-            intset_maker: object for creating transaction read and write sets
+            obj_set_maker: object for creating transaction read and write sets
             scheduler: component for scheduling transactions
             executor: component for executing transactions on the processing cores
             core_count: number of processing cores
@@ -40,7 +40,7 @@ class Simulator:
         self.scheduler = scheduler
         self.executor = executor
         self.start_state = MachineState(
-            transactions, intset_maker, core_count=core_count
+            transactions, obj_set_maker, core_count=core_count
         )
 
     def run(self, verbose=False) -> List[MachineState]:
@@ -76,7 +76,7 @@ class Simulator:
                 # Some transactions have finished executing.
                 next_state = state.copy()
                 core = heapq.heappop(next_state.cores)  # remove finished transaction.
-                next_state.intset_maker.free(core.transaction)
+                next_state.obj_set_maker.free(core.transaction)
                 next_state.incoming.reset_overflows()
                 next_states = [next_state]
             else:

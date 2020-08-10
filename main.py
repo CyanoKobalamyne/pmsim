@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from api import (
-    AddressSetMakerFactory,
+    ObjSetMakerFactory,
     TransactionExecutor,
     TransactionGeneratorFactory,
     TransactionSchedulerFactory,
@@ -26,7 +26,7 @@ from schedulers import (
     MaximalSchedulerFactory,
     TournamentSchedulerFactory,
 )
-from sets import IdealAddressSetMakerFactory, FiniteAddressSetMakerFactory
+from sets import IdealObjSetMakerFactory, FiniteObjSetMakerFactory
 from simulator import Simulator
 
 
@@ -164,7 +164,7 @@ def make_parallelism_table(
     def run_sims(
         sched_factory: TransactionSchedulerFactory = TournamentSchedulerFactory(),
         executor: TransactionExecutor = RandomExecutor(),
-        set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
+        set_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
     ):
         print(get_title(sched_factory, executor, set_factory))
         print()
@@ -211,7 +211,7 @@ def make_parallelism_table(
         print()
 
     for n in (2, 3, 4, 5, None):
-        run_sims(set_factory=FiniteAddressSetMakerFactory(1024, n_hash_funcs=n))
+        run_sims(set_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n))
 
 
 def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
@@ -407,14 +407,14 @@ def run_sim(
     tr_factory: TransactionGeneratorFactory,
     sched_factory: TransactionSchedulerFactory,
     executor: TransactionExecutor = RandomExecutor(),
-    set_factory: AddressSetMakerFactory = IdealAddressSetMakerFactory(),
+    set_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
         tr_gen = tr_factory()
-        intset_maker = set_factory()
+        obj_set_maker = set_factory()
         scheduler = sched_factory(args.op_time, args.poolsize, args.queuesize)
-        sim = Simulator(tr_gen, intset_maker, scheduler, executor, args.num_cores)
+        sim = Simulator(tr_gen, obj_set_maker, scheduler, executor, args.num_cores)
         yield i, sim.run(args.verbose)
 
 

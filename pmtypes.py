@@ -20,7 +20,7 @@ from typing import (
     Tuple,
 )
 
-from api import AddressSetMaker
+from api import ObjSetMaker
 
 
 class UniqIdMaker:
@@ -49,7 +49,7 @@ class Transaction:
             write_set: the set of objects that this transaction needs to write
                        and possibly also read
             time: the amount of time units it takes to execute this transaction
-            intset_maker: makes sets used for keeping track of read and written objects
+            obj_set_maker: makes sets used for keeping track of read and written objects
         """
         self.read_set = read_set
         self.write_set = write_set
@@ -138,7 +138,7 @@ class TransactionSet(MutableSet[Transaction]):
         )
 
 
-class TransactionGenerator(Generator[Optional[Transaction], AddressSetMaker, None]):
+class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
@@ -160,11 +160,11 @@ class TransactionGenerator(Generator[Optional[Transaction], AddressSetMaker, Non
         self.overflowed: List[Tuple[int, int]] = []
         self.deferred: List[Tuple[int, int]] = []
 
-    def send(self, intset_maker: AddressSetMaker) -> Optional[Transaction]:
+    def send(self, obj_set_maker: ObjSetMaker) -> Optional[Transaction]:
         """Return next transaction.
 
         Arguments:
-            intset_maker: makes sets to be used to store objects in transactions
+            obj_set_maker: makes sets to be used to store objects in transactions
         """
         if self.deferred:
             tr_base, address_base = self.deferred.pop(0)
@@ -183,13 +183,13 @@ class TransactionGenerator(Generator[Optional[Transaction], AddressSetMaker, Non
         else:
             raise StopIteration
         try:
-            read_set = intset_maker(self.addresses[read_start:read_end])
+            read_set = obj_set_maker(self.addresses[read_start:read_end])
             try:
-                write_set = intset_maker(self.addresses[write_start:write_end])
+                write_set = obj_set_maker(self.addresses[write_start:write_end])
                 return Transaction(read_set, write_set, tr_conf["time"])
             except ValueError:
                 # Remove the already inserted objects from the read set.
-                intset_maker.free(Transaction(read_set, set(), 0))
+                obj_set_maker.free(Transaction(read_set, set(), 0))
                 raise
         except ValueError:
             self.overflowed.append((self.tr_index - 1, read_start))
@@ -256,7 +256,7 @@ class MachineState:
     """Represents the full state of the machine. Useful for state space search."""
 
     incoming: TransactionGenerator
-    intset_maker: AddressSetMaker
+    obj_set_maker: ObjSetMaker
     pending: Set[Transaction] = dataclasses.field(default_factory=set)
     scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
@@ -273,7 +273,7 @@ class MachineState:
         Collection fields are recreated, but the contained object will be the same.
         """
         new = copy.copy(self)
-        new.intset_maker = copy.copy(self.intset_maker)
+        new.obj_set_maker = copy.copy(self.obj_set_maker)
         new.incoming = copy.copy(self.incoming)
         new.pending = set(self.pending)
         new.scheduled = set(self.scheduled)

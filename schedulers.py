@@ -33,7 +33,7 @@ class AbstractScheduler(TransactionScheduler):
         missing = 0
         while self.pool_size is None or len(state.pending) + missing < self.pool_size:
             try:
-                if (tr := state.incoming.send(state.intset_maker)) is None:
+                if (tr := state.incoming.send(state.obj_set_maker)) is None:
                     missing += 1
                     continue
                 else:

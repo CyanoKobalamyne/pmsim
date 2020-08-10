@@ -5,29 +5,29 @@ from __future__ import annotations
 import itertools
 from typing import AbstractSet, Callable, Iterable, Iterator, MutableMapping, Optional
 
-from api import AddressSetMaker, AddressSetMakerFactory
+from api import ObjSetMaker, ObjSetMakerFactory
 from pmtypes import Transaction
 
 
-class IdealAddressSetMaker(AddressSetMaker):
+class IdealObjSetMaker(ObjSetMaker):
     """Wrapper around the built-in set class."""
 
     # See https://github.com/python/mypy/issues/3482
     __call__ = staticmethod(set)  # type: ignore
 
 
-class IdealAddressSetMakerFactory(AddressSetMakerFactory):
+class IdealObjSetMakerFactory(ObjSetMakerFactory):
     """Factory for (wrapped) built-in sets."""
 
     # See https://github.com/python/mypy/issues/3482
-    __call__ = staticmethod(IdealAddressSetMaker)  # type: ignore
+    __call__ = staticmethod(IdealObjSetMaker)  # type: ignore
 
     def __str__(self) -> str:
         """Return human-readable name for the sets."""
         return "Idealized set"
 
 
-class ApproximateAddressSet(AbstractSet[int]):
+class ApproximateObjSet(AbstractSet[int]):
     """Bloom filter-like implementation of an integer set."""
 
     def __init__(self, objects: Iterable[int] = (), /, *, size: int, n_funcs: int):
@@ -55,10 +55,10 @@ class ApproximateAddressSet(AbstractSet[int]):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: AbstractSet) -> ApproximateAddressSet:
+    def __or__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the union of this set and the other set."""
-        if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
+        if isinstance(other, ApproximateObjSet):
+            out = ApproximateObjSet(size=self.size, n_funcs=self.n_funcs)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -66,10 +66,10 @@ class ApproximateAddressSet(AbstractSet[int]):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: AbstractSet) -> ApproximateAddressSet:
+    def __and__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the intersection of this set and the other set."""
-        if isinstance(other, ApproximateAddressSet):
-            out = ApproximateAddressSet(size=self.size, n_funcs=self.n_funcs)
+        if isinstance(other, ApproximateObjSet):
+            out = ApproximateObjSet(size=self.size, n_funcs=self.n_funcs)
             out.bits = self.bits & other.bits
             return out
         else:
@@ -78,24 +78,24 @@ class ApproximateAddressSet(AbstractSet[int]):
             )
 
 
-class ApproximateAddressSetMaker(AddressSetMaker):
-    """Makes approximate set instances."""
+class ApproximateObjSetMaker(ObjSetMaker):
+    """Makes approximate object set instances."""
 
-    def __init__(self, factory: ApproximateAddressSetMakerFactory):
-        """Initialize approximate set maker."""
+    def __init__(self, factory: ApproximateObjSetMakerFactory):
+        """Initialize approximate object set maker."""
         self.size = factory.size
         self.n_funcs = factory.n_funcs
 
-    def __call__(self, objects: Iterable[int] = ()) -> ApproximateAddressSet:
+    def __call__(self, objects: Iterable[int] = ()) -> ApproximateObjSet:
         """Return new approximate set."""
-        return ApproximateAddressSet(objects, size=self.size, n_funcs=self.n_funcs)
+        return ApproximateObjSet(objects, size=self.size, n_funcs=self.n_funcs)
 
 
-class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
+class ApproximateObjSetMakerFactory(ObjSetMakerFactory):
     """Factory for approximate set maker instances with preset arguments."""
 
     def __init__(self, size: int, n_funcs: int = 1):
-        """Initialize factory for approximate address set makers.
+        """Initialize factory for approximate object set makers.
 
         Arguments:
             size: width of bit vector used to represent the set
@@ -103,10 +103,10 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         """
         self.size = size
         self.n_funcs = n_funcs
-        self.generator = ApproximateAddressSetMaker(self)
+        self.generator = ApproximateObjSetMaker(self)
 
-    def __call__(self) -> ApproximateAddressSetMaker:
-        """Return new approximate address set maker."""
+    def __call__(self) -> ApproximateObjSetMaker:
+        """Return new approximate object set maker."""
         return self.generator
 
     def __str__(self) -> str:
@@ -115,7 +115,7 @@ class ApproximateAddressSetMakerFactory(AddressSetMakerFactory):
         return f"Approximate set ({self.size} bits{opt})"
 
 
-class FiniteAddressSet(AbstractSet[int]):
+class FiniteObjSet(AbstractSet[int]):
     """Fixed-size set with a global renaming table."""
 
     def __init__(
@@ -164,10 +164,10 @@ class FiniteAddressSet(AbstractSet[int]):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: AbstractSet) -> FiniteAddressSet:
+    def __or__(self, other: AbstractSet) -> FiniteObjSet:
         """Return the union of this set and the other set."""
-        if isinstance(other, FiniteAddressSet):
-            out = FiniteAddressSet(size=self.size, renaming_table=self.table)
+        if isinstance(other, FiniteObjSet):
+            out = FiniteObjSet(size=self.size, renaming_table=self.table)
             out.bits = self.bits | other.bits
             return out
         else:
@@ -175,10 +175,10 @@ class FiniteAddressSet(AbstractSet[int]):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: AbstractSet) -> FiniteAddressSet:
+    def __and__(self, other: AbstractSet) -> FiniteObjSet:
         """Return the intersection of this set and the other set."""
-        if isinstance(other, FiniteAddressSet):
-            out = FiniteAddressSet(size=self.size, renaming_table=self.table)
+        if isinstance(other, FiniteObjSet):
+            out = FiniteObjSet(size=self.size, renaming_table=self.table)
             out.bits = self.bits & other.bits
             return out
         else:
@@ -187,22 +187,22 @@ class FiniteAddressSet(AbstractSet[int]):
             )
 
 
-class FiniteAddressSetMaker(AddressSetMaker, MutableMapping[int, int]):
-    """Makes fixed-size address sets that use a global renaming table."""
+class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
+    """Makes fixed-size object sets that use a global renaming table."""
 
-    def __init__(self, factory: FiniteAddressSetMakerFactory):
+    def __init__(self, factory: FiniteObjSetMakerFactory):
         """Initialize finite set maker."""
         self.size = factory.size
         self.hash_fn = factory.hash_fn
         self.n_hash_funcs = factory.n_hash_funcs
         self.table = [(-1, 0)] * factory.size
 
-    def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSet:
+    def __call__(self, objects: Iterable[int] = ()) -> FiniteObjSet:
         """Return new fixed-size set."""
-        return FiniteAddressSet(objects, size=self.size, renaming_table=self)
+        return FiniteObjSet(objects, size=self.size, renaming_table=self)
 
     def free(self, transaction: Transaction) -> None:
-        """See AddressSetMaker.free."""
+        """See ObjSetMaker.free."""
         for obj in itertools.chain(transaction.read_set, transaction.write_set):
             del self[obj]
 
@@ -251,8 +251,8 @@ class FiniteAddressSetMaker(AddressSetMaker, MutableMapping[int, int]):
         raise NotImplementedError
 
 
-class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
-    """Factory for fixed-size address set makers with preset arguments."""
+class FiniteObjSetMakerFactory(ObjSetMakerFactory):
+    """Factory for fixed-size object set makers with preset arguments."""
 
     def __init__(
         self,
@@ -265,9 +265,9 @@ class FiniteAddressSetMakerFactory(AddressSetMakerFactory):
         self.hash_fn = (lambda i, x: (x + i) % size) if hash_fn is None else hash_fn
         self.n_hash_funcs = size if n_hash_funcs is None else n_hash_funcs
 
-    def __call__(self, objects: Iterable[int] = ()) -> FiniteAddressSetMaker:
+    def __call__(self, objects: Iterable[int] = ()) -> FiniteObjSetMaker:
         """Return new fixed-size set maker."""
-        return FiniteAddressSetMaker(self)
+        return FiniteObjSetMaker(self)
 
     def __str__(self) -> str:
         """Return human-readable name for the sets."""
