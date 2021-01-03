@@ -9,8 +9,11 @@ from argparse import ArgumentParser, FileType, Namespace
 from pathlib import PurePath
 from typing import Dict, List, Sequence, Set
 
-import matplotlib.pyplot as plt
-import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    import numpy as np
+except ImportError:
+    plt = np = None
 
 from api import (
     ObjSetMakerFactory,
@@ -56,25 +59,36 @@ def get_args() -> Namespace:
     )
     tpar_parser.set_defaults(func=make_parallelism_table)
 
-    # Options for statistics plotting script.
-    stat_parser = subparsers.add_parser("stat", help="plot system statistics")
-    stat_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=1, type=int
-    )
-    stat_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=4, type=int
-    )
-    stat_parser.set_defaults(func=make_stats_plot)
+    if plt is not None:
+        # Options for statistics plotting script.
+        stat_parser = subparsers.add_parser("stat", help="plot system statistics")
+        stat_parser.add_argument(
+            "-t",
+            "--op-time",
+            help="length of one hardware operation",
+            default=1,
+            type=int,
+        )
+        stat_parser.add_argument(
+            "-c", "--num-cores", help="number of execution cores", default=4, type=int
+        )
+        stat_parser.set_defaults(func=make_stats_plot)
 
-    # Options for latency plotting script.
-    latency_parser = subparsers.add_parser("latency", help="plot transaction latencies")
-    latency_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=1, type=int
-    )
-    latency_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=4, type=int
-    )
-    latency_parser.set_defaults(func=make_latency_plot)
+        # Options for latency plotting script.
+        latency_parser = subparsers.add_parser(
+            "latency", help="plot transaction latencies"
+        )
+        latency_parser.add_argument(
+            "-t",
+            "--op-time",
+            help="length of one hardware operation",
+            default=1,
+            type=int,
+        )
+        latency_parser.add_argument(
+            "-c", "--num-cores", help="number of execution cores", default=4, type=int
+        )
+        latency_parser.set_defaults(func=make_latency_plot)
 
     # Options for pool size finder.
     psfind_parser = subparsers.add_parser("psfind", help="tabulate optimal pool sizes")
