@@ -13,29 +13,35 @@ from typing import (
     Optional,
 )
 
-from api import ObjSetMaker, ObjSetMakerFactory
+from api import ObjSet, ObjSetMaker, ObjSetMakerFactory
 from pmtypes import Transaction
+
+
+class IdealObjSet(ObjSet, set):
+    """Wrapper around the built-in set."""
 
 
 class IdealObjSetMaker(ObjSetMaker):
     """Wrapper around the built-in set class."""
 
-    # See https://github.com/python/mypy/issues/3482
-    __call__ = staticmethod(set)  # type: ignore
+    def __call__(self, objects: Iterable[int] = ()) -> IdealObjSet:
+        """Return new built-in set."""
+        return IdealObjSet(objects)
 
 
 class IdealObjSetMakerFactory(ObjSetMakerFactory):
     """Factory for (wrapped) built-in sets."""
 
-    # See https://github.com/python/mypy/issues/3482
-    __call__ = staticmethod(IdealObjSetMaker)  # type: ignore
+    def __call__(self):
+        """See ObjSetMakerFactory.__call__."""
+        return IdealObjSetMaker()
 
     def __str__(self) -> str:
         """Return human-readable name for the sets."""
         return "Idealized set"
 
 
-class ApproximateObjSet(AbstractSet[int]):
+class ApproximateObjSet(ObjSet):
     """Bloom filter-like implementation of an integer set."""
 
     def __init__(self, objects: Iterable[int] = (), /, *, size: int):
@@ -117,7 +123,7 @@ class ApproximateObjSetMakerFactory(ObjSetMakerFactory):
         return f"Approximate set ({self.size} bits)"
 
 
-class FiniteObjSet(AbstractSet[int]):
+class FiniteObjSet(ObjSet):
     """Fixed-size set with a global renaming table."""
 
     def __init__(

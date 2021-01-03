@@ -9,11 +9,15 @@ if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction
 
 
+class ObjSet(AbstractSet[int]):
+    """Set data structure for memory objects (addresses)."""
+
+
 class ObjSetMaker(ABC):
     """Makes object sets for a given simulation."""
 
     @abstractmethod
-    def __call__(self, objects: Iterable[int] = ()) -> AbstractSet[int]:
+    def __call__(self, objects: Iterable[int] = ()) -> ObjSet:
         """Return a set containing objects."""
 
     def free(self, transaction: Transaction) -> None:
