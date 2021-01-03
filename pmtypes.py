@@ -39,7 +39,7 @@ class Transaction:
     """An atomic operation in the api."""
 
     def __init__(
-        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int,
+        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int
     ) -> None:
         """Create a transaction.
 

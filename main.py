@@ -29,6 +29,10 @@ from sets import IdealObjSetMakerFactory, FiniteObjSetMakerFactory
 from simulator import Simulator
 
 
+DEFAULT_EXECUTOR = RandomExecutor()
+DEFAULT_OBJ_SET_MAKER_FACTORY = IdealObjSetMakerFactory()
+
+
 def get_args() -> Namespace:
     """Parse and print command-line arguments."""
     parser = ArgumentParser(
@@ -161,11 +165,11 @@ def make_parallelism_table(
     )
 
     def run_sims(
-        sched_factory: TransactionSchedulerFactory = TournamentSchedulerFactory(),
-        executor: TransactionExecutor = RandomExecutor(),
-        set_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
+        sched_factory: TransactionSchedulerFactory,
+        executor: TransactionExecutor = DEFAULT_EXECUTOR,
+        obj_set_maker_factory: ObjSetMakerFactory = DEFAULT_OBJ_SET_MAKER_FACTORY,
     ):
-        print(get_title(sched_factory, executor, set_factory))
+        print(get_title(sched_factory, executor, obj_set_maker_factory))
         print()
         print(thead)
         for sched_time in sched_times:
@@ -175,7 +179,7 @@ def make_parallelism_table(
                 args.num_cores = core_count
                 results = []
                 for _, path in run_sim(
-                    args, tr_factory, sched_factory, executor, set_factory
+                    args, tr_factory, sched_factory, executor, obj_set_maker_factory
                 ):
                     start = end = t_prev = t_cur = None
                     total = 0
@@ -218,7 +222,10 @@ def make_parallelism_table(
 
     for n in (2, 3, 4, 5, None):
         try:
-            run_sims(set_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n))
+            run_sims(
+                sched_factory=TournamentSchedulerFactory(),
+                obj_set_maker_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n),
+            )
         except RuntimeError:
             print("--- Failed ---")
             print()
@@ -417,8 +424,8 @@ def run_sim(
     args: Namespace,
     gen_factory: TransactionGeneratorFactory,
     sched_factory: TransactionSchedulerFactory,
-    executor: TransactionExecutor = RandomExecutor(),
-    obj_set_maker_factory: ObjSetMakerFactory = IdealObjSetMakerFactory(),
+    executor: TransactionExecutor = DEFAULT_EXECUTOR,
+    obj_set_maker_factory: ObjSetMakerFactory = DEFAULT_OBJ_SET_MAKER_FACTORY,
 ):
     """Yield index and path through the state space found by the simulator."""
     for i in range(args.repeats):
