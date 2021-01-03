@@ -4,6 +4,7 @@ __pycache__/
 # IDE folders
 .mypy_cache/
 .vscode/
+.isort.cfg
 
 # Generated files
 results/
