@@ -1,7 +1,8 @@
 """Classes that create transaction generators for Puppetmaster."""
 
 import random
-from typing import Generator, Iterable, List, Mapping, Optional, Sequence, Tuple
+from collections.abc import Generator, Iterable, Mapping, Sequence
+from typing import Optional
 
 from more_itertools import SequenceView
 
@@ -27,8 +28,8 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
-        self.overflowed: List[Tuple[int, int]] = []
-        self.deferred: List[Tuple[int, int]] = []
+        self.overflowed: list[tuple[int, int]] = []
+        self.deferred: list[tuple[int, int]] = []
 
     def send(self, obj_set_maker: ObjSetMaker) -> Optional[Transaction]:
         """Return next transaction.
@@ -153,7 +154,7 @@ class TransactionGeneratorFactory:
             self.total_tr_time += cur_tr_count * tr["time"]
 
         # Generate transaction metadata in randomized order.
-        one_tr_data: List[Mapping[str, int]] = []
+        one_tr_data: list[Mapping[str, int]] = []
         for i, tr_type in enumerate(tr_types):
             one_tr_data.extend(tr_type for _ in range(tr_counts[i]))
         self.tr_data = []

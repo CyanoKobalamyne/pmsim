@@ -3,7 +3,7 @@
 import heapq
 import itertools
 import typing
-from typing import Iterable
+from collections.abc import Iterable
 
 from api import TransactionExecutor
 from pmtypes import Core, MachineState, Transaction

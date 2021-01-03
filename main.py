@@ -6,8 +6,8 @@ import os
 import random
 import statistics
 from argparse import ArgumentParser, FileType, Namespace
+from collections.abc import Sequence
 from pathlib import PurePath
-from typing import Dict, List, Sequence, Set
 
 try:
     import matplotlib.pyplot as plt
@@ -15,11 +15,7 @@ try:
 except ImportError:
     plt = np = None
 
-from api import (
-    ObjSetMakerFactory,
-    TransactionExecutor,
-    TransactionSchedulerFactory,
-)
+from api import ObjSetMakerFactory, TransactionExecutor, TransactionSchedulerFactory
 from executors import RandomExecutor
 from generator import TransactionGeneratorFactory
 from pmtypes import Transaction
@@ -28,9 +24,8 @@ from schedulers import (
     MaximalSchedulerFactory,
     TournamentSchedulerFactory,
 )
-from sets import IdealObjSetMakerFactory, FiniteObjSetMakerFactory
+from sets import FiniteObjSetMakerFactory, IdealObjSetMakerFactory
 from simulator import Simulator
-
 
 DEFAULT_EXECUTOR = RandomExecutor()
 DEFAULT_OBJ_SET_MAKER_FACTORY = IdealObjSetMakerFactory()
@@ -188,7 +183,7 @@ def make_parallelism_table(
         print(thead)
         for sched_time in sched_times:
             args.op_time = sched_time
-            prls: List[float] = []
+            prls: list[float] = []
             for core_count in core_counts:
                 args.num_cores = core_count
                 results = []
@@ -319,8 +314,8 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
         for i, path in run_sim(args, tr_factory, sched_factory):
             start_times = {}
             end_times = {}
-            prev_pending: Set[Transaction] = set()
-            prev_executing: Set[Transaction] = set()
+            prev_pending: set[Transaction] = set()
+            prev_executing: set[Transaction] = set()
             for state in path:
                 for tr in prev_pending - state.pending:
                     start_times[tr] = state.clock
@@ -486,7 +481,7 @@ if __name__ == "__main__":
 
     args = get_args()
 
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    tr_types: dict[str, dict[str, int]] = json.load(args.template)
     tr_factory = TransactionGeneratorFactory(
         args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
     )

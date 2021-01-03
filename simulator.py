@@ -2,7 +2,6 @@
 
 import dataclasses
 import heapq
-from typing import List
 
 from api import ObjSetMaker, TransactionExecutor, TransactionScheduler
 from generator import TransactionGenerator
@@ -14,7 +13,7 @@ class SimulatorState:
     """Internal state of the simulator."""
 
     time: int
-    path: List[MachineState] = dataclasses.field(compare=False)
+    path: list[MachineState] = dataclasses.field(compare=False)
 
 
 class Simulator:
@@ -44,7 +43,7 @@ class Simulator:
             transactions, obj_set_maker, core_count=core_count
         )
 
-    def run(self, verbose=False) -> List[MachineState]:
+    def run(self, verbose=False) -> list[MachineState]:
         """Simulate execution of a set of transactions on this machine.
 
         Arguments:

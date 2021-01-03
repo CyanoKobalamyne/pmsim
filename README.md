@@ -3,6 +3,11 @@
 Puppet Master is a hardware-based distributed scheduler. The code here is its
 software simulation.
 
+## Requirements
+- Python 3.9
+- [more-itertools](https://github.com/more-itertools/more-itertools)
+- [matplotlib](https://matplotlib.org/) (optional, for plotting commands)
+
 ## Model
 
 - Transaction-based scheduling.

@@ -5,16 +5,8 @@ from __future__ import annotations
 import copy
 import dataclasses
 import itertools
-from typing import (
-    TYPE_CHECKING,
-    AbstractSet,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    MutableSet,
-    Set,
-)
+from collections.abc import Iterable, Iterator, MutableSet, Set
+from typing import TYPE_CHECKING
 
 from api import ObjSetMaker
 
@@ -25,7 +17,7 @@ if TYPE_CHECKING:
 class UniqIdMaker:
     """Creates unique ids for class instances for the lifetime of the program."""
 
-    counters: Dict[type, Iterator[int]] = {}
+    counters: dict[type, Iterator[int]] = {}
 
     @classmethod
     def next_id(cls, type_: type):
@@ -38,9 +30,7 @@ class UniqIdMaker:
 class Transaction:
     """An atomic operation in the api."""
 
-    def __init__(
-        self, read_set: AbstractSet[int], write_set: AbstractSet[int], time: int
-    ) -> None:
+    def __init__(self, read_set: Set[int], write_set: Set[int], time: int) -> None:
         """Create a transaction.
 
         Attributes:
@@ -83,7 +73,7 @@ class TransactionSet(MutableSet[Transaction]):
 
     def __init__(self, transactions: Iterable[Transaction] = (), /):
         """Create a new set."""
-        self.transactions: Set[Transaction] = set()
+        self.transactions: set[Transaction] = set()
         for t in transactions:
             self.add(t)
 
@@ -158,10 +148,10 @@ class MachineState:
 
     incoming: TransactionGenerator
     obj_set_maker: ObjSetMaker
-    pending: Set[Transaction] = dataclasses.field(default_factory=set)
-    scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
+    pending: set[Transaction] = dataclasses.field(default_factory=set)
+    scheduled: set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
-    cores: List[Core] = dataclasses.field(default_factory=list)
+    cores: list[Core] = dataclasses.field(default_factory=list)
     clock: int = 0  # global clock, same as clock of the scheduler.
 
     def __bool__(self):
