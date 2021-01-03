@@ -55,20 +55,20 @@ def get_args() -> Namespace:
     # Options for statistics plotting script.
     stat_parser = subparsers.add_parser("stat", help="plot system statistics")
     stat_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
+        "-t", "--op-time", help="length of one hardware operation", default=1, type=int
     )
     stat_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=4, type=int,
+        "-c", "--num-cores", help="number of execution cores", default=4, type=int
     )
     stat_parser.set_defaults(func=make_stats_plot)
 
     # Options for latency plotting script.
     latency_parser = subparsers.add_parser("latency", help="plot transaction latencies")
     latency_parser.add_argument(
-        "-t", "--op-time", help="length of one hardware operation", default=1, type=int,
+        "-t", "--op-time", help="length of one hardware operation", default=1, type=int
     )
     latency_parser.add_argument(
-        "-c", "--num-cores", help="number of execution cores", default=4, type=int,
+        "-c", "--num-cores", help="number of execution cores", default=4, type=int
     )
     latency_parser.set_defaults(func=make_latency_plot)
 
@@ -205,6 +205,13 @@ def make_parallelism_table(
                         results.append(len(state.cores) + 1)
                     else:
                         results.append(total / (end - start))
+                    if args.verbose >= 1:
+                        rename_steps = path[-1].obj_set_maker.history
+                        print(
+                            f"Rename steps: {statistics.mean(rename_steps):.2f} (avg), "
+                            f"{statistics.median(rename_steps)} (median), "
+                            f"{max(rename_steps)} (max)"
+                        )
                 prls.append(statistics.mean(results))
             print(tbody.format(sched_time, *prls))
         print()

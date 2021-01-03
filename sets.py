@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 import itertools
-from typing import AbstractSet, Callable, Iterable, Iterator, MutableMapping, Optional
+from typing import (
+    AbstractSet,
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    MutableMapping,
+    Optional,
+)
 
 from api import ObjSetMaker, ObjSetMakerFactory
 from pmtypes import Transaction
@@ -190,6 +198,7 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
         self.hash_fn = factory.hash_fn
         self.n_hash_funcs = factory.n_hash_funcs
         self.table = [(-1, 0)] * factory.size
+        self.history: List[int] = []
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteObjSet:
         """Return new fixed-size set."""
@@ -212,6 +221,7 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
                 self.table[h] = (obj, count + 1)
             else:
                 continue
+            self.history.append(i + 1)
             return h
         raise KeyError("renaming table is full")
 
