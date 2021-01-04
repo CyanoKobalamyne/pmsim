@@ -6,7 +6,9 @@ from typing import Optional
 
 from more_itertools import SequenceView
 
-from pmtypes import ObjSetMaker, Transaction
+from api import ObjSetMaker
+from pmtypes import Transaction
+from sets import IdealObjSetMaker
 
 
 class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
@@ -31,12 +33,14 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
         self.overflowed: list[tuple[int, int]] = []
         self.deferred: list[tuple[int, int]] = []
 
-    def send(self, obj_set_maker: ObjSetMaker) -> Optional[Transaction]:
+    def send(self, obj_set_maker: Optional[ObjSetMaker]) -> Optional[Transaction]:
         """Return next transaction.
 
         Arguments:
             obj_set_maker: makes sets to be used to store objects in transactions
         """
+        if obj_set_maker is None:
+            obj_set_maker = IdealObjSetMaker()
         if self.deferred:
             tr_base, address_base = self.deferred.pop(0)
             tr_conf = self.tr_data[tr_base]
