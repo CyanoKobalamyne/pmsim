@@ -10,7 +10,7 @@ from api import ObjSet, ObjSetMaker, ObjSetMakerFactory
 from pmtypes import Transaction
 
 
-class IdealObjSet(ObjSet, set):
+class IdealObjSet(set, ObjSet):
     """Wrapper around the built-in set."""
 
 
