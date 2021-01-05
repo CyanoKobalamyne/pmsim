@@ -6,7 +6,7 @@ import copy
 import dataclasses
 import itertools
 from collections.abc import Iterable, Iterator, MutableSet, Set
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from api import ObjSetMaker
 
@@ -28,9 +28,13 @@ class Transaction:
 class TransactionSet(MutableSet[Transaction]):
     """A set of transactions."""
 
+    transactions: set[Transaction]
+    read_set: Optional[Set[int]] = None
+    write_set: Optional[Set[int]] = None
+
     def __init__(self, transactions: Iterable[Transaction] = (), /):
         """Create a new set."""
-        self.transactions: set[Transaction] = set()
+        self.transactions = set()
         for t in transactions:
             self.add(t)
 
@@ -57,14 +61,14 @@ class TransactionSet(MutableSet[Transaction]):
     def add(self, transaction: Transaction) -> None:
         """Add a new transaction to the set."""
         self.transactions.add(transaction)
-        if not hasattr(self, "read_set"):
+        if self.read_set is None:
             self.read_set = transaction.read_set
         else:
-            self.read_set = transaction.read_set | self.read_set
-        if not hasattr(self, "write_set"):
+            self.read_set |= transaction.read_set
+        if self.write_set is None:
             self.write_set = transaction.write_set
         else:
-            self.write_set = transaction.write_set | self.write_set
+            self.write_set |= transaction.write_set
 
     def discard(self, transaction: Transaction) -> None:
         """Remove a transaction from the set.
@@ -75,7 +79,7 @@ class TransactionSet(MutableSet[Transaction]):
 
     def compatible(self, transaction: Transaction) -> bool:
         """Return True if the transaction is compatible with the ones in this set."""
-        if not self.transactions:
+        if not self.transactions or self.read_set is None or self.write_set is None:
             return True
         return (
             not (transaction.read_set & self.write_set)
