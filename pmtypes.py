@@ -15,57 +15,25 @@ if TYPE_CHECKING:
 
 
 class UniqIdMaker:
-    """Creates unique ids for class instances for the lifetime of the program."""
+    """Creates unique ids for the lifetime of the program."""
 
-    counters: dict[type, Iterator[int]] = {}
+    def __init__(self):
+        """Initialize a new counter."""
+        self.counter = itertools.count()
 
-    @classmethod
-    def next_id(cls, type_: type):
-        """Return the next id corresponding to an instance of the given type."""
-        if type_ not in cls.counters:
-            cls.counters[type_] = itertools.count()
-        return next(cls.counters[type_])
+    def __call__(self) -> int:
+        """Return the next id."""
+        return next(self.counter)
 
 
+@dataclasses.dataclass(frozen=True)
 class Transaction:
     """An atomic operation in the api."""
 
-    def __init__(self, read_set: Set[int], write_set: Set[int], time: int) -> None:
-        """Create a transaction.
-
-        Attributes:
-            read_set: the set of objects that this transaction needs to read
-            write_set: the set of objects that this transaction needs to write
-                       and possibly also read
-            time: the amount of time units it takes to execute this transaction
-            obj_set_maker: makes sets used for keeping track of read and written objects
-        """
-        self.read_set = read_set
-        self.write_set = write_set
-        self.time = time
-        self.id = UniqIdMaker.next_id(Transaction)
-
-    def __hash__(self) -> int:
-        """Return a hash value for this transaction."""
-        return hash((self.id,))
-
-    def __eq__(self, other: object) -> bool:
-        """Return True if the two transactions are the same."""
-        if isinstance(other, Transaction):
-            return self.id == other.id
-        return False
-
-    def __repr__(self) -> str:
-        """Return a string representation of this object."""
-        return (
-            f"{self.__class__.__name__}(id={self.id!r}, read_set="
-            f"{self.read_set!r}, write_set={self.write_set!r}, time="
-            f"{self.time!r})"
-        )
-
-    def __str__(self) -> str:
-        """Return a user-friendly string representation of this object."""
-        return f"{self.__class__.__name__}(id={self.id}, time={self.time})"
+    id: int = dataclasses.field(init=False, default_factory=UniqIdMaker())
+    read_set: Set[int] = dataclasses.field(compare=False)
+    write_set: Set[int] = dataclasses.field(compare=False)
+    time: int = dataclasses.field(compare=False)
 
 
 class TransactionSet(MutableSet[Transaction]):
