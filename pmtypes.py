@@ -14,23 +14,12 @@ if TYPE_CHECKING:
     from generator import TransactionGenerator
 
 
-class UniqIdMaker:
-    """Creates unique ids for the lifetime of the program."""
-
-    def __init__(self):
-        """Initialize a new counter."""
-        self.counter = itertools.count()
-
-    def __call__(self) -> int:
-        """Return the next id."""
-        return next(self.counter)
-
-
 @dataclasses.dataclass(frozen=True)
 class Transaction:
     """An atomic operation in the api."""
 
-    id: int = dataclasses.field(init=False, default_factory=UniqIdMaker())
+    # Make a new id for each transaction. Don't compare other fields (unnecessary).
+    id: int = dataclasses.field(init=False, default_factory=itertools.count().__next__)
     read_set: Set[int] = dataclasses.field(compare=False)
     write_set: Set[int] = dataclasses.field(compare=False)
     time: int = dataclasses.field(compare=False)
