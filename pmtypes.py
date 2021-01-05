@@ -47,7 +47,7 @@ class Transaction:
 
     def __hash__(self) -> int:
         """Return a hash value for this transaction."""
-        return self.id
+        return hash((self.id,))
 
     def __eq__(self, other: object) -> bool:
         """Return True if the two transactions are the same."""
