@@ -1,0 +1,26 @@
+{
+    "get": {
+        "reads": 1,
+        "writes": 0,
+        "time": 1000,
+        "weight": 4
+    },
+    "set": {
+        "reads": 0,
+        "writes": 1,
+        "time": 1000,
+        "weight": 4
+    },
+    "increment": {
+        "reads": 1,
+        "writes": 1,
+        "time": 2000,
+        "weight": 2
+    },
+    "swap": {
+        "reads": 2,
+        "writes": 2,
+        "time": 4000,
+        "weight": 1
+    }
+}
