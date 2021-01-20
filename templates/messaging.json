@@ -1,14 +1,14 @@
 {
     "fetch": {
-        "reads": 25,
-        "writes": 5,
-        "time": 3000,
-        "weight": 1
+        "reads": 7,
+        "writes": 2,
+        "time": 2700,
+        "weight": 10
     },
     "post": {
         "reads": 1,
-        "writes": 2,
-        "time": 2000,
-        "weight": 5
+        "writes": 5,
+        "time": 1800,
+        "weight": 1
     }
 }
