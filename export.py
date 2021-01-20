@@ -1,10 +1,10 @@
 #!/bin/env python3
 """Script to export generated transactions."""
-import itertools
 import json
 import random
 from argparse import ArgumentParser, FileType, Namespace
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Iterable
+from itertools import zip_longest as lzip
 
 from generator import TransactionGenerator, TransactionGeneratorFactory
 
@@ -28,30 +28,22 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
-def to_csv(
-    tr_types: Collection[Mapping[str, int]], tr_generator: TransactionGenerator
-) -> Iterable[str]:
+def to_csv(trs: TransactionGenerator, max_reads: int, max_writes: int) -> Iterable[str]:
     """Yield transactions as comma-separated values (CSV)."""
     # Header
-    max_read_set_size = max(t["reads"] for t in tr_types)
-    max_write_set_size = max(t["writes"] for t in tr_types)
-    read_obj_labels = map("Read object {}".format, range(max_read_set_size))
-    written_obj_labels = map("Written object {}".format, range(max_write_set_size))
-    yield f"Type,{','.join(read_obj_labels)},{','.join(written_obj_labels)}"
+    read_obj_labels = ",".join(map("Read object {}".format, range(max_reads)))
+    written_obj_labels = ",".join(map("Written object {}".format, range(max_writes)))
+    yield f"Type,{read_obj_labels},{written_obj_labels}"
 
-    def csvify(values: Collection[int], length: int):
-        return ",".join(
-            str(value)
-            for value, _ in itertools.zip_longest(values, range(length), fillvalue="")
-        )
+    def csv_join(values: Iterable, n_fields: int):
+        return ",".join(str(v) for v, _ in lzip(values, range(n_fields), fillvalue=""))
 
-    for transaction in tr_generator:
+    for transaction in trs:
         if transaction is None:
             continue
-        yield (
-            f"{transaction.label},{csvify(transaction.read_set, max_read_set_size)},"
-            f"{csvify(transaction.write_set, max_write_set_size)}"
-        )
+        read_obj_fields = csv_join(transaction.read_set, max_reads)
+        written_obj_fields = csv_join(transaction.write_set, max_writes)
+        yield f"{transaction.label},{read_obj_fields},{written_obj_fields}"
 
 
 FORMATTERS = {"csv": to_csv}
@@ -70,5 +62,8 @@ if __name__ == "__main__":
     )
 
     formatter = FORMATTERS[args.format]
-    for line in formatter(tr_types.values(), tr_factory()):
+    transactions = tr_factory()
+    max_reads = max(t["reads"] for t in tr_types.values())
+    max_writes = max(t["writes"] for t in tr_types.values())
+    for line in formatter(transactions, max_reads, max_writes):
         print(line)
