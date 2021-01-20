@@ -4,8 +4,6 @@ import random
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Optional
 
-from more_itertools import SequenceView
-
 from api import ObjSetMaker
 from pmtypes import Transaction
 from sets import IdealObjSetMaker
@@ -15,7 +13,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_data: Iterable[Mapping[str, int]], addresses: Sequence[int]
+        self, tr_data: Sequence[Mapping[str, int]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -26,7 +24,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
                 "time": transaction time
             addresses: addresses available for transactions (assigned sequentially)
         """
-        self.tr_data = list(tr_data)
+        self.tr_data = tr_data
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
@@ -180,8 +178,8 @@ class TransactionGeneratorFactory:
         self.run_index += 1
         tr_end = self.tr_count * self.run_index
         addr_end = self.obj_count * self.run_index
-        tr_data = SequenceView(self.tr_data)[tr_start:tr_end]
-        addresses = SequenceView(self.addresses)[addr_start:addr_end]
+        tr_data = self.tr_data[tr_start:tr_end]
+        addresses = self.addresses[addr_start:addr_end]
         return TransactionGenerator(tr_data, addresses)
 
     def __len__(self):
