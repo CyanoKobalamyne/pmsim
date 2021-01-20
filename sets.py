@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 from collections.abc import Callable, Iterable, Iterator, MutableMapping, Set
 from typing import Optional
 
@@ -20,6 +19,10 @@ class IdealObjSetMaker(ObjSetMaker):
     def __call__(self, objects: Iterable[int] = ()) -> IdealObjSet:
         """Return new built-in set."""
         return IdealObjSet(objects)
+
+    def free_objects(self, objects: Iterable[int]) -> None:
+        """See ObjSetMaker.free_objects."""
+        pass
 
 
 class IdealObjSetMakerFactory(ObjSetMakerFactory):
@@ -93,6 +96,10 @@ class ApproximateObjSetMaker(ObjSetMaker):
     def __call__(self, objects: Iterable[int] = ()) -> ApproximateObjSet:
         """Return new approximate set."""
         return ApproximateObjSet(objects, size=self.size)
+
+    def free_objects(self, objects: Iterable[int]) -> None:
+        """See ObjSetMaker.free_objects."""
+        pass
 
 
 class ApproximateObjSetMakerFactory(ObjSetMakerFactory):
@@ -203,9 +210,9 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
         """Return new fixed-size set."""
         return FiniteObjSet(objects, size=self.size, renaming_table=self)
 
-    def free(self, transaction: Transaction) -> None:
-        """See ObjSetMaker.free."""
-        for obj in itertools.chain(transaction.read_set, transaction.write_set):
+    def free_objects(self, objects: Iterable[int]) -> None:
+        """Free resources associated with objects in the set."""
+        for obj in objects:
             del self[obj]
 
     def __getitem__(self, obj: int) -> int:

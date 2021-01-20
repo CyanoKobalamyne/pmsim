@@ -21,9 +21,14 @@ class ObjSetMaker(ABC):
     def __call__(self, objects: Iterable[int] = ()) -> ObjSet:
         """Return a set containing objects."""
 
+    @abstractmethod
+    def free_objects(self, objects: Iterable[int]) -> None:
+        """Free resources associated with objects in the set."""
+
     def free(self, transaction: Transaction) -> None:
         """Free resources associated with the transaction."""
-        pass  # Does nothing by default.
+        self.free_objects(transaction.read_set)
+        self.free_objects(transaction.write_set)
 
 
 class ObjSetMakerFactory(ABC):

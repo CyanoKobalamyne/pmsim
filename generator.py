@@ -62,7 +62,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
                 return Transaction(read_set, write_set, tr_conf["time"])
             except ValueError:
                 # Remove the already inserted objects from the read set.
-                obj_set_maker.free(Transaction(read_set, set(), 0))
+                obj_set_maker.free_objects(read_set)
                 raise
         except ValueError:
             self.overflowed.append((self.tr_index - 1, read_start))
