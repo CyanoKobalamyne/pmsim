@@ -483,7 +483,7 @@ if __name__ == "__main__":
 
     tr_types: dict[str, dict[str, int]] = json.load(args.template)
     tr_factory = TransactionGeneratorFactory(
-        args.memsize, tr_types.values(), args.n, args.repeats, args.zipf_param
+        args.memsize, tr_types, args.n, args.repeats, args.zipf_param
     )
 
     args.func(args, tr_factory)

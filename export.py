@@ -37,7 +37,7 @@ def to_csv(
     max_write_set_size = max(t["writes"] for t in tr_types)
     read_obj_labels = map("Read object {}".format, range(max_read_set_size))
     written_obj_labels = map("Written object {}".format, range(max_write_set_size))
-    yield f"{','.join(read_obj_labels)},{','.join(written_obj_labels)},Time"
+    yield f"Type,{','.join(read_obj_labels)},{','.join(written_obj_labels)}"
 
     def csvify(values: Collection[int], length: int):
         return ",".join(
@@ -49,8 +49,8 @@ def to_csv(
         if transaction is None:
             continue
         yield (
-            f"{csvify(transaction.read_set, max_read_set_size)},"
-            f"{csvify(transaction.write_set, max_write_set_size)},{transaction.time}"
+            f"{transaction.label},{csvify(transaction.read_set, max_read_set_size)},"
+            f"{csvify(transaction.write_set, max_write_set_size)}"
         )
 
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     tr_types: dict[str, dict[str, int]] = json.load(args.template)
     tr_factory = TransactionGeneratorFactory(
         mem_size=args.memory_size,
-        tr_types=tr_types.values(),
+        tr_types=tr_types,
         tr_count=args.count,
         zipf_param=args.zipf_param,
     )

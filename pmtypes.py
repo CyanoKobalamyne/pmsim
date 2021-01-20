@@ -22,6 +22,7 @@ class Transaction:
     id: int = dataclasses.field(init=False, default_factory=itertools.count().__next__)
     read_set: Set[int] = dataclasses.field(compare=False)
     write_set: Set[int] = dataclasses.field(compare=False)
+    label: str = dataclasses.field(compare=False)
     time: int = dataclasses.field(compare=False)
 
 

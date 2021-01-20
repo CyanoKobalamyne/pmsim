@@ -13,7 +13,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_data: Sequence[Mapping[str, int]], addresses: Sequence[int]
+        self, tr_data: Sequence[tuple[str, Mapping[str, int]]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -41,12 +41,12 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
             obj_set_maker = IdealObjSetMaker()
         if self.deferred:
             tr_base, address_base = self.deferred.pop(0)
-            tr_conf = self.tr_data[tr_base]
+            tr_label, tr_conf = self.tr_data[tr_base]
             read_start = address_base
             read_end = write_start = read_start + tr_conf["reads"]
             write_end = write_start + tr_conf["writes"]
         elif self.tr_index != len(self.tr_data):
-            tr_conf = self.tr_data[self.tr_index]
+            tr_label, tr_conf = self.tr_data[self.tr_index]
             self.tr_index += 1
             read_start = self.address_index
             self.address_index += tr_conf["reads"]
@@ -59,7 +59,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
             read_set = obj_set_maker(self.addresses[read_start:read_end])
             try:
                 write_set = obj_set_maker(self.addresses[write_start:write_end])
-                return Transaction(read_set, write_set, tr_conf["time"])
+                return Transaction(read_set, write_set, tr_label, tr_conf["time"])
             except ValueError:
                 # Remove the already inserted objects from the read set.
                 obj_set_maker.free_objects(read_set)
@@ -115,7 +115,7 @@ class TransactionGeneratorFactory:
     def __init__(
         self,
         mem_size: int,
-        tr_types: Iterable[Mapping[str, int]],
+        tr_types: Mapping[str, Mapping[str, int]],
         tr_count: int,
         run_count: int = 1,
         zipf_param: int = 0,
@@ -148,16 +148,16 @@ class TransactionGeneratorFactory:
         tr_counts = []
         self.obj_count = 0
         self.total_tr_time = 0
-        total_weight = sum(tr["weight"] for tr in tr_types)
-        for tr in tr_types:
+        total_weight = sum(tr["weight"] for tr in tr_types.values())
+        for tr in tr_types.values():
             cur_tr_count = int(round(tr_count * tr["weight"] / total_weight))
             tr_counts.append(cur_tr_count)
             self.obj_count += cur_tr_count * (tr["reads"] + tr["writes"])
             self.total_tr_time += cur_tr_count * tr["time"]
 
         # Generate transaction metadata in randomized order.
-        one_tr_data: list[Mapping[str, int]] = []
-        for i, tr_type in enumerate(tr_types):
+        one_tr_data: list[tuple[str, Mapping[str, int]]] = []
+        for i, tr_type in enumerate(tr_types.items()):
             one_tr_data.extend(tr_type for _ in range(tr_counts[i]))
         self.tr_data = []
         for _ in range(run_count):
