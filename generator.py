@@ -166,7 +166,11 @@ class TransactionGeneratorFactory:
 
         # Generate memory addresses according to distribution.
         addr_count = self.obj_count * run_count
-        weights = [1 / (i + 1) ** zipf_param for i in range(mem_size)]
+        weights = (
+            None
+            if zipf_param == 0
+            else [1 / (i + 1) ** zipf_param for i in range(mem_size)]
+        )
         self.addresses = random.choices(range(mem_size), k=addr_count, weights=weights)
 
     def __call__(self) -> TransactionGenerator:
