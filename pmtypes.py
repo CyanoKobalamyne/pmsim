@@ -5,8 +5,16 @@ from __future__ import annotations
 import copy
 import dataclasses
 import itertools
-from collections.abc import Iterable, Iterator, MutableSet, Set
-from typing import TYPE_CHECKING, Optional
+from typing import (
+    TYPE_CHECKING,
+    AbstractSet,
+    Iterable,
+    Iterator,
+    List,
+    MutableSet,
+    Optional,
+    Set,
+)
 
 from api import ObjSetMaker
 
@@ -20,8 +28,8 @@ class Transaction:
 
     # Make a new id for each transaction. Don't compare other fields (unnecessary).
     id: int = dataclasses.field(init=False, default_factory=itertools.count().__next__)
-    read_set: Set[int] = dataclasses.field(compare=False)
-    write_set: Set[int] = dataclasses.field(compare=False)
+    read_set: AbstractSet[int] = dataclasses.field(compare=False)
+    write_set: AbstractSet[int] = dataclasses.field(compare=False)
     label: str = dataclasses.field(compare=False)
     time: int = dataclasses.field(compare=False)
 
@@ -29,9 +37,9 @@ class Transaction:
 class TransactionSet(MutableSet[Transaction]):
     """A set of transactions."""
 
-    transactions: set[Transaction]
-    read_set: Optional[Set[int]] = None
-    write_set: Optional[Set[int]] = None
+    transactions: Set[Transaction]
+    read_set: Optional[AbstractSet[int]] = None
+    write_set: Optional[AbstractSet[int]] = None
 
     def __init__(self, transactions: Iterable[Transaction] = (), /):
         """Create a new set."""
@@ -110,10 +118,10 @@ class MachineState:
 
     incoming: TransactionGenerator
     obj_set_maker: ObjSetMaker
-    pending: set[Transaction] = dataclasses.field(default_factory=set)
-    scheduled: set[Transaction] = dataclasses.field(default_factory=set)
+    pending: Set[Transaction] = dataclasses.field(default_factory=set)
+    scheduled: Set[Transaction] = dataclasses.field(default_factory=set)
     core_count: int = 1
-    cores: list[Core] = dataclasses.field(default_factory=list)
+    cores: List[Core] = dataclasses.field(default_factory=list)
     clock: int = 0  # global clock, same as clock of the scheduler.
 
     def __bool__(self):

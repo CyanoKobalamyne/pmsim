@@ -3,8 +3,8 @@
 import json
 import random
 from argparse import ArgumentParser, FileType, Namespace
-from collections.abc import Iterable
 from itertools import zip_longest as lzip
+from typing import Dict, Iterable
 
 from generator import TransactionGenerator, TransactionGeneratorFactory
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     args = get_args()
 
-    tr_types: dict[str, dict[str, int]] = json.load(args.template)
+    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
     tr_factory = TransactionGeneratorFactory(
         mem_size=args.memory_size,
         tr_types=tr_types,

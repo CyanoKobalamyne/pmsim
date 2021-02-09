@@ -1,6 +1,6 @@
 """Unit tests for puppetmaster."""
 import unittest
-from collections.abc import Generator, Iterable
+from typing import Generator, Iterable
 from unittest import TestCase
 
 from api import ObjSetMaker

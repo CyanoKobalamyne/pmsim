@@ -1,8 +1,7 @@
 """Classes that create transaction generators for Puppetmaster."""
 
 import random
-from collections.abc import Generator, Iterable, Mapping, Sequence
-from typing import Optional
+from typing import Generator, List, Mapping, Optional, Sequence, Tuple
 
 from api import ObjSetMaker
 from pmtypes import Transaction
@@ -13,7 +12,7 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
     """Yields new transactions based on configuration and available addresses."""
 
     def __init__(
-        self, tr_data: Sequence[tuple[str, Mapping[str, int]]], addresses: Sequence[int]
+        self, tr_data: Sequence[Tuple[str, Mapping[str, int]]], addresses: Sequence[int]
     ) -> None:
         """Create new TransactionGenerator.
 
@@ -28,8 +27,8 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
         self.addresses = addresses
         self.tr_index = 0
         self.address_index = 0
-        self.overflowed: list[tuple[int, int]] = []
-        self.deferred: list[tuple[int, int]] = []
+        self.overflowed: List[Tuple[int, int]] = []
+        self.deferred: List[Tuple[int, int]] = []
 
     def send(self, obj_set_maker: Optional[ObjSetMaker]) -> Optional[Transaction]:
         """Return next transaction.
@@ -156,7 +155,7 @@ class TransactionGeneratorFactory:
             self.total_tr_time += cur_tr_count * tr["time"]
 
         # Generate transaction metadata in randomized order.
-        one_tr_data: list[tuple[str, Mapping[str, int]]] = []
+        one_tr_data: List[Tuple[str, Mapping[str, int]]] = []
         for i, tr_type in enumerate(tr_types.items()):
             one_tr_data.extend(tr_type for _ in range(tr_counts[i]))
         self.tr_data = []

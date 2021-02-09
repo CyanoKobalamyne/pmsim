@@ -3,8 +3,7 @@
 import heapq
 import itertools
 from abc import abstractmethod
-from collections.abc import Iterable
-from typing import Optional
+from typing import Iterable, Optional, Tuple
 
 from api import TransactionScheduler, TransactionSchedulerFactory
 from pmtypes import MachineState, Transaction, TransactionSet
@@ -78,7 +77,7 @@ class AbstractScheduler(TransactionScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-    ) -> Iterable[tuple[TransactionSet, int]]:
+    ) -> Iterable[Tuple[TransactionSet, int]]:
         """Schedule one or more transactions."""
 
 
@@ -90,7 +89,7 @@ class GreedyScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-    ) -> Iterable[tuple[TransactionSet, int]]:
+    ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule.
 
         Iterates through pending transactions once and adds all compatible ones.
@@ -128,7 +127,7 @@ class MaximalScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-    ) -> Iterable[tuple[TransactionSet, int]]:
+    ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule."""
         pending_list = list(pending)
 
@@ -190,7 +189,7 @@ class TournamentScheduler(AbstractScheduler):
         ongoing: TransactionSet,
         pending: Iterable[Transaction],
         max_count: Optional[int],
-    ) -> Iterable[tuple[TransactionSet, int]]:
+    ) -> Iterable[Tuple[TransactionSet, int]]:
         """See AbstractScheduler.schedule.
 
         Filters out all transactions that conflict with currently running ones, then

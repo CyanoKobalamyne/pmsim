@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Set
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional
 
 if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction
 
 
-class ObjSet(Set[int]):
+class ObjSet(AbstractSet[int]):
     """Set data structure for memory objects (addresses)."""
 
 

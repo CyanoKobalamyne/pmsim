@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Iterator, MutableMapping, Set
-from typing import Optional
+from typing import (
+    AbstractSet,
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    MutableMapping,
+    Optional,
+)
 
 from api import ObjSet, ObjSetMaker, ObjSetMakerFactory
-from pmtypes import Transaction
 
 
 class IdealObjSet(set, ObjSet):
@@ -63,7 +69,7 @@ class ApproximateObjSet(ObjSet):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: Set) -> ApproximateObjSet:
+    def __or__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the union of this set and the other set."""
         if isinstance(other, ApproximateObjSet):
             out = ApproximateObjSet(size=self.size)
@@ -74,7 +80,7 @@ class ApproximateObjSet(ObjSet):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: Set) -> ApproximateObjSet:
+    def __and__(self, other: AbstractSet) -> ApproximateObjSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, ApproximateObjSet):
             out = ApproximateObjSet(size=self.size)
@@ -172,7 +178,7 @@ class FiniteObjSet(ObjSet):
         """Return False if set is empty."""
         return self.bits != 0
 
-    def __or__(self, other: Set) -> FiniteObjSet:
+    def __or__(self, other: AbstractSet) -> FiniteObjSet:
         """Return the union of this set and the other set."""
         if isinstance(other, FiniteObjSet):
             out = FiniteObjSet(size=self.size, renaming_table=self.table)
@@ -183,7 +189,7 @@ class FiniteObjSet(ObjSet):
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
 
-    def __and__(self, other: Set) -> FiniteObjSet:
+    def __and__(self, other: AbstractSet) -> FiniteObjSet:
         """Return the intersection of this set and the other set."""
         if isinstance(other, FiniteObjSet):
             out = FiniteObjSet(size=self.size, renaming_table=self.table)
@@ -204,7 +210,7 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
         self.hash_fn = factory.hash_fn
         self.n_hash_funcs = factory.n_hash_funcs
         self.table = [(-1, 0)] * factory.size
-        self.history: list[int] = []
+        self.history: List[int] = []
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteObjSet:
         """Return new fixed-size set."""
