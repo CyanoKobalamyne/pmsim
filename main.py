@@ -18,7 +18,7 @@ except ImportError:
 from api import ObjSetMakerFactory, TransactionExecutor, TransactionSchedulerFactory
 from executors import RandomExecutor
 from generator import TransactionGeneratorFactory
-from pmtypes import Transaction
+from pmtypes import SimulationParams, Transaction
 from schedulers import (
     GreedySchedulerFactory,
     MaximalSchedulerFactory,
@@ -180,13 +180,19 @@ def make_parallelism_table(
         print()
         print(thead)
         for sched_time in sched_times:
-            args.op_time = sched_time
             prls: List[float] = []
             for core_count in core_counts:
-                args.num_cores = core_count
                 results = []
+                params = SimulationParams(
+                    sched_time, core_count, args.poolsize, args.queuesize
+                )
                 for _, path in run_sim(
-                    args, tr_factory, sched_factory, executor, obj_set_maker_factory
+                    args,
+                    params,
+                    tr_factory,
+                    sched_factory,
+                    executor,
+                    obj_set_maker_factory,
                 ):
                     start = end = t_prev = t_cur = None
                     total = 0
@@ -246,6 +252,9 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
         f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
         f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
     )
+    params = SimulationParams(
+        args.op_time, args.num_cores, args.poolsize, args.queuesize
+    )
 
     fig, axes = plt.subplots(args.repeats, 4)
 
@@ -256,7 +265,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
         print(get_title(sched_factory))
         print()
         lines = []
-        for i, path in run_sim(args, tr_factory, sched_factory):
+        for i, path in run_sim(args, params, tr_factory, sched_factory):
             scheduled_counts = {}
             for state in path:
                 if state.clock not in scheduled_counts:
@@ -299,6 +308,9 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
         f"_p{args.poolsize}_q{args.queuesize if args.queuesize is not None else 'inf'}"
         f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
     )
+    params = SimulationParams(
+        args.op_time, args.num_cores, args.poolsize, args.queuesize
+    )
 
     fig, axes = plt.subplots(args.repeats, 4)
 
@@ -309,7 +321,7 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
         print(get_title(sched_factory))
         print()
         lines = []
-        for i, path in run_sim(args, tr_factory, sched_factory):
+        for i, path in run_sim(args, params, tr_factory, sched_factory):
             start_times = {}
             end_times = {}
             prev_pending: Set[Transaction] = set()
@@ -359,14 +371,21 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
     executor = RandomExecutor()
 
     class ScheduledCountSequence(Sequence[int]):
+        def __init__(self, op_time, core_num):
+            self.op_time = op_time
+            self.core_num = core_num
+
         def __getitem__(self, key):
-            args.poolsize = key
+            pool_size = key
             if args.verbose == 1:
-                print("Trying pool size of", args.poolsize, end="...")
+                print("Trying pool size of", pool_size, end="...")
             if args.verbose >= 2:
-                print("Trying pool size of", args.poolsize)
+                print("Trying pool size of", pool_size)
             min_sched_counts = []
-            for _, path in run_sim(args, tr_factory, sched_factory, executor):
+            params = SimulationParams(
+                self.op_time, self.core_num, pool_size, args.queuesize
+            )
+            for _, path in run_sim(args, params, tr_factory, sched_factory, executor):
                 scheduled_counts = {}
                 for state in path:
                     # Skip over warm-up phase (until first transaction completes).
@@ -417,11 +436,10 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
     print()
     print(thead)
     for sched_time in sched_times:
-        args.op_time = sched_time
         min_poolsizes = []
         for core_count in core_counts:
-            args.num_cores = core_count
-            min_poolsize = bisect.bisect_left(ScheduledCountSequence(), 0, lo=1)
+            scheduled_counts = ScheduledCountSequence(sched_time, core_count)
+            min_poolsize = bisect.bisect_left(scheduled_counts, 0, lo=1)
             min_poolsizes.append(min_poolsize)
         print(tbody.format(sched_time, *min_poolsizes))
     print()
@@ -429,6 +447,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
 
 def run_sim(
     args: Namespace,
+    params: SimulationParams,
     gen_factory: TransactionGeneratorFactory,
     sched_factory: TransactionSchedulerFactory,
     executor: TransactionExecutor = DEFAULT_EXECUTOR,
@@ -438,8 +457,8 @@ def run_sim(
     for i in range(args.repeats):
         gen = tr_factory()
         obj_set_maker = obj_set_maker_factory()
-        scheduler = sched_factory(args.op_time, args.poolsize, args.queuesize)
-        sim = Simulator(gen, obj_set_maker, scheduler, executor, args.num_cores)
+        scheduler = sched_factory(params.op_time, params.pool_size, params.queue_size)
+        sim = Simulator(gen, obj_set_maker, scheduler, executor, params.core_num)
         yield i, sim.run(args.verbose)
 
 

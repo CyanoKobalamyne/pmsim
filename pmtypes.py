@@ -148,3 +148,13 @@ class MachineState:
             f"incoming, {len(self.pending)} pending, {len(self.scheduled)} scheduled, "
             f"{len(self.cores)} running>"
         )
+
+
+@dataclasses.dataclass
+class SimulationParams:
+    """Represents parameters for a single simulation run."""
+
+    op_time: int
+    core_num: int
+    pool_size: Optional[int]
+    queue_size: Optional[int]
