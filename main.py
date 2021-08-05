@@ -6,6 +6,7 @@ import os
 import random
 import statistics
 from argparse import ArgumentParser, Namespace
+from multiprocessing import Pool
 from pathlib import PurePath
 from typing import Dict, List, Sequence, Set
 
@@ -232,10 +233,19 @@ def make_parallelism_table(
         print(get_title(sched_factory, executor, obj_set_maker_factory))
         print()
         print(thead)
-        for sched_time in sched_times:
-            prls = run_prl_sims(
-                core_counts, sched_time, sched_factory, executor, obj_set_maker_factory
+        sim_params = [
+            (
+                core_counts,
+                sched_time,
+                sched_factory,
+                executor,
+                obj_set_maker_factory,
             )
+            for sched_time in sched_times
+        ]
+        for sched_time, prls in zip(
+            sched_times, process_pool.starmap(run_prl_sims, sim_params)
+        ):
             print(tbody.format(sched_time, *prls))
         print()
 
@@ -511,4 +521,5 @@ if __name__ == "__main__":
         args.memsize, tr_types, args.n, args.repeats, args.zipf_param
     )
 
+    process_pool = Pool()
     args.func(args, tr_factory)
