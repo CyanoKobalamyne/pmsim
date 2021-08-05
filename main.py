@@ -154,6 +154,59 @@ def get_args() -> Namespace:
     return args
 
 
+def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_factory):
+    """Return average parallelism for all core counts and the given operation time."""
+    prls: List[float] = []
+    for core_count in core_counts:
+        results = []
+        params = SimulationParams(op_time, core_count, args.poolsize, args.queuesize)
+        for _, path in run_sim(
+            args,
+            params,
+            tr_factory,
+            sched_factory,
+            executor,
+            obj_set_maker_factory,
+        ):
+            start = end = t_prev = t_cur = None
+            total = 0
+            for state in path:
+                # Skip over warm-up phase (until first transaction completes).
+                if (
+                    len(state.incoming)
+                    + len(state.pending)
+                    + len(state.scheduled)
+                    + len(state.cores)
+                    == args.n
+                ):
+                    continue
+                if start is None:
+                    start = state.clock
+                    t_prev = start
+                else:
+                    t_cur = state.clock
+                    total += len(state.cores) * (t_cur - t_prev)
+                    t_prev = t_cur
+                # Skip over tail (when pool is empty).
+                if not state.incoming and len(state.pending) < args.poolsize:
+                    end = state.clock
+                    break
+            assert start is not None and end is not None
+            if start == end:
+                results.append(len(state.cores) + 1)
+            else:
+                results.append(total / (end - start))
+            if args.verbose >= 1:
+                rename_steps = path[-1].obj_set_maker.history
+                print(
+                    f"Rename steps: {statistics.mean(rename_steps):.2f} (avg), "
+                    f"{statistics.median(rename_steps)} (median), "
+                    f"{max(rename_steps)} (max)"
+                )
+        prls.append(statistics.mean(results))
+    return prls
+
+
 def make_parallelism_table(
     args: Namespace, tr_factory: TransactionGeneratorFactory
 ) -> None:
@@ -180,56 +233,9 @@ def make_parallelism_table(
         print()
         print(thead)
         for sched_time in sched_times:
-            prls: List[float] = []
-            for core_count in core_counts:
-                results = []
-                params = SimulationParams(
-                    sched_time, core_count, args.poolsize, args.queuesize
-                )
-                for _, path in run_sim(
-                    args,
-                    params,
-                    tr_factory,
-                    sched_factory,
-                    executor,
-                    obj_set_maker_factory,
-                ):
-                    start = end = t_prev = t_cur = None
-                    total = 0
-                    for state in path:
-                        # Skip over warm-up phase (until first transaction completes).
-                        if (
-                            len(state.incoming)
-                            + len(state.pending)
-                            + len(state.scheduled)
-                            + len(state.cores)
-                            == args.n
-                        ):
-                            continue
-                        if start is None:
-                            start = state.clock
-                            t_prev = start
-                        else:
-                            t_cur = state.clock
-                            total += len(state.cores) * (t_cur - t_prev)
-                            t_prev = t_cur
-                        # Skip over tail (when pool is empty).
-                        if not state.incoming and len(state.pending) < args.poolsize:
-                            end = state.clock
-                            break
-                    assert start is not None and end is not None
-                    if start == end:
-                        results.append(len(state.cores) + 1)
-                    else:
-                        results.append(total / (end - start))
-                    if args.verbose >= 1:
-                        rename_steps = path[-1].obj_set_maker.history
-                        print(
-                            f"Rename steps: {statistics.mean(rename_steps):.2f} (avg), "
-                            f"{statistics.median(rename_steps)} (median), "
-                            f"{max(rename_steps)} (max)"
-                        )
-                prls.append(statistics.mean(results))
+            prls = run_prl_sims(
+                core_counts, sched_time, sched_factory, executor, obj_set_maker_factory
+            )
             print(tbody.format(sched_time, *prls))
         print()
 
