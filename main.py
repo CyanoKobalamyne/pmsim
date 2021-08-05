@@ -5,7 +5,7 @@ import json
 import os
 import random
 import statistics
-from argparse import ArgumentParser, FileType, Namespace
+from argparse import ArgumentParser, Namespace
 from pathlib import PurePath
 from typing import Dict, List, Sequence, Set
 
@@ -102,9 +102,7 @@ def get_args() -> Namespace:
     psfind_parser.set_defaults(func=make_ps_table)
 
     # General options.
-    parser.add_argument(
-        "template", help="transaction template file", type=FileType("rt")
-    )
+    parser.add_argument("template", help="transaction template file", type=str)
     parser.add_argument(
         "-m", "--memsize", help="memory size (# of objects)", default=1024, type=int
     )
@@ -144,7 +142,7 @@ def get_args() -> Namespace:
     args.n = 2 ** (getattr(args, "log_max_cores", 10) + 1)
 
     print(
-        f"Template: {os.path.basename(args.template.name)}\n"
+        f"Template: {os.path.basename(args.template)}\n"
         f"No. of transactions: {args.n}\n"
         f"Memory size (-m): {args.memsize}\n"
         f"Scheduling pool size or lookahead (-p): {args.poolsize or 'infinite'}\n"
@@ -244,7 +242,7 @@ def make_parallelism_table(
 def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
-        f"{PurePath(args.template.name).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
+        f"{PurePath(args.template).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
         f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
         f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
     )
@@ -297,7 +295,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
 def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
-        f"{PurePath(args.template.name).stem}_latency_{args.n}_m{args.memsize}"
+        f"{PurePath(args.template).stem}_latency_{args.n}_m{args.memsize}"
         f"_p{args.poolsize}_q{args.queuesize if args.queuesize is not None else 'inf'}"
         f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
     )
@@ -481,7 +479,9 @@ if __name__ == "__main__":
 
     args = get_args()
 
-    tr_types: Dict[str, Dict[str, int]] = json.load(args.template)
+    with open(args.template, "rt") as template_file:
+        tr_types: Dict[str, Dict[str, int]] = json.load(template_file)
+
     tr_factory = TransactionGeneratorFactory(
         args.memsize, tr_types, args.n, args.repeats, args.zipf_param
     )
