@@ -15,6 +15,17 @@ from typing import (
 from api import ObjSet, ObjSetMaker, ObjSetMakerFactory
 
 
+def default_hash(i: int, x: int, n: int):
+    """Return a hash value for x.
+
+    Arguments:
+        i: hash function index within family
+        x: value to be hashed
+        n: domain
+    """
+    return (x + i) % n
+
+
 class IdealObjSet(set, ObjSet):
     """Wrapper around the built-in set."""
 
@@ -225,7 +236,7 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
         """Return name for object smaller than the table size."""
         assert obj != -1
         for i in range(self.n_hash_funcs):
-            h = self.hash_fn(i, obj)
+            h = self.hash_fn(i, obj, self.size)
             prev_obj, count = self.table[h]
             if prev_obj == -1:
                 self.table[h] = (obj, 1)
@@ -241,7 +252,7 @@ class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
         """Remove an object from the renaming table."""
         assert obj != -1
         for i in range(self.n_hash_funcs):
-            h = self.hash_fn(i, obj)
+            h = self.hash_fn(i, obj, self.size)
             prev_obj, count = self.table[h]
             assert prev_obj != -1 and count > 0 or prev_obj == -1 and count == 0
             if prev_obj == obj and count == 1:
@@ -273,12 +284,12 @@ class FiniteObjSetMakerFactory(ObjSetMakerFactory):
     def __init__(
         self,
         size: int,
-        hash_fn: Optional[Callable[[int, int], int]] = None,
+        hash_fn: Optional[Callable[[int, int, int], int]] = None,
         n_hash_funcs: Optional[int] = None,
     ):
         """Initialize factory with set size and hash functions."""
         self.size = size
-        self.hash_fn = (lambda i, x: (x + i) % size) if hash_fn is None else hash_fn
+        self.hash_fn = default_hash if hash_fn is None else hash_fn
         self.n_hash_funcs = size if n_hash_funcs is None else n_hash_funcs
 
     def __call__(self, objects: Iterable[int] = ()) -> FiniteObjSetMaker:
