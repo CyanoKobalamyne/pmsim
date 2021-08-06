@@ -12,6 +12,18 @@ if TYPE_CHECKING:
 class ObjSet(AbstractSet[int]):
     """Set data structure for memory objects (addresses)."""
 
+    @abstractmethod
+    def __or__(self, other: AbstractSet) -> ObjSet:
+        """Return the union of this set and the other set."""
+
+    @abstractmethod
+    def __and__(self, other: AbstractSet) -> ObjSet:
+        """Return the intersection of this set and the other set."""
+
+    @abstractmethod
+    def copy(self) -> ObjSet:
+        """Return a copy of this set."""
+
 
 class ObjSetMaker(ABC):
     """Makes object sets for a given simulation."""

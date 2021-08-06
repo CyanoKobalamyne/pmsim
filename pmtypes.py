@@ -5,18 +5,9 @@ from __future__ import annotations
 import copy
 import dataclasses
 import itertools
-from typing import (
-    TYPE_CHECKING,
-    AbstractSet,
-    Iterable,
-    Iterator,
-    List,
-    MutableSet,
-    Optional,
-    Set,
-)
+from typing import TYPE_CHECKING, Iterable, Iterator, List, MutableSet, Optional, Set
 
-from api import ObjSetMaker
+from api import ObjSet, ObjSetMaker
 
 if TYPE_CHECKING:
     from generator import TransactionGenerator
@@ -28,8 +19,8 @@ class Transaction:
 
     # Make a new id for each transaction. Don't compare other fields (unnecessary).
     id: int = dataclasses.field(init=False, default_factory=itertools.count().__next__)
-    read_set: AbstractSet[int] = dataclasses.field(compare=False)
-    write_set: AbstractSet[int] = dataclasses.field(compare=False)
+    read_set: ObjSet = dataclasses.field(compare=False)
+    write_set: ObjSet = dataclasses.field(compare=False)
     label: str = dataclasses.field(compare=False)
     time: int = dataclasses.field(compare=False)
 
@@ -38,8 +29,8 @@ class TransactionSet(MutableSet[Transaction]):
     """A set of transactions."""
 
     transactions: Set[Transaction]
-    read_set: Optional[AbstractSet[int]] = None
-    write_set: Optional[AbstractSet[int]] = None
+    read_set: Optional[ObjSet] = None
+    write_set: Optional[ObjSet] = None
 
     def __init__(self, transactions: Iterable[Transaction] = (), /):
         """Create a new set."""
@@ -71,11 +62,11 @@ class TransactionSet(MutableSet[Transaction]):
         """Add a new transaction to the set."""
         self.transactions.add(transaction)
         if self.read_set is None:
-            self.read_set = transaction.read_set
+            self.read_set = transaction.read_set.copy()
         else:
             self.read_set |= transaction.read_set
         if self.write_set is None:
-            self.write_set = transaction.write_set
+            self.write_set = transaction.write_set.copy()
         else:
             self.write_set |= transaction.write_set
 

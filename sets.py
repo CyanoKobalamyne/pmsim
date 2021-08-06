@@ -26,7 +26,7 @@ def default_hash(i: int, x: int, n: int):
     return (x + i) % n
 
 
-class IdealObjSet(set, ObjSet):
+class IdealObjSet(set, ObjSet):  # type: ignore
     """Wrapper around the built-in set."""
 
 
@@ -101,6 +101,12 @@ class ApproximateObjSet(ObjSet):
             raise TypeError(
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
+
+    def copy(self):
+        """See ObjSet.copy."""
+        copied = ApproximateObjSet(size=self.size)
+        copied.bits = self.bits
+        return copied
 
 
 class ApproximateObjSetMaker(ObjSetMaker):
@@ -210,6 +216,13 @@ class FiniteObjSet(ObjSet):
             raise TypeError(
                 f"other set must have type {self.__class__.__name__}, not {type(other)}"
             )
+
+    def copy(self):
+        """See ObjSet.copy."""
+        copied = FiniteObjSet(size=self.size, renaming_table=self.table)
+        copied.bits = self.bits
+        copied.objs = self.objs
+        return copied
 
 
 class FiniteObjSetMaker(ObjSetMaker, MutableMapping[int, int]):
