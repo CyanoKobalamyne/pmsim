@@ -44,7 +44,7 @@ def get_args() -> Namespace:
     tpar_parser.add_argument(
         "--log-max-stime",
         help="Log-2 of the maximum scheduling time",
-        default=10,
+        default=5,
         type=int,
     )
     tpar_parser.add_argument(

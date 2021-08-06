@@ -2,13 +2,13 @@
     "fetch": {
         "reads": 7,
         "writes": 2,
-        "time": 2700,
+        "time": 24,
         "weight": 10
     },
     "post": {
         "reads": 1,
         "writes": 5,
-        "time": 1800,
+        "time": 16,
         "weight": 1
     }
 }
