@@ -2,6 +2,7 @@
 
 import heapq
 import itertools
+import math
 from abc import abstractmethod
 from typing import Iterable, Optional, Tuple
 
@@ -182,7 +183,7 @@ class MaximalSchedulerFactory(TransactionSchedulerFactory):
 class TournamentScheduler(AbstractScheduler):
     """Implementation of a "tournament" scheduler."""
 
-    is_pipelined: bool
+    comparator_limit: Optional[int]
 
     def schedule(
         self,
@@ -202,41 +203,43 @@ class TournamentScheduler(AbstractScheduler):
             for t1, t2 in itertools.zip_longest(sets[::2], sets[1::2]):
                 if t2 is not None and t1.compatible(t2):
                     t1 |= t2
+            if self.comparator_limit is None:
+                rounds += 1
+            else:
+                rounds += int(math.ceil(len(sets) / (2 * self.comparator_limit)))
             sets = sets[::2]
-            rounds += 1
         if not sets:
             candidates = TransactionSet()
         elif max_count is None:
             candidates = sets[0]
         else:
             candidates = TransactionSet(itertools.islice(sets[0], max_count))
-        if self.is_pipelined:
-            op_time = self.op_time
-        else:
-            op_time = self.op_time * max(1, rounds)
+        op_time = self.op_time * max(1, rounds)
         return [(candidates, op_time)]
 
 
 class TournamentSchedulerFactory(TransactionSchedulerFactory):
     """Factory for greedy schedulers."""
 
-    def __init__(self, is_pipelined: bool = False):
+    def __init__(self, comparator_limit: int = None):
         """Initialize the factory.
 
         Arguments:
             is_pipelined: whether scheduling time depends on the number of merge steps
         """
-        self.is_pipelined = is_pipelined
+        if comparator_limit is not None and comparator_limit < 1:
+            raise ValueError("comparator limit must be at least 1")
+        self.comparator_limit = comparator_limit
 
     def __call__(
         self, op_time: int = 0, pool_size: int = None, queue_size: int = None
     ) -> TournamentScheduler:
         """See TransactionSchedulerFactory.__call__."""
         sched = TournamentScheduler(op_time, pool_size, queue_size)
-        sched.is_pipelined = self.is_pipelined
+        sched.comparator_limit = self.comparator_limit
         return sched
 
     def __str__(self) -> str:
         """Return human-readable name for the schedulers."""
-        opt = " (fully pipelined)" if self.is_pipelined else ""
-        return f"Tournament scheduler{opt}"
+        comparators = "inf" if self.comparator_limit is None else self.comparator_limit
+        return f"Tournament scheduler (comparators={comparators})"

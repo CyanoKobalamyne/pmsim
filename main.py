@@ -292,9 +292,9 @@ def make_stats_plot(tr_factory: TransactionGeneratorFactory) -> None:
         j += 1
         return lines
 
-    run_sims(TournamentSchedulerFactory())
+    run_sims(TournamentSchedulerFactory(comparator_limit=1))
 
-    midlines = run_sims(TournamentSchedulerFactory(is_pipelined=True))
+    midlines = run_sims(TournamentSchedulerFactory())
 
     run_sims(GreedySchedulerFactory())
 
@@ -356,9 +356,9 @@ def make_latency_plot(tr_factory: TransactionGeneratorFactory) -> None:
         j += 1
         return lines
 
-    run_sims(TournamentSchedulerFactory())
+    run_sims(TournamentSchedulerFactory(comparator_limit=1))
 
-    midlines = run_sims(TournamentSchedulerFactory(is_pipelined=True))
+    midlines = run_sims(TournamentSchedulerFactory())
 
     run_sims(GreedySchedulerFactory())
 
