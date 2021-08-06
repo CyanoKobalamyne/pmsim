@@ -160,9 +160,8 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
     prls: List[float] = []
     for core_count in core_counts:
         results = []
-        params = SimulationParams(op_time, core_count, args.poolsize, args.queuesize)
+        params = SimulationParams(op_time, core_count, ARGS.poolsize, ARGS.queuesize)
         for _, path in run_sim(
-            args,
             params,
             tr_factory,
             sched_factory,
@@ -178,7 +177,7 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
                     + len(state.pending)
                     + len(state.scheduled)
                     + len(state.cores)
-                    == args.n
+                    == ARGS.n
                 ):
                     continue
                 if start is None:
@@ -189,7 +188,7 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
                     total += len(state.cores) * (t_cur - t_prev)
                     t_prev = t_cur
                 # Skip over tail (when pool is empty).
-                if not state.incoming and len(state.pending) < args.poolsize:
+                if not state.incoming and len(state.pending) < ARGS.poolsize:
                     end = state.clock
                     break
             assert start is not None and end is not None
@@ -197,7 +196,7 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
                 results.append(len(state.cores) + 1)
             else:
                 results.append(total / (end - start))
-            if args.verbose >= 1:
+            if ARGS.verbose >= 1:
                 rename_steps = path[-1].obj_set_maker.history
                 print(
                     f"Rename steps: {statistics.mean(rename_steps):.2f} (avg), "
@@ -208,12 +207,10 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
     return prls
 
 
-def make_parallelism_table(
-    args: Namespace, tr_factory: TransactionGeneratorFactory
-) -> None:
+def make_parallelism_table(tr_factory: TransactionGeneratorFactory) -> None:
     """Print parallelism as a function of scheduling time and core count."""
-    sched_times = [0, *(2 ** logstime for logstime in range(args.log_max_stime + 1))]
-    core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
+    sched_times = [0, *(2 ** logstime for logstime in range(ARGS.log_max_stime + 1))]
+    core_counts = [2 ** logcores for logcores in range(ARGS.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
         varname="Steady-state parallelism",
@@ -244,7 +241,7 @@ def make_parallelism_table(
             for sched_time in sched_times
         ]
         for sched_time, prls in zip(
-            sched_times, process_pool.starmap(run_prl_sims, sim_params)
+            sched_times, PROCESS_POOL.starmap(run_prl_sims, sim_params)
         ):
             print(tbody.format(sched_time, *prls))
         print()
@@ -261,18 +258,18 @@ def make_parallelism_table(
             continue
 
 
-def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
+def make_stats_plot(tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
-        f"{PurePath(args.template).stem}_{args.n}_m{args.memsize}_p{args.poolsize}"
-        f"_q{args.queuesize if args.queuesize is not None else 'inf'}"
-        f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
+        f"{PurePath(ARGS.template).stem}_{ARGS.n}_m{ARGS.memsize}_p{ARGS.poolsize}"
+        f"_q{ARGS.queuesize if ARGS.queuesize is not None else 'inf'}"
+        f"_z{ARGS.zipf_param}_t{ARGS.op_time}_c{ARGS.num_cores}.pdf"
     )
     params = SimulationParams(
-        args.op_time, args.num_cores, args.poolsize, args.queuesize
+        ARGS.op_time, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
     )
 
-    fig, axes = plt.subplots(args.repeats, 4)
+    fig, axes = plt.subplots(ARGS.repeats, 4)
 
     j = 0
 
@@ -281,7 +278,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
         print(get_title(sched_factory))
         print()
         lines = []
-        for i, path in run_sim(args, params, tr_factory, sched_factory):
+        for i, path in run_sim(params, tr_factory, sched_factory):
             scheduled_counts = {}
             for state in path:
                 if state.clock not in scheduled_counts:
@@ -301,7 +298,7 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
 
     run_sims(GreedySchedulerFactory())
 
-    if args.poolsize <= 20:
+    if ARGS.poolsize <= 20:
         run_sims(MaximalSchedulerFactory())
 
     axes[-1][1].legend(
@@ -317,18 +314,18 @@ def make_stats_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) ->
     fig.savefig(filename)
 
 
-def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
+def make_latency_plot(tr_factory: TransactionGeneratorFactory) -> None:
     """Plot number of scheduled transactions as a function of time."""
     filename = (
-        f"{PurePath(args.template).stem}_latency_{args.n}_m{args.memsize}"
-        f"_p{args.poolsize}_q{args.queuesize if args.queuesize is not None else 'inf'}"
-        f"_z{args.zipf_param}_t{args.op_time}_c{args.num_cores}.pdf"
+        f"{PurePath(ARGS.template).stem}_latency_{ARGS.n}_m{ARGS.memsize}"
+        f"_p{ARGS.poolsize}_q{ARGS.queuesize if ARGS.queuesize is not None else 'inf'}"
+        f"_z{ARGS.zipf_param}_t{ARGS.op_time}_c{ARGS.num_cores}.pdf"
     )
     params = SimulationParams(
-        args.op_time, args.num_cores, args.poolsize, args.queuesize
+        ARGS.op_time, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
     )
 
-    fig, axes = plt.subplots(args.repeats, 4)
+    fig, axes = plt.subplots(ARGS.repeats, 4)
 
     j = 0
 
@@ -337,7 +334,7 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
         print(get_title(sched_factory))
         print()
         lines = []
-        for i, path in run_sim(args, params, tr_factory, sched_factory):
+        for i, path in run_sim(params, tr_factory, sched_factory):
             start_times = {}
             end_times = {}
             prev_pending: Set[Transaction] = set()
@@ -365,7 +362,7 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
 
     run_sims(GreedySchedulerFactory())
 
-    if args.poolsize <= 20:
+    if ARGS.poolsize <= 20:
         run_sims(MaximalSchedulerFactory())
 
     axes[-1][1].legend(
@@ -381,7 +378,7 @@ def make_latency_plot(args: Namespace, tr_factory: TransactionGeneratorFactory) 
     fig.savefig(filename)
 
 
-def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> None:
+def make_ps_table(tr_factory: TransactionGeneratorFactory) -> None:
     """Print minimum pool size as a function of scheduling time and core count."""
     sched_factory = TournamentSchedulerFactory()
     executor = RandomExecutor()
@@ -393,15 +390,15 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
 
         def __getitem__(self, key):
             pool_size = key
-            if args.verbose == 1:
+            if ARGS.verbose == 1:
                 print("Trying pool size of", pool_size, end="...")
-            if args.verbose >= 2:
+            if ARGS.verbose >= 2:
                 print("Trying pool size of", pool_size)
             min_sched_counts = []
             params = SimulationParams(
-                self.op_time, self.core_num, pool_size, args.queuesize
+                self.op_time, self.core_num, pool_size, ARGS.queuesize
             )
-            for _, path in run_sim(args, params, tr_factory, sched_factory, executor):
+            for _, path in run_sim(ARGS, params, tr_factory, sched_factory, executor):
                 scheduled_counts = {}
                 for state in path:
                     # Skip over warm-up phase (until first transaction completes).
@@ -410,7 +407,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
                         + len(state.pending)
                         + len(state.scheduled)
                         + len(state.cores)
-                        == args.n
+                        == ARGS.n
                     ):
                         continue
                     if state.clock not in scheduled_counts:
@@ -418,25 +415,25 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
                             len(state.scheduled) - state.core_count + len(state.cores)
                         )
                     # Skip over tail (when pool is empty).
-                    if not state.incoming and len(state.pending) < args.poolsize:
+                    if not state.incoming and len(state.pending) < ARGS.poolsize:
                         break
                 min_sched_count = min(scheduled_counts.values())
                 min_sched_counts.append(min_sched_count)
-                if args.verbose == 1:
+                if ARGS.verbose == 1:
                     print(min_sched_count, end=", ")
                 if min_sched_count == 0:
                     break
-            if args.verbose == 1:
+            if ARGS.verbose == 1:
                 print()
-            if args.verbose >= 2:
+            if ARGS.verbose >= 2:
                 print("Results:", ", ".join(map(str, min_sched_counts)))
             return min_sched_count
 
         def __len__(self):
-            return args.n
+            return ARGS.n
 
-    sched_times = [2 ** logstime for logstime in range(args.log_max_stime + 1)]
-    core_counts = [2 ** logcores for logcores in range(args.log_max_cores + 1)]
+    sched_times = [2 ** logstime for logstime in range(ARGS.log_max_stime + 1)]
+    core_counts = [2 ** logcores for logcores in range(ARGS.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
         varname="Minimum pool size for keeping the cores busy",
@@ -444,7 +441,7 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
         yname="HW operation time",
         xvals=core_counts,
         yvals=sched_times,
-        max_value=args.n,
+        max_value=ARGS.n,
         precision=0,
     )
 
@@ -462,7 +459,6 @@ def make_ps_table(args: Namespace, tr_factory: TransactionGeneratorFactory) -> N
 
 
 def run_sim(
-    args: Namespace,
     params: SimulationParams,
     gen_factory: TransactionGeneratorFactory,
     sched_factory: TransactionSchedulerFactory,
@@ -470,12 +466,12 @@ def run_sim(
     obj_set_maker_factory: ObjSetMakerFactory = DEFAULT_OBJ_SET_MAKER_FACTORY,
 ):
     """Yield index and path through the state space found by the simulator."""
-    for i in range(args.repeats):
+    for i in range(ARGS.repeats):
         gen = tr_factory()
         obj_set_maker = obj_set_maker_factory()
         scheduler = sched_factory(params.op_time, params.pool_size, params.queue_size)
         sim = Simulator(gen, obj_set_maker, scheduler, executor, params.core_num)
-        yield i, sim.run(args.verbose)
+        yield i, sim.run(ARGS.verbose)
 
 
 def get_table_templates(
@@ -512,14 +508,14 @@ def get_title(*args: object):
 if __name__ == "__main__":
     random.seed(0)
 
-    args = get_args()
+    ARGS = get_args()
 
-    with open(args.template, "rt") as template_file:
+    with open(ARGS.template, "rt") as template_file:
         tr_types: Dict[str, Dict[str, int]] = json.load(template_file)
 
     tr_factory = TransactionGeneratorFactory(
-        args.memsize, tr_types, args.n, args.repeats, args.zipf_param
+        ARGS.memsize, tr_types, ARGS.n, ARGS.repeats, ARGS.zipf_param
     )
 
-    process_pool = Pool()
-    args.func(args, tr_factory)
+    PROCESS_POOL = Pool()
+    ARGS.func(tr_factory)
