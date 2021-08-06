@@ -25,7 +25,11 @@ from schedulers import (
     MaximalSchedulerFactory,
     TournamentSchedulerFactory,
 )
-from sets import FiniteObjSetMakerFactory, IdealObjSetMakerFactory
+from sets import (
+    ApproximateObjSetMakerFactory,
+    FiniteObjSetMakerFactory,
+    IdealObjSetMakerFactory,
+)
 from simulator import Simulator
 
 DEFAULT_EXECUTOR = RandomExecutor()
@@ -224,8 +228,8 @@ def make_parallelism_table(tr_factory: TransactionGeneratorFactory) -> None:
 
     def run_sims(
         sched_factory: TransactionSchedulerFactory,
-        executor: TransactionExecutor = DEFAULT_EXECUTOR,
         obj_set_maker_factory: ObjSetMakerFactory = DEFAULT_OBJ_SET_MAKER_FACTORY,
+        executor: TransactionExecutor = DEFAULT_EXECUTOR,
     ):
         print(get_title(sched_factory, executor, obj_set_maker_factory))
         print()
@@ -246,16 +250,23 @@ def make_parallelism_table(tr_factory: TransactionGeneratorFactory) -> None:
             print(tbody.format(sched_time, *prls))
         print()
 
-    for n in (2, 3, 4, 5, None):
-        try:
-            run_sims(
-                sched_factory=TournamentSchedulerFactory(),
-                obj_set_maker_factory=FiniteObjSetMakerFactory(1024, n_hash_funcs=n),
-            )
-        except RuntimeError:
-            print("--- Failed ---")
-            print()
-            continue
+    for log_size in (7, 8, 9, 10):
+        run_sims(
+            TournamentSchedulerFactory(comparator_limit=1),
+            ApproximateObjSetMakerFactory(2 ** log_size),
+        )
+        run_sims(
+            TournamentSchedulerFactory(), ApproximateObjSetMakerFactory(2 ** log_size)
+        )
+        run_sims(
+            TournamentSchedulerFactory(comparator_limit=1),
+            FiniteObjSetMakerFactory(2 ** log_size),
+        )
+        run_sims(TournamentSchedulerFactory(), FiniteObjSetMakerFactory(2 ** log_size))
+    run_sims(TournamentSchedulerFactory(comparator_limit=1))
+    run_sims(TournamentSchedulerFactory())
+    run_sims(GreedySchedulerFactory())
+    run_sims(MaximalSchedulerFactory())
 
 
 def make_stats_plot(tr_factory: TransactionGeneratorFactory) -> None:
