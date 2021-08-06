@@ -14,7 +14,7 @@ try:
     import matplotlib.pyplot as plt
     import numpy as np
 except ImportError:
-    plt = np = None
+    plt = np = None  # type: ignore
 
 from api import ObjSetMakerFactory, TransactionExecutor, TransactionSchedulerFactory
 from executors import RandomExecutor
