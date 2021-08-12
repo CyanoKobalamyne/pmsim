@@ -2,11 +2,16 @@
     "get" : {
         "reads": 1,
         "writes": 0,
-        "time": 10,
-        "weight": 10 },
+        "time": 75,
+        "weight": 2 },
     "set" : {
         "reads": 0,
         "writes": 1,
-        "time": 10,
+        "time": 75,
+        "weight": 2 },
+    "transfer" : {
+        "reads": 0,
+        "writes": 2,
+        "time": 300,
         "weight": 1 }
 }
