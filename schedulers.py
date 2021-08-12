@@ -182,6 +182,7 @@ class TournamentScheduler(AbstractScheduler):
     """Implementation of a "tournament" scheduler."""
 
     comparator_limit: Optional[int]
+    is_pipelined: bool
 
     def schedule(
         self,
@@ -212,14 +213,14 @@ class TournamentScheduler(AbstractScheduler):
             candidates = sets[0]
         else:
             candidates = TransactionSet(itertools.islice(sets[0], max_count))
-        steps = max(1, rounds)
+        steps = max(1, rounds) if self.is_pipelined else 1
         return [(candidates, steps)]
 
 
 class TournamentSchedulerFactory(TransactionSchedulerFactory):
     """Factory for greedy schedulers."""
 
-    def __init__(self, comparator_limit: int = None):
+    def __init__(self, comparator_limit: int = None, is_pipelined=True):
         """Initialize the factory.
 
         Arguments:
@@ -228,6 +229,7 @@ class TournamentSchedulerFactory(TransactionSchedulerFactory):
         if comparator_limit is not None and comparator_limit < 1:
             raise ValueError("comparator limit must be at least 1")
         self.comparator_limit = comparator_limit
+        self.is_pipelined = is_pipelined
 
     def __call__(
         self, clock_period: int = 0, pool_size: int = None, queue_size: int = None
@@ -235,6 +237,7 @@ class TournamentSchedulerFactory(TransactionSchedulerFactory):
         """See TransactionSchedulerFactory.__call__."""
         sched = TournamentScheduler(clock_period, pool_size, queue_size)
         sched.comparator_limit = self.comparator_limit
+        sched.is_pipelined = self.is_pipelined
         return sched
 
     def __str__(self) -> str:
