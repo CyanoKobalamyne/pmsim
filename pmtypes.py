@@ -145,7 +145,7 @@ class MachineState:
 class SimulationParams:
     """Represents parameters for a single simulation run."""
 
-    op_time: int
+    clock_period: int
     core_num: int
     pool_size: Optional[int]
     queue_size: Optional[int]

@@ -46,9 +46,9 @@ def get_args() -> Namespace:
     # Options for tabulation script.
     tpar_parser = subparsers.add_parser("tpar", help="tabulate parallelism")
     tpar_parser.add_argument(
-        "--log-max-stime",
-        help="Log-2 of the maximum scheduling time",
-        default=5,
+        "--log-max-period",
+        help="Log-2 of the maximum clock period",
+        default=6,
         type=int,
     )
     tpar_parser.add_argument(
@@ -64,8 +64,8 @@ def get_args() -> Namespace:
         stat_parser = subparsers.add_parser("stat", help="plot system statistics")
         stat_parser.add_argument(
             "-t",
-            "--op-time",
-            help="length of one hardware operation",
+            "--clock-period",
+            help="clock period in nanoseconds",
             default=1,
             type=int,
         )
@@ -80,8 +80,8 @@ def get_args() -> Namespace:
         )
         latency_parser.add_argument(
             "-t",
-            "--op-time",
-            help="length of one hardware operation",
+            "--clock-period",
+            help="length of one hardware operation (clock period)",
             default=1,
             type=int,
         )
@@ -93,9 +93,9 @@ def get_args() -> Namespace:
     # Options for pool size finder.
     psfind_parser = subparsers.add_parser("psfind", help="tabulate optimal pool sizes")
     psfind_parser.add_argument(
-        "--log-max-stime",
-        help="Log-2 of the maximum scheduling time",
-        default=10,
+        "--log-max-period",
+        help="Log-2 of the maximum clock period",
+        default=6,
         type=int,
     )
     psfind_parser.add_argument(
@@ -159,12 +159,16 @@ def get_args() -> Namespace:
     return args
 
 
-def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_factory):
-    """Return average parallelism for all core counts and the given operation time."""
+def run_prl_sims(
+    core_counts, clock_period, sched_factory, executor, obj_set_maker_factory
+):
+    """Return average parallelism for all core counts and the given clock period."""
     prls: List[float] = []
     for core_count in core_counts:
         results = []
-        params = SimulationParams(op_time, core_count, ARGS.poolsize, ARGS.queuesize)
+        params = SimulationParams(
+            clock_period, core_count, ARGS.poolsize, ARGS.queuesize
+        )
         for _, path in run_sim(
             params,
             tr_factory,
@@ -213,15 +217,15 @@ def run_prl_sims(core_counts, op_time, sched_factory, executor, obj_set_maker_fa
 
 def make_parallelism_table(tr_factory: TransactionGeneratorFactory) -> None:
     """Print parallelism as a function of scheduling time and core count."""
-    sched_times = [0, *(2 ** logstime for logstime in range(ARGS.log_max_stime + 1))]
+    clock_periods = [0, *(2 ** logp for logp in range(ARGS.log_max_period + 1))]
     core_counts = [2 ** logcores for logcores in range(ARGS.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
         varname="Steady-state parallelism",
         xname="Number of cores",
-        yname="HW operation time",
+        yname="Clock period",
         xvals=core_counts,
-        yvals=sched_times,
+        yvals=clock_periods,
         max_value=max(core_counts),
         precision=1,
     )
@@ -237,17 +241,17 @@ def make_parallelism_table(tr_factory: TransactionGeneratorFactory) -> None:
         sim_params = [
             (
                 core_counts,
-                sched_time,
+                clock_period,
                 sched_factory,
                 executor,
                 obj_set_maker_factory,
             )
-            for sched_time in sched_times
+            for clock_period in clock_periods
         ]
-        for sched_time, prls in zip(
-            sched_times, PROCESS_POOL.starmap(run_prl_sims, sim_params)
+        for clock_period, prls in zip(
+            clock_periods, PROCESS_POOL.starmap(run_prl_sims, sim_params)
         ):
-            print(tbody.format(sched_time, *prls))
+            print(tbody.format(clock_period, *prls))
         print()
 
     for log_size in (7, 8, 9, 10):
@@ -274,10 +278,10 @@ def make_stats_plot(tr_factory: TransactionGeneratorFactory) -> None:
     filename = (
         f"{PurePath(ARGS.template).stem}_{ARGS.n}_m{ARGS.memsize}_p{ARGS.poolsize}"
         f"_q{ARGS.queuesize if ARGS.queuesize is not None else 'inf'}"
-        f"_z{ARGS.zipf_param}_t{ARGS.op_time}_c{ARGS.num_cores}.pdf"
+        f"_z{ARGS.zipf_param}_t{ARGS.clock_period}_c{ARGS.num_cores}.pdf"
     )
     params = SimulationParams(
-        ARGS.op_time, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
+        ARGS.clock_period, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
     )
 
     fig, axes = plt.subplots(ARGS.repeats, 4)
@@ -330,10 +334,10 @@ def make_latency_plot(tr_factory: TransactionGeneratorFactory) -> None:
     filename = (
         f"{PurePath(ARGS.template).stem}_latency_{ARGS.n}_m{ARGS.memsize}"
         f"_p{ARGS.poolsize}_q{ARGS.queuesize if ARGS.queuesize is not None else 'inf'}"
-        f"_z{ARGS.zipf_param}_t{ARGS.op_time}_c{ARGS.num_cores}.pdf"
+        f"_z{ARGS.zipf_param}_t{ARGS.clock_period}_c{ARGS.num_cores}.pdf"
     )
     params = SimulationParams(
-        ARGS.op_time, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
+        ARGS.clock_period, ARGS.num_cores, ARGS.poolsize, ARGS.queuesize
     )
 
     fig, axes = plt.subplots(ARGS.repeats, 4)
@@ -395,8 +399,8 @@ def make_ps_table(tr_factory: TransactionGeneratorFactory) -> None:
     executor = RandomExecutor()
 
     class ScheduledCountSequence(Sequence[int]):
-        def __init__(self, op_time, core_num):
-            self.op_time = op_time
+        def __init__(self, clock_period, core_num):
+            self.clock_period = clock_period
             self.core_num = core_num
 
         def __getitem__(self, key):
@@ -407,7 +411,7 @@ def make_ps_table(tr_factory: TransactionGeneratorFactory) -> None:
                 print("Trying pool size of", pool_size)
             min_sched_counts = []
             params = SimulationParams(
-                self.op_time, self.core_num, pool_size, ARGS.queuesize
+                self.clock_period, self.core_num, pool_size, ARGS.queuesize
             )
             for _, path in run_sim(ARGS, params, tr_factory, sched_factory, executor):
                 scheduled_counts = {}
@@ -443,15 +447,15 @@ def make_ps_table(tr_factory: TransactionGeneratorFactory) -> None:
         def __len__(self):
             return ARGS.n
 
-    sched_times = [2 ** logstime for logstime in range(ARGS.log_max_stime + 1)]
+    clock_periods = [2 ** logp for logp in range(ARGS.log_max_period + 1)]
     core_counts = [2 ** logcores for logcores in range(ARGS.log_max_cores + 1)]
 
     thead, tbody = get_table_templates(
         varname="Minimum pool size for keeping the cores busy",
         xname="Number of cores",
-        yname="HW operation time",
+        yname="Clock period",
         xvals=core_counts,
-        yvals=sched_times,
+        yvals=clock_periods,
         max_value=ARGS.n,
         precision=0,
     )
@@ -459,13 +463,13 @@ def make_ps_table(tr_factory: TransactionGeneratorFactory) -> None:
     print(get_title(sched_factory, executor))
     print()
     print(thead)
-    for sched_time in sched_times:
+    for clock_period in clock_periods:
         min_poolsizes = []
         for core_count in core_counts:
-            scheduled_counts = ScheduledCountSequence(sched_time, core_count)
+            scheduled_counts = ScheduledCountSequence(clock_period, core_count)
             min_poolsize = bisect.bisect_left(scheduled_counts, 0, lo=1)
             min_poolsizes.append(min_poolsize)
-        print(tbody.format(sched_time, *min_poolsizes))
+        print(tbody.format(clock_period, *min_poolsizes))
     print()
 
 
@@ -480,7 +484,9 @@ def run_sim(
     for i in range(ARGS.repeats):
         gen = tr_factory()
         obj_set_maker = obj_set_maker_factory()
-        scheduler = sched_factory(params.op_time, params.pool_size, params.queue_size)
+        scheduler = sched_factory(
+            params.clock_period, params.pool_size, params.queue_size
+        )
         sim = Simulator(gen, obj_set_maker, scheduler, executor, params.core_num)
         yield i, sim.run(ARGS.verbose)
 
