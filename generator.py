@@ -58,7 +58,13 @@ class TransactionGenerator(Generator[Optional[Transaction], ObjSetMaker, None]):
             read_set = obj_set_maker(self.addresses[read_start:read_end])
             try:
                 write_set = obj_set_maker(self.addresses[write_start:write_end])
-                return Transaction(read_set, write_set, tr_label, tr_conf["time"])
+                tr_time = tr_conf["time"]
+                tr_size = tr_conf["reads"] + tr_conf["writes"]
+                if obj_set_maker.history is not None:
+                    rename_steps = sum(obj_set_maker.history[-tr_size:])
+                else:
+                    rename_steps = 0
+                return Transaction(read_set, write_set, tr_label, tr_time, rename_steps)
             except ValueError:
                 # Remove the already inserted objects from the read set.
                 obj_set_maker.free_objects(read_set)

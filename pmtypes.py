@@ -23,6 +23,7 @@ class Transaction:
     write_set: ObjSet = dataclasses.field(compare=False)
     label: str = dataclasses.field(compare=False)
     time: int = dataclasses.field(compare=False)
+    rename_steps: int = dataclasses.field(compare=False)
 
 
 class TransactionSet(MutableSet[Transaction]):

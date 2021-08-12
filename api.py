@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional
+from typing import TYPE_CHECKING, AbstractSet, Iterable, Optional, Sequence
 
 if TYPE_CHECKING:
     from pmtypes import MachineState, Transaction
@@ -27,6 +27,8 @@ class ObjSet(AbstractSet[int]):
 
 class ObjSetMaker(ABC):
     """Makes object sets for a given simulation."""
+
+    history: Optional[Sequence[int]] = None
 
     @abstractmethod
     def __call__(self, objects: Iterable[int] = ()) -> ObjSet:
@@ -53,7 +55,7 @@ class ObjSetMakerFactory(ABC):
 class TransactionScheduler(ABC):
     """Represents the scheduling unit within Puppetmaster."""
 
-    op_time: int
+    clock_period: int
     pool_size: Optional[int]
     queue_size: Optional[int]
 
@@ -75,12 +77,12 @@ class TransactionSchedulerFactory(ABC):
 
     @abstractmethod
     def __call__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+        self, clock_period: int = 0, pool_size: int = None, queue_size: int = None
     ) -> TransactionScheduler:
         """Create a new scheduler.
 
         Arguments:
-            op_time: number of cycles the scheduler takes to execute a single operation
+            clock_period: clock period of the scheduler
             pool_size: number of tranactions seen by the scheduler simultaneously
                        (all of them if None)
             queue_size: maximum number of transactions that can be waiting for execution

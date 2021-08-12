@@ -14,10 +14,10 @@ class AbstractScheduler(TransactionScheduler):
     """Represents the scheduling unit within Puppetmaster."""
 
     def __init__(
-        self, op_time: int, pool_size: Optional[int], queue_size: Optional[int]
+        self, clock_period: int, pool_size: Optional[int], queue_size: Optional[int]
     ):
         """See TransactionSchedulerFactory.__call__."""
-        self.op_time = op_time
+        self.clock_period = clock_period
         self.pool_size = pool_size
         self.queue_size = queue_size
 
@@ -60,9 +60,10 @@ class AbstractScheduler(TransactionScheduler):
             None if self.queue_size is None else self.queue_size - len(state.scheduled)
         )
         out_states = []
-        for scheduled, time in self.schedule(ongoing, state.pending, max_count):
+        for scheduled, sched_steps in self.schedule(ongoing, state.pending, max_count):
             new_state = state.copy()
-            new_state.clock += time
+            cycles = sched_steps + max((t.rename_steps for t in scheduled), default=0)
+            new_state.clock += self.clock_period * cycles
             if scheduled:
                 new_state.scheduled.update(scheduled)
                 new_state.pending.difference_update(scheduled)
@@ -79,7 +80,7 @@ class AbstractScheduler(TransactionScheduler):
         pending: Iterable[Transaction],
         max_count: Optional[int],
     ) -> Iterable[Tuple[TransactionSet, int]]:
-        """Schedule one or more transactions."""
+        """Return set of scheduled transactions and number of steps taken."""
 
 
 class GreedyScheduler(AbstractScheduler):
@@ -101,17 +102,17 @@ class GreedyScheduler(AbstractScheduler):
                 candidates.add(tr)
                 if max_count is not None and len(candidates) == max_count:
                     break
-        return [(candidates, self.op_time)]
+        return [(candidates, 1)]
 
 
 class GreedySchedulerFactory(TransactionSchedulerFactory):
     """Factory for greedy schedulers."""
 
     def __call__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+        self, clock_period: int = 0, pool_size: int = None, queue_size: int = None
     ) -> GreedyScheduler:
         """See TransactionSchedulerFactory.__call__."""
-        return GreedyScheduler(op_time, pool_size, queue_size)
+        return GreedyScheduler(clock_period, pool_size, queue_size)
 
     def __str__(self) -> str:
         """Return human-readable name for the schedulers."""
@@ -143,17 +144,14 @@ class MaximalScheduler(AbstractScheduler):
                 new_prefix.add(tr)
                 yield from all_candidate_sets(new_prefix, i + 1)
 
-        def get_result(candidates):
-            return (
-                candidates
-                if max_count is None
-                else TransactionSet(itertools.islice(candidates, max_count)),
-                self.op_time,
-            )
-
         candidate_sets = all_candidate_sets(TransactionSet(), 0)
-        out = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
-        return map(get_result, out)
+        candidate_sets = heapq.nlargest(self.n_schedules, candidate_sets, key=len)
+        if max_count is None:
+            return [(candidates, 1) for candidates in candidate_sets]
+        return [
+            (TransactionSet(itertools.islice(candidates, max_count)), 1)
+            for candidates in candidate_sets
+        ]
 
 
 class MaximalSchedulerFactory(TransactionSchedulerFactory):
@@ -168,10 +166,10 @@ class MaximalSchedulerFactory(TransactionSchedulerFactory):
         self.n_schedules = n_schedules
 
     def __call__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+        self, clock_period: int = 0, pool_size: int = None, queue_size: int = None
     ) -> MaximalScheduler:
         """See TransactionSchedulerFactory.__call__."""
-        sched = MaximalScheduler(op_time, pool_size, queue_size)
+        sched = MaximalScheduler(clock_period, pool_size, queue_size)
         sched.n_schedules = self.n_schedules
         return sched
 
@@ -214,8 +212,8 @@ class TournamentScheduler(AbstractScheduler):
             candidates = sets[0]
         else:
             candidates = TransactionSet(itertools.islice(sets[0], max_count))
-        op_time = self.op_time * max(1, rounds)
-        return [(candidates, op_time)]
+        steps = max(1, rounds)
+        return [(candidates, steps)]
 
 
 class TournamentSchedulerFactory(TransactionSchedulerFactory):
@@ -232,10 +230,10 @@ class TournamentSchedulerFactory(TransactionSchedulerFactory):
         self.comparator_limit = comparator_limit
 
     def __call__(
-        self, op_time: int = 0, pool_size: int = None, queue_size: int = None
+        self, clock_period: int = 0, pool_size: int = None, queue_size: int = None
     ) -> TournamentScheduler:
         """See TransactionSchedulerFactory.__call__."""
-        sched = TournamentScheduler(op_time, pool_size, queue_size)
+        sched = TournamentScheduler(clock_period, pool_size, queue_size)
         sched.comparator_limit = self.comparator_limit
         return sched
 
