@@ -62,7 +62,7 @@ class AbstractScheduler(TransactionScheduler):
         out_states = []
         for scheduled, sched_steps in self.schedule(ongoing, state.pending, max_count):
             new_state = state.copy()
-            cycles = sched_steps + max((t.rename_steps for t in scheduled), default=0)
+            cycles = sched_steps
             new_state.clock += self.clock_period * cycles
             if scheduled:
                 new_state.scheduled.update(scheduled)
